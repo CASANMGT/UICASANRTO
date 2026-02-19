@@ -71,6 +71,7 @@
         <nav class="nav-tabs">
             <div class="nav-tab active" data-tab="fleet">🗺️ Fleet & Tracking</div>
             <div class="nav-tab" data-tab="finance">💰 Finance</div>
+            <div class="nav-tab" data-tab="gps">📡 GPS Devices</div>
         </nav>
 
         <!-- Filters -->
@@ -115,6 +116,13 @@
                     <!-- Injected via ui.js -->
                 </div>
             </div>
+
+            <!-- GPS Tab (Hidden by default) -->
+            <div id="gpsView" class="view-container hidden">
+                <div id="gpsContent" style="padding:24px; height:100%; overflow-y:auto">
+                    <!-- Injected via ui.js -->
+                </div>
+            </div>
         </main>
     </div>
 
@@ -130,6 +138,14 @@
         <div class="modal">
             <h2>🏖️ Holiday Pause</h2>
             <div id="holidayModalContent"></div>
+        </div>
+    </div>
+
+    <!-- GPS CRUD Modal -->
+    <div id="gpsModalOverlay" class="modal-overlay">
+        <div class="modal" style="max-width:540px; width:90%">
+            <h2 id="gpsModalTitle">📡 Add GPS Device</h2>
+            <div id="gpsModalContent"></div>
         </div>
     </div>
 

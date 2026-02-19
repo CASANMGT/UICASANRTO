@@ -1,5 +1,6 @@
 /* UI Rendering & Event Handling */
 import { formatRupiah, timeAgo, getCountdown } from './utils.js';
+import { state, programs } from './store.js';
 
 // Elements
 const elVehicleList = document.getElementById('vehicleList');
@@ -18,12 +19,6 @@ window.changePage = (delta) => {
     window.dispatchEvent(new CustomEvent('page-change'));
 };
 
-window.changeFinancePage = (delta) => {
-    if (!window.financePage) window.financePage = 1;
-    window.financePage += delta;
-    if (window.financePage < 1) window.financePage = 1;
-    window.dispatchEvent(new CustomEvent('finance-page-change'));
-};
 
 export const resetPagination = () => {
     currentPage = 1;
@@ -527,3 +522,327 @@ export const updateCountdowns = () => {
         }
     });
 };
+
+// ─── GPS LIST ─────────────────────────────────────────────────────────────────
+
+const GPS_STATUS_COLOR = {
+    'Online': '#22C55E',
+    'Offline': '#EF4444',
+    'Low Signal': '#F59E0B',
+    'Tampered': '#A855F7',
+};
+const SIM_STATUS_COLOR = {
+    'Active': '#22C55E',
+    'Low Balance': '#F59E0B',
+    'Expired': '#EF4444',
+    'Inactive': '#6B7280',
+};
+
+export const renderGpsList = (devices, stats, filter = {}) => {
+    const container = document.getElementById('gpsContent');
+    if (!container) return;
+
+    // Pagination constants
+    const pageSize = 25;
+    if (!window.gpsPage) window.gpsPage = 1;
+    const totalPages = Math.ceil(devices.length / pageSize) || 1;
+    if (window.gpsPage > totalPages) window.gpsPage = totalPages;
+    const startIndex = (window.gpsPage - 1) * pageSize;
+    const pageDevices = devices.slice(startIndex, startIndex + pageSize);
+
+    const timeAgoFunc = (iso) => {
+        if (!iso) return '—';
+        const diff = Date.now() - new Date(iso);
+        const m = Math.floor(diff / 60000);
+        if (m < 1) return 'Just now';
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        return `${Math.floor(h / 24)}d ago`;
+    };
+
+    // Stats bar
+    const statsHtml = `
+    <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px">
+        ${[
+            { label: 'Total', val: stats.total, color: 'var(--t1)' },
+            { label: 'Online', val: stats.online, color: '#22C55E' },
+            { label: 'Offline', val: stats.offline, color: '#EF4444' },
+            { label: 'Low Signal', val: stats.lowSignal, color: '#F59E0B' },
+            { label: 'Tampered', val: stats.tampered, color: '#A855F7' },
+            { label: 'FW Alert', val: stats.firmwareAlert, color: '#F97316' },
+            { label: 'SIM Expiry <30d', val: stats.simExpiring, color: '#F59E0B' },
+        ].map(s => `
+            <div class="card stat-card" style="text-align:center">
+                <h3 style="font-size:11px">${s.label}</h3>
+                <div class="value" style="color:${s.color}; font-size:22px">${s.val}</div>
+            </div>
+        `).join('')}
+    </div>`;
+
+    // Filter + action toolbar
+    const toolbar = `
+    <div style="display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap">
+        <input type="text" id="gpsSearch" class="search-bar" style="flex:1; min-width:200px"
+            placeholder="Search ID, IMEI, plate..." value="${filter.search || ''}">
+        <select id="gpsStatusFilter" class="form-control" style="width:140px">
+            <option value="all" ${!filter.status || filter.status === 'all' ? 'selected' : ''}>All Status</option>
+            <option value="Online" ${filter.status === 'Online' ? 'selected' : ''}>Online</option>
+            <option value="Offline" ${filter.status === 'Offline' ? 'selected' : ''}>Offline</option>
+            <option value="Low Signal" ${filter.status === 'Low Signal' ? 'selected' : ''}>Low Signal</option>
+            <option value="Tampered" ${filter.status === 'Tampered' ? 'selected' : ''}>Tampered</option>
+        </select>
+        <select id="gpsBrandFilter" class="form-control" style="width:130px">
+            <option value="all">All Brands</option>
+            <option value="Weloop" ${filter.brand === 'Weloop' ? 'selected' : ''}>Weloop</option>
+            <option value="Teltonika" ${filter.brand === 'Teltonika' ? 'selected' : ''}>Teltonika</option>
+            <option value="Concox" ${filter.brand === 'Concox' ? 'selected' : ''}>Concox</option>
+        </select>
+        <button class="btn btn-primary" id="gpsAddBtn" style="white-space:nowrap">
+            ＋ Add Device
+        </button>
+    </div>`;
+
+    // Table rows
+    const rows = pageDevices.map(d => {
+        const statusColor = GPS_STATUS_COLOR[d.status] || '#6B7280';
+        const simColor = SIM_STATUS_COLOR[d.sim.status] || '#6B7280';
+        const fwAlert = d.firmwareUpdateRequired
+            ? `<span style="margin-left:4px; font-size:10px; background:#F97316; color:#fff; padding:1px 5px; border-radius:3px">UPDATE</span>`
+            : '';
+        const usagePct = Math.round((d.sim.dataUsedMB / d.sim.dataLimitMB) * 100);
+
+        // Find program info
+        let programName = '—';
+        if (d.vehicleId) {
+            const vehicle = state.vehicles.find(v => v.id === d.vehicleId);
+            if (vehicle) {
+                const prog = programs.find(p => p.id === vehicle.programId);
+                programName = prog ? prog.name : '—';
+            }
+        }
+
+        const addressHtml = d.status === 'Online' && d.address ?
+            `<div style="font-size:11px; color:var(--t1); margin-bottom:2px">${d.address}</div>` :
+            '';
+
+        const locationHtml = d.lat ?
+            `<div style="display:flex; flex-direction:column; gap:2px">
+                ${addressHtml}
+                <div style="display:flex; align-items:center; gap:8px">
+                    <a href="#" onclick="window.dispatchEvent(new CustomEvent('focus-vehicle', {detail:'${d.vehicleId}'})); return false;" 
+                       style="color:var(--ac); text-decoration:none; font-family:'IBM Plex Mono'; font-size:10px">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</a>
+                    <span style="font-size:10px; color:var(--t3); background:var(--s3); padding:1px 4px; border-radius:3px">${d.lastPingTime || '—'}</span>
+                </div>
+            </div>` :
+            '—';
+
+        return `
+        <tr style="border-bottom:1px solid var(--s3); transition:background .15s"
+            onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
+            <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--t2)">${d.id}</td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div style="font-weight:600">${d.brand} ${d.model}</div>
+                <div style="font-size:10px; color:var(--t3)">${d.imei}</div>
+            </td>
+            <td style="padding:10px 12px">
+                <span style="color:${statusColor}; font-weight:600; font-size:12px">● ${d.status}</span>
+                <div style="font-size:10px; color:var(--t3)">${timeAgoFunc(d.lastPing)}</div>
+            </td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div style="color:var(--t1)">${d.vehiclePlate}</div>
+                <div style="font-size:10px; color:var(--t3)">${programName}</div>
+            </td>
+            <td style="padding:10px 12px; font-size:12px">
+                ${locationHtml}
+            </td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div>${d.sim.carrier}</div>
+                <div style="font-size:10px; color:var(--t3)">${usagePct}% used</div>
+                <span style="font-size:10px; color:${simColor}">${d.sim.status}</span>
+            </td>
+            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
+                ${d.firmware}${fwAlert}
+            </td>
+            <td style="padding:10px 12px">
+                <div style="display:flex; gap:6px">
+                    <button class="btn btn-secondary"
+                        style="font-size:11px; padding:4px 10px"
+                        onclick="window.dispatchEvent(new CustomEvent('gps-edit', {detail:'${d.id}'}))">Edit</button>
+                    <button class="btn btn-secondary"
+                        style="font-size:11px; padding:4px 10px; color:var(--d); border-color:var(--d)"
+                        onclick="window.dispatchEvent(new CustomEvent('gps-delete', {detail:'${d.id}'}))">Del</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+
+    const noResults = pageDevices.length === 0
+        ? `<tr><td colspan="8" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
+        : '';
+
+    const paginationHtml = `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--s2); border-top:1px solid var(--b1)">
+        <div style="color:var(--t3); font-size:12px">
+            Showing ${startIndex + 1} - ${Math.min(startIndex + pageSize, devices.length)} of ${devices.length} devices
+        </div>
+        <div style="display:flex; gap:8px">
+            <button class="btn btn-secondary" style="font-size:11px; padding:4px 12px"
+                onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>◀ Prev</button>
+            <div style="display:flex; align-items:center; font-size:12px; color:var(--t2); padding:0 10px">
+                Page ${window.gpsPage} of ${totalPages}
+            </div>
+            <button class="btn btn-secondary" style="font-size:11px; padding:4px 12px"
+                onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next ▶</button>
+        </div>
+    </div>`;
+
+    container.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+        <div>
+            <h2 style="margin:0 0 4px">GPS Devices</h2>
+            <div style="color:var(--t3); font-size:13px">${stats.total} devices — ${stats.online} online</div>
+        </div>
+    </div>
+
+    ${statsHtml}
+    ${toolbar}
+
+    <div class="card" style="overflow:hidden">
+        <div style="overflow-x:auto">
+            <table style="width:100%; border-collapse:collapse; font-size:13px">
+                <thead style="background:var(--s3); position:sticky; top:0; z-index:2">
+                    <tr style="text-align:left; color:var(--t3); font-size:11px; text-transform:uppercase; letter-spacing:.05em">
+                        <th style="padding:10px 12px">Device ID</th>
+                        <th style="padding:10px 12px">Brand / IMEI</th>
+                        <th style="padding:10px 12px">Status</th>
+                        <th style="padding:10px 12px">Vehicle / Program</th>
+                        <th style="padding:10px 12px">Last Location</th>
+                        <th style="padding:10px 12px">SIM</th>
+                        <th style="padding:10px 12px">Firmware</th>
+                        <th style="padding:10px 12px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}${noResults}</tbody>
+            </table>
+        </div>
+        ${paginationHtml}
+    </div>`;
+
+    // Wire up filter events
+    const searchEl = document.getElementById('gpsSearch');
+    if (searchEl) searchEl.addEventListener('input', e => {
+        window.gpsPage = 1;
+        window.dispatchEvent(new CustomEvent('gps-filter', { detail: { search: e.target.value } }));
+    });
+    const statusEl = document.getElementById('gpsStatusFilter');
+    if (statusEl) statusEl.addEventListener('change', e => {
+        window.gpsPage = 1;
+        window.dispatchEvent(new CustomEvent('gps-filter', { detail: { status: e.target.value } }));
+    });
+    const brandEl = document.getElementById('gpsBrandFilter');
+    if (brandEl) brandEl.addEventListener('change', e => {
+        window.gpsPage = 1;
+        window.dispatchEvent(new CustomEvent('gps-filter', { detail: { brand: e.target.value } }));
+    });
+    const addBtn = document.getElementById('gpsAddBtn');
+    if (addBtn) addBtn.addEventListener('click', () =>
+        window.dispatchEvent(new CustomEvent('gps-add')));
+};
+
+export const openGpsModal = (device = null, vehicles = []) => {
+    const overlay = document.getElementById('gpsModalOverlay');
+    const title = document.getElementById('gpsModalTitle');
+    const content = document.getElementById('gpsModalContent');
+    if (!overlay || !content) return;
+
+    const isEdit = !!device;
+    title.textContent = isEdit ? `✏️ Edit Device — ${device.id}` : '📡 Add GPS Device';
+
+    const vehicleOptions = [
+        `<option value="">— Unassigned —</option>`,
+        ...vehicles.map(v => `<option value="${v.id}" ${isEdit && device.vehicleId === v.id ? 'selected' : ''}>${v.id} — ${v.plate}</option>`)
+    ].join('');
+
+    content.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:14px; padding-top:8px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Brand</label>
+                <select id="gf_brand" class="form-control">
+                    ${['Weloop', 'Teltonika', 'Concox'].map(b =>
+        `<option ${isEdit && device.brand === b ? 'selected' : ''}>${b}</option>`).join('')}
+                </select>
+            </div>
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Model</label>
+                <input id="gf_model" class="form-control" value="${isEdit ? device.model : ''}" placeholder="e.g. WL-210 Pro">
+            </div>
+        </div>
+        <div>
+            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">IMEI</label>
+            <input id="gf_imei" class="form-control" value="${isEdit ? device.imei : ''}" placeholder="15-digit IMEI">
+        </div>
+        <div>
+            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Serial Number</label>
+            <input id="gf_serial" class="form-control" value="${isEdit ? device.serial : ''}" placeholder="Manufacturer serial">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Firmware</label>
+                <input id="gf_firmware" class="form-control" value="${isEdit ? device.firmware : ''}" placeholder="FW-3.4.2">
+            </div>
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Mount Position</label>
+                <select id="gf_mount" class="form-control">
+                    ${['Under Seat', 'Behind Panel', 'Frame', 'Battery Compartment'].map(m =>
+            `<option ${isEdit && device.mountPosition === m ? 'selected' : ''}>${m}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <hr style="border-color:var(--s3); margin:4px 0">
+        <div style="font-size:12px; font-weight:600; color:var(--t2)">SIM Card</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">SIM Number</label>
+                <input id="gf_sim" class="form-control" value="${isEdit ? device.sim.number : ''}" placeholder="08xxxxxxxxxx">
+            </div>
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Carrier</label>
+                <select id="gf_carrier" class="form-control">
+                    ${['Telkomsel', 'XL', 'Indosat', 'Tri', 'Smartfren'].map(c =>
+                `<option ${isEdit && device.sim.carrier === c ? 'selected' : ''}>${c}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">SIM Expiry</label>
+                <input id="gf_simexpiry" type="date" class="form-control" value="${isEdit ? device.sim.expiry : ''}">
+            </div>
+            <div>
+                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Warranty Expiry</label>
+                <input id="gf_warranty" type="date" class="form-control" value="${isEdit ? device.warrantyExpiry : ''}">
+            </div>
+        </div>
+        <hr style="border-color:var(--s3); margin:4px 0">
+        <div>
+            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Assigned Vehicle</label>
+            <select id="gf_vehicle" class="form-control">${vehicleOptions}</select>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
+            <button class="btn btn-secondary" onclick="window.dispatchEvent(new CustomEvent('gps-modal-close'))">Cancel</button>
+            <button class="btn btn-primary" onclick="window.dispatchEvent(new CustomEvent('gps-save', {detail:'${isEdit ? device.id : 'new'}'}))">
+                ${isEdit ? 'Save Changes' : 'Add Device'}
+            </button>
+        </div>
+    </div>`;
+
+    overlay.classList.add('active');
+};
+
+export const closeGpsModal = () => {
+    const overlay = document.getElementById('gpsModalOverlay');
+    if (overlay) overlay.classList.remove('active');
+};
+

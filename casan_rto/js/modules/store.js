@@ -33,6 +33,7 @@ const lastNames = ['Santoso', 'Pratama', 'Wijaya', 'Saputra', 'Hidayat', 'Nugroh
 export const state = {
     vehicles: [],
     transactions: [],
+    gpsDevices: [],
     filter: {
         partner: 'all',
         status: 'all',
@@ -171,7 +172,114 @@ export const initData = () => {
     // Sort transactions by date desc
     state.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    console.log(`Generated ${state.vehicles.length} vehicles and ${state.transactions.length} transactions`);
+    // Generate GPS Devices (one per vehicle + 3 unassigned spares)
+    const gpsBrands = [
+        { brand: 'Weloop', models: ['WL-210 Pro', 'WL-310'], firmwareBase: 'FW-3.4.' },
+        { brand: 'Teltonika', models: ['FMB920', 'FMB130'], firmwareBase: 'FW-03.27.' },
+        { brand: 'Concox', models: ['GT06N', 'TR06'], firmwareBase: 'FW-2.1.' },
+    ];
+    const carriers = ['Telkomsel', 'XL', 'Indosat', 'Tri', 'Smartfren'];
+    const mountPositions = ['Under Seat', 'Behind Panel', 'Frame', 'Battery Compartment'];
+    const gpsStatuses = ['Online', 'Online', 'Online', 'Offline', 'Low Signal', 'Tampered'];
+    const simStatuses = ['Active', 'Active', 'Active', 'Low Balance', 'Expired'];
+
+    // One GPS per vehicle
+    state.vehicles.forEach((v, idx) => {
+        const brandObj = randArr(gpsBrands);
+        const model = randArr(brandObj.models);
+        const fwNum = randInt(1, 9);
+        const fwLatest = fwNum + 1;
+        const carrier = randArr(carriers);
+        const devStatus = randArr(gpsStatuses);
+        const dataUsed = randInt(50, 490);
+        const installDate = new Date(now - randInt(30 * oneDay, 365 * oneDay)).toISOString().split('T')[0];
+
+        // Mock Indonesian address components
+        const streets = ['Jl. Sudirman', 'Jl. Gatot Subroto', 'Jl. Rasuna Said', 'Jl. Thamrin', 'Jl. TB Simatupang', 'Jl. Kemang Raya', 'Jl. Senopati', 'Jl. Raya Bogor'];
+        const kecamatans = ['Kebayoran Baru', 'Setiabudi', 'Menteng', 'Tebet', 'Cilandak', 'Pancoran', 'Pasar Minggu', 'Tanah Abang'];
+        const kotas = ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Timur', 'Jakarta Barat', 'Jakarta Utara'];
+
+        const street = randArr(streets) + ' No. ' + randInt(1, 150);
+        const kec = randArr(kecamatans);
+        const kota = randArr(kotas);
+        const address = `${street}, ${kec}, ${kota}`;
+
+        const lastPingDate = devStatus === 'Online'
+            ? new Date(now - randInt(0, 60 * 60 * 1000))
+            : new Date(now - randInt(2 * 60 * 60 * 1000, 10 * oneDay));
+
+        state.gpsDevices.push({
+            id: `GPS-${String(idx + 1).padStart(5, '0')}`,
+            imei: `86${randInt(1000000000000, 9999999999999)}`,
+            serial: `${brandObj.brand.substring(0, 2).toUpperCase()}-2024-${String(randInt(1000, 9999))}`,
+            brand: brandObj.brand,
+            model: model,
+            firmware: `${brandObj.firmwareBase}${fwNum}`,
+            firmwareLatest: `${brandObj.firmwareBase}${fwLatest}`,
+            firmwareUpdateRequired: fwNum < fwLatest,
+            // SIM
+            sim: {
+                number: `0${randInt(811, 899)}${randInt(10000000, 99999999)}`,
+                carrier: carrier,
+                dataUsedMB: dataUsed,
+                dataLimitMB: 500,
+                expiry: new Date(now + randInt(7 * oneDay, 180 * oneDay)).toISOString().split('T')[0],
+                status: randArr(simStatuses),
+                monthlyCost: 15000,
+            },
+            // Installation
+            vehicleId: v.id,
+            vehiclePlate: v.plate,
+            installDate: installDate,
+            mountPosition: randArr(mountPositions),
+            relayConnected: true,
+            // Status
+            status: devStatus,
+            lat: devStatus === 'Online' ? -6.2 + (random() - 0.5) * 0.3 : null,
+            lng: devStatus === 'Online' ? 106.8 + (random() - 0.5) * 0.4 : null,
+            address: devStatus === 'Online' ? address : '—',
+            lastPing: lastPingDate.toISOString(),
+            lastPingTime: lastPingDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            signalStrength: devStatus === 'Online' ? randArr(['Excellent', 'Good', 'Fair']) : 'Poor',
+            uptime30d: devStatus === 'Online' ? randInt(92, 100) : randInt(40, 85),
+            immobilizationState: v.status === 'immobilized' ? 'Immobilized' : 'Normal',
+            // Financial
+            purchaseCost: 350000,
+            monthlyCost: 15000,
+            warrantyExpiry: new Date(now + randInt(30 * oneDay, 365 * oneDay)).toISOString().split('T')[0],
+        });
+    });
+
+    // 3 unassigned spare devices
+    for (let s = 0; s < 3; s++) {
+        const brandObj = randArr(gpsBrands);
+        state.gpsDevices.push({
+            id: `GPS-SPARE-${String(s + 1).padStart(3, '0')}`,
+            imei: `86${randInt(1000000000000, 9999999999999)}`,
+            serial: `${brandObj.brand.substring(0, 2).toUpperCase()}-SPARE-${randInt(100, 999)}`,
+            brand: brandObj.brand,
+            model: randArr(brandObj.models),
+            firmware: `${brandObj.firmwareBase}1`,
+            firmwareLatest: `${brandObj.firmwareBase}2`,
+            firmwareUpdateRequired: true,
+            sim: { number: '-', carrier: '-', dataUsedMB: 0, dataLimitMB: 500, expiry: '-', status: 'Inactive', monthlyCost: 0 },
+            vehicleId: null,
+            vehiclePlate: '—',
+            installDate: null,
+            mountPosition: '—',
+            relayConnected: false,
+            status: 'Offline',
+            lastPing: null,
+            signalStrength: 'None',
+            uptime30d: 0,
+            immobilizationState: '—',
+            purchaseCost: 350000,
+            monthlyCost: 0,
+            warrantyExpiry: new Date(now + 365 * oneDay).toISOString().split('T')[0],
+        });
+    }
+
+    console.log(`Generated ${state.vehicles.length} vehicles, ${state.transactions.length} transactions, ${state.gpsDevices.length} GPS devices`);
 };
 
 export const getFilteredVehicles = () => {

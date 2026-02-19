@@ -1,8 +1,9 @@
 /* Main App Logic */
 import { initData, state, getFilteredVehicles, getStats } from './modules/store.js';
 import { initMap, updateMapMarkers, focusVehicleOnMap, resizeMap } from './modules/map.js';
-import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination } from './modules/ui.js';
+import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal } from './modules/ui.js';
 import { getFinanceStats, getTransactions, getProgramStats } from './modules/finance.js';
+import { getGpsDevices, getGpsStats, getGpsById, createGpsDevice, updateGpsDevice, deleteGpsDevice } from './modules/gps.js';
 
 /* Initial Load */
 document.addEventListener('DOMContentLoaded', () => {
@@ -91,11 +92,25 @@ function updateFinance() {
     renderFinanceDashboard(getFinanceStats(), getTransactions(), getProgramStats());
 }
 
+// GPS filter state
+let gpsFilter = { status: 'all', brand: 'all', search: '' };
+window.gpsPage = 1;
+
+function updateGps() {
+    renderGpsList(getGpsDevices(gpsFilter), getGpsStats(), gpsFilter);
+}
+
 // Global for inline onclick on pagination buttons in the finance table
 window.changeFinancePage = (delta) => {
     if (!window.financePage) window.financePage = 1;
     window.financePage = Math.max(1, window.financePage + delta);
     updateFinance();
+};
+
+window.changeGpsPage = (delta) => {
+    if (!window.gpsPage) window.gpsPage = 1;
+    window.gpsPage = Math.max(1, window.gpsPage + delta);
+    updateGps();
 };
 
 function updateStatsBar() {
@@ -121,18 +136,19 @@ function setupEventListeners() {
                 tab.classList.add('active');
 
                 const showFleet = tab.dataset.tab === 'fleet';
+                const showFinance = tab.dataset.tab === 'finance';
+                const showGps = tab.dataset.tab === 'gps';
                 const fleetView = document.getElementById('fleetView');
                 const financeView = document.getElementById('financeView');
+                const gpsView = document.getElementById('gpsView');
 
-                if (showFleet) {
-                    if (fleetView) fleetView.classList.remove('hidden');
-                    if (financeView) financeView.classList.add('hidden');
-                    resizeMap();
-                } else {
-                    if (fleetView) fleetView.classList.add('hidden');
-                    if (financeView) financeView.classList.remove('hidden');
-                    updateFinance();
-                }
+                if (fleetView) fleetView.classList.toggle('hidden', !showFleet);
+                if (financeView) financeView.classList.toggle('hidden', !showFinance);
+                if (gpsView) gpsView.classList.toggle('hidden', !showGps);
+
+                if (showFleet) resizeMap();
+                if (showFinance) updateFinance();
+                if (showGps) updateGps();
             });
         });
     }
@@ -216,4 +232,62 @@ function setupEventListeners() {
         window.financePage = 1; // Reset to first page
         updateFinance();
     });
+
+    window.addEventListener('gps-page-change', () => {
+        updateGps();
+    });
+
+    // ── GPS CRUD Events ────────────────────────────────────────────────────────
+
+    // Filter change (search, status, brand)
+    window.addEventListener('gps-filter', (e) => {
+        Object.assign(gpsFilter, e.detail);
+        updateGps();
+    });
+
+    // Add new device
+    window.addEventListener('gps-add', () => {
+        openGpsModal(null, state.vehicles);
+    });
+
+    // Edit existing device
+    window.addEventListener('gps-edit', (e) => {
+        const device = getGpsById(e.detail);
+        if (device) openGpsModal(device, state.vehicles);
+    });
+
+    // Save (create or update)
+    window.addEventListener('gps-save', (e) => {
+        const fields = {
+            brand: document.getElementById('gf_brand')?.value,
+            model: document.getElementById('gf_model')?.value,
+            imei: document.getElementById('gf_imei')?.value,
+            serial: document.getElementById('gf_serial')?.value,
+            firmware: document.getElementById('gf_firmware')?.value,
+            mountPosition: document.getElementById('gf_mount')?.value,
+            simNumber: document.getElementById('gf_sim')?.value,
+            carrier: document.getElementById('gf_carrier')?.value,
+            simExpiry: document.getElementById('gf_simexpiry')?.value,
+            warrantyExpiry: document.getElementById('gf_warranty')?.value,
+            vehicleId: document.getElementById('gf_vehicle')?.value || null,
+        };
+        if (e.detail === 'new') {
+            createGpsDevice(fields);
+        } else {
+            updateGpsDevice(e.detail, fields);
+        }
+        closeGpsModal();
+        updateGps();
+    });
+
+    // Delete
+    window.addEventListener('gps-delete', (e) => {
+        if (confirm(`Delete device ${e.detail}? This cannot be undone.`)) {
+            deleteGpsDevice(e.detail);
+            updateGps();
+        }
+    });
+
+    // Close modal
+    window.addEventListener('gps-modal-close', () => closeGpsModal());
 }
