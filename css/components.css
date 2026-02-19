@@ -14,16 +14,59 @@
     border-color: var(--b2);
 }
 
-/* Stats Bar */
+/* Stats Bar — horizontal grid on desktop */
 .stats-bar {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 12px;
-    padding: 0 20px 16px;
+    gap: 10px;
+    padding: 6px 20px 10px;
+    align-items: stretch;
+}
+
+/* helper class for finance inner grids */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .stats-bar {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 10px 12px;
+        gap: 10px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .stats-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .stat-card {
+        min-width: 90px;
+        padding: 6px 10px;
+        flex-shrink: 0;
+        text-align: center;
+        background: var(--s2);
+        border: 1px solid var(--b1);
+        border-radius: 8px;
+    }
+
+    .stat-card h3 {
+        font-size: 8px;
+    }
+
+    .stat-card .value {
+        font-size: 14px;
+        font-family: var(--font-mono);
+    }
 }
 
 .stat-card {
-    padding: 12px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     justify-content: center;

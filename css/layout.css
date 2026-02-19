@@ -2,10 +2,9 @@
 
 #app {
     display: grid;
-    grid-template-rows: 60px 48px 100px 1fr;
-    /* Header, Nav, Stats, Content */
+    grid-template-rows: auto auto auto 1fr;
     height: 100vh;
-    max-width: 1640px;
+    max-width: 100%;
     margin: 0 auto;
     overflow: hidden;
 }
@@ -75,10 +74,17 @@
 /* Nav Tabs */
 .nav-tabs {
     display: flex;
-    padding: 0 20px;
+    padding: 0 10px;
     border-bottom: 1px solid var(--b1);
     background: var(--s1);
-    gap: 8px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Hide scrollbar for clean tab look */
+}
+
+.nav-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-tab {
@@ -112,6 +118,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 /* Dashboard Grid (Fleet View) */
@@ -247,50 +255,82 @@
 
 @media (max-width: 768px) {
     #app {
-        grid-template-rows: auto auto auto 1fr;
-        height: auto;
-        min-height: 100vh;
-        overflow: auto;
-        /* Enable scroll on body */
+        grid-template-rows: 50px 40px 68px 1fr;
+        height: 100vh;
+        overflow: hidden;
     }
 
     .app-header {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 12px;
-        gap: 12px;
-    }
-
-    .header-controls {
+        height: auto;
+        padding: 8px 12px;
+        flex-direction: row;
         justify-content: space-between;
     }
 
+    .logo-area h1 {
+        font-size: 14px !important;
+    }
+
+    .header-controls {
+        gap: 8px;
+    }
+
+    .dealer-select {
+        padding: 4px 6px;
+        font-size: 10px;
+        max-width: 80px;
+    }
+
+    .nav-tabs {
+        height: 40px;
+        padding: 0 8px;
+    }
+
+    .nav-tab {
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
     .stats-bar {
-        grid-template-columns: repeat(2, 1fr);
-        padding: 0 12px 12px;
+        max-height: 68px;
+        /* Prevent stats from growing too tall */
         height: auto;
+        padding: 8px 10px;
     }
 
     .dashboard-grid {
         display: flex;
         flex-direction: column;
-        height: auto;
+        height: 100%;
+        overflow: hidden;
     }
 
     .map-container {
-        height: 300px;
-        min-height: 300px;
+        height: 30vh;
+        /* Reduced to give more room to list */
+        min-height: 180px;
+        flex-shrink: 0;
     }
 
     .panel-sidebar {
-        height: auto;
-        overflow: visible;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: var(--bg);
+        border-top: 1px solid var(--b1);
+        z-index: 10;
+        /* Ensure clickability */
+        position: relative;
+    }
+
+    .panel-header {
+        padding: 10px 12px;
     }
 
     .vehicle-list {
-        height: auto;
-        max-height: none;
-        overflow: visible;
-        padding-bottom: 40px;
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }

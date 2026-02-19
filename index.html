@@ -112,14 +112,15 @@
 
             <!-- Finance Tab (Hidden by default) -->
             <div id="financeView" class="view-container hidden">
-                <div id="financeContent" style="padding-bottom:40px">
+                <div id="financeContent" style="overflow-y:auto; flex:1; min-height:0;">
                     <!-- Injected via ui.js -->
                 </div>
             </div>
 
             <!-- GPS Tab (Hidden by default) -->
             <div id="gpsView" class="view-container hidden">
-                <div id="gpsContent" style="padding:24px; height:100%; overflow-y:auto">
+                <div id="gpsContent"
+                    style="overflow-y:auto; flex:1; min-height:0; padding:24px; box-sizing:border-box;">
                     <!-- Injected via ui.js -->
                 </div>
             </div>

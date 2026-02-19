@@ -389,7 +389,7 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     </div>` : '';
 
     container.innerHTML = `
-        <div style="height:100%; overflow:hidden; display:flex; flex-direction:column; padding:20px; gap:0; box-sizing:border-box">
+        <div style="display:flex; flex-direction:column; padding:20px; gap:0; box-sizing:border-box; min-height:100%;">
 
             <!-- Header row with title + program filter -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-shrink:0">
@@ -433,17 +433,15 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
                 </div>
             </div>
 
-            <!-- Table + Payment Methods grid -->
-            <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; flex:1; min-height:0">
-
-                <!-- Transaction Table -->
+            <!-- Transaction Table -->
+            <div>
                 <div class="card" style="display:flex; flex-direction:column; overflow:hidden">
-                    <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center; flex-shrink:0">
+                    <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="margin:0">Recent Transactions</h3>
                         <span style="font-size:12px; color:var(--t3)">${transactions.length} records</span>
                     </div>
-                    <div style="flex:1; overflow-y:auto; min-height:0">
-                        <table style="width:100%; border-collapse:collapse; font-size:13px">
+                    <div style="overflow-x:auto">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:600px">
                             <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
                                 <tr style="text-align:left; color:var(--t3)">
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">TX ID</th>
@@ -457,19 +455,11 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                ${rows || '<tr><td colspan="7" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
+                                ${rows || '<tr><td colspan="8" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
                             </tbody>
                         </table>
                     </div>
                     ${txPagination}
-                </div>
-
-                <!-- Payment Methods -->
-                <div class="card" style="padding:20px; overflow-y:auto">
-                    <h3 style="margin:0 0 16px">Payment Methods</h3>
-                    <div style="display:flex; flex-direction:column; gap:14px">
-                        ${renderPaymentMethodBars(transactions)}
-                    </div>
                 </div>
             </div>
         </div>
@@ -485,31 +475,6 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     }
 };
 
-
-
-// Helper to render simple bars for payment methods
-function renderPaymentMethodBars(txs) {
-    const counts = {};
-    txs.forEach(t => counts[t.method] = (counts[t.method] || 0) + 1);
-    const total = txs.length;
-
-    return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([method, count]) => {
-            const pct = (count / total) * 100;
-            return `
-                <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
-                        <span>${method}</span>
-                        <span>${Math.round(pct)}%</span>
-                    </div>
-                    <div style="height:6px; background:var(--s3); border-radius:3px; overflow:hidden">
-                        <div style="height:100%; width:${pct}%; background:var(--w)"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-}
 
 function formatDate(iso) {
     return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -674,9 +639,6 @@ export const renderGpsList = (devices, stats, filter = {}) => {
                 <div style="font-size:10px; color:var(--t3)">${usagePct}% used</div>
                 <span style="font-size:10px; color:${simColor}">${d.sim.status}</span>
             </td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
-                ${d.firmware}${fwAlert}
-            </td>
             <td style="padding:10px 12px">
                 <div style="display:flex; gap:6px">
                     <button class="btn btn-secondary"
@@ -691,7 +653,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
     }).join('');
 
     const noResults = pageDevices.length === 0
-        ? `<tr><td colspan="8" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
+        ? `<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
         : '';
 
     const paginationHtml = `
@@ -732,7 +694,6 @@ export const renderGpsList = (devices, stats, filter = {}) => {
                         <th style="padding:10px 12px">Vehicle / Program</th>
                         <th style="padding:10px 12px">Last Location</th>
                         <th style="padding:10px 12px">SIM</th>
-                        <th style="padding:10px 12px">Firmware</th>
                         <th style="padding:10px 12px">Actions</th>
                     </tr>
                 </thead>
