@@ -6,7 +6,7 @@ A web-based fleet operations dashboard for managing EV motorcycles on RTO (Rent-
 
 ## 🌐 Live Demo
 
-**[https://gleeful-medovik-5ded90.netlify.app](https://69965db0baa068f1603696ef--gleeful-medovik-5ded90.netlify.app/)**
+**[https://gleeful-medovik-5ded90.netlify.app](https://gleeful-medovik-5ded90.netlify.app/)**
 
 ---
 
