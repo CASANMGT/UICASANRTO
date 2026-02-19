@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASAN RTO | Fleet Management Dashboard</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/map_controls.css">
+    <link rel="stylesheet" href="css/credit_bar.css">
+    <link rel="stylesheet" href="css/finance_strip.css">
+
+    <!-- External Libs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Specific overrides for Leaflet dark mode */
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out,
+        .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-box">C</div>
+                <div>
+                    <h1 style="font-size:16px; font-weight:700;">CASAN Fleet Management</h1>
+                    <div style="font-size:11px; color:var(--t2);">RTO & Rental — Jabodetabek</div>
+                </div>
+            </div>
+
+            <div class="header-controls">
+                <!-- Filters -->
+                <div class="filter-group">
+                    <select id="partnerSelect" class="form-control" style="width:150px">
+                        <option value="all">All Partners</option>
+                        <option value="tangkas">Tangkas</option>
+                        <option value="maka">Maka</option>
+                        <option value="united">United</option>
+                    </select>
+                </div>
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    LIVE
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <div class="nav-tab active" data-tab="fleet">🗺️ Fleet & Tracking</div>
+            <div class="nav-tab" data-tab="finance">💰 Finance</div>
+            <div class="nav-tab" data-tab="gps">📡 GPS Devices</div>
+        </nav>
+
+        <!-- Filters -->
+        <!-- Filters (MOVED TO SIDEBAR) -->
+        <!-- <div id="headerFilters" class="filter-bar sticky-filters"></div> -->
+
+        <!-- Stats Bar -->
+        <div id="statsBar" class="stats-bar">
+            <!-- Rendered by JS -->
+        </div>
+
+        <!-- Main Content -->
+        <main class="view-container">
+            <!-- Fleet Tab -->
+            <div id="fleetView" class="dashboard-grid">
+                <div id="map" class="map-container">
+                    <!-- Leaflet Map -->
+                    <!-- Map Filters Overlay -->
+                    <div class="map-filters" id="mapFilters">
+                        <!-- Map toggles rendered by JS -->
+                    </div>
+                </div>
+
+                <aside class="panel-sidebar">
+                    <div class="panel-header">
+                        <input type="text" id="searchInput" class="search-bar"
+                            placeholder="Search ID, Plate, Customer...">
+                        <div id="statusFilters" class="filter-row">
+                            <!-- Filters rendered by JS -->
+                        </div>
+                    </div>
+
+                    <div id="vehicleList" class="vehicle-list">
+                        <!-- Cards rendered by JS -->
+                    </div>
+                </aside>
+            </div>
+
+            <!-- Finance Tab (Hidden by default) -->
+            <div id="financeView" class="view-container hidden">
+                <div id="financeContent" style="padding-bottom:40px">
+                    <!-- Injected via ui.js -->
+                </div>
+            </div>
+
+            <!-- GPS Tab (Hidden by default) -->
+            <div id="gpsView" class="view-container hidden">
+                <div id="gpsContent" style="padding:24px; height:100%; overflow-y:auto">
+                    <!-- Injected via ui.js -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="paymentModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2>💰 Record Payment</h2>
+            <div id="paymentModalContent"></div>
+        </div>
+    </div>
+
+    <div id="holidayModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2>🏖️ Holiday Pause</h2>
+            <div id="holidayModalContent"></div>
+        </div>
+    </div>
+
+    <!-- GPS CRUD Modal -->
+    <div id="gpsModalOverlay" class="modal-overlay">
+        <div class="modal" style="max-width:540px; width:90%">
+            <h2 id="gpsModalTitle">📡 Add GPS Device</h2>
+            <div id="gpsModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastContainer"
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 10px;">
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+
+
+    <script type="module" src="js/app.js"></script>
+
+</body>
+
+</html>

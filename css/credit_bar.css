@@ -1,0 +1,55 @@
+/* Credit Bar */
+.cb {
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.16);
+    border-radius: 8px;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.cbh {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.cbl {
+    font-size: 9px;
+    color: var(--t3);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.cbv {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--t1);
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+.cbt {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    margin-top: 4px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.cbf {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.cbx {
+    font-size: 10px;
+    color: var(--t3);
+    margin-top: 6px;
+    display: flex;
+    justify-content: space-between;
+}

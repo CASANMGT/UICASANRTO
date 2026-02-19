@@ -1,0 +1,296 @@
+/* App Layout */
+
+#app {
+    display: grid;
+    grid-template-rows: 60px 48px 100px 1fr;
+    /* Header, Nav, Stats, Content */
+    height: 100vh;
+    max-width: 1640px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--b1);
+    background: var(--s1);
+    z-index: 10;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-box {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--ac), #06b6d4);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 900;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.dealer-select {
+    background: var(--s2);
+    border: 1px solid var(--b1);
+    color: var(--t1);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--g);
+    font-weight: 600;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--g);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+/* Nav Tabs */
+.nav-tabs {
+    display: flex;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--b1);
+    background: var(--s1);
+    gap: 8px;
+}
+
+.nav-tab {
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    color: var(--t2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.nav-tab:hover {
+    color: var(--t1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.nav-tab.active {
+    color: var(--ac);
+    border-bottom-color: var(--ac);
+    background: rgba(0, 229, 195, 0.05);
+}
+
+/* Main Content Area */
+.view-container {
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Dashboard Grid (Fleet View) */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    /* Map | Sidebar */
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.map-container {
+    position: relative;
+    background: #111;
+    height: 100%;
+    width: 100%;
+}
+
+.panel-sidebar {
+    background: var(--s1);
+    border-left: 1px solid var(--b1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--b1);
+    background: var(--s2);
+}
+
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    background: var(--s1);
+    border: 1px solid var(--b1);
+    border-radius: 6px;
+    color: var(--t1);
+    margin-bottom: 12px;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: var(--ac);
+}
+
+.filter-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid var(--b1);
+    border-radius: 20px;
+    /* Pill shape */
+    background: var(--s1);
+    color: var(--t2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--t3);
+    color: var(--t1);
+}
+
+.filter-btn.active {
+    background: var(--s3);
+    border-color: currentColor;
+    color: var(--t1);
+}
+
+/* Map Filters Overlay */
+.map-filters {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    pointer-events: none;
+    /* Let clicks pass through container */
+}
+
+.map-filters>* {
+    pointer-events: auto;
+}
+
+/* Re-enable buttons */
+
+.map-toggle {
+    background: rgba(12, 16, 24, 0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--b2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--t2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.map-toggle.active {
+    border-color: var(--ac);
+    color: var(--t1);
+    background: rgba(12, 16, 24, 0.95);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50vh 1fr;
+    }
+
+    .panel-sidebar {
+        border-left: none;
+        border-top: 1px solid var(--b1);
+    }
+}
+
+@media (max-width: 768px) {
+    #app {
+        grid-template-rows: auto auto auto 1fr;
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+        /* Enable scroll on body */
+    }
+
+    .app-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .header-controls {
+        justify-content: space-between;
+    }
+
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 0 12px 12px;
+        height: auto;
+    }
+
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+    }
+
+    .map-container {
+        height: 300px;
+        min-height: 300px;
+    }
+
+    .panel-sidebar {
+        height: auto;
+        overflow: visible;
+    }
+
+    .vehicle-list {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+        padding-bottom: 40px;
+    }
+}
