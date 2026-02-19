@@ -1,5 +1,5 @@
 /* Map Logic */
-// Removed invalid import
+import { timeAgo } from './utils.js';
 
 let map = null;
 let markers = null;
@@ -71,7 +71,7 @@ export const initMap = (onVehicleSelect) => {
                     background:rgba(0, 229, 195, 0.2); 
                     border:2px solid #00E5C3; 
                     border-radius:50%; 
-                    color:#fff; 
+                    color:#000; 
                     display:flex; 
                     align-items:center; 
                     justify-content:center; 
@@ -170,22 +170,10 @@ export const updateMapMarkers = (vehicles) => {
     markerMap.clear();
 
     vehicles.forEach(v => {
-        // Map Filter Logic
-        // 1. Status Check
-        // if (!mapFilters[v.status] && v.status !== 'expiring') { // Expiring is a derived status usually?
-        //      // If status is active but has creditExpiry, is it 'expiring'?
-        //      // Reference HTML: 
-        //      // if(expiring && !mapF.expiring) return;
-        //      // if(!mapF[v.st]) return;
-        // }
-
         const isExpiring = !!v.creditExpiry;
-        // const statusKey = isExpiring ? 'expiring' : v.status; // Not used directly in filter logic below
 
-        // Check Map Filters
-        // If it's expiring, check 'expiring' filter. If not allowed, return.
-        // Note: 'active' vehicles can be expiring.
-
+        // Map Filter Logic
+        // ... (existing logic)
         if (isExpiring) {
             if (!mapFilters.expiring) return;
         } else {
@@ -197,27 +185,41 @@ export const updateMapMarkers = (vehicles) => {
         if (!v.isOnline && !mapFilters.offline) return;
 
         // Create Marker
-        // ... (Existing Logic)
+        const credits = v.credits || 0;
+
+        let label = '';
+        if (v.status === 'active') {
+            label = isExpiring ? '<1' : credits;
+        } else if (v.status === 'grace') {
+            label = 'G'; // Indicate Grace period
+        } else if (v.status === 'immobilized') {
+            label = 'L'; // Indicate Locked
+        }
+
         const el = document.createElement('div');
         el.className = 'marker-custom';
-        // const color = isExpiring ? COLORS.expiring : (v.isOnline ? COLORS.active : COLORS.offline); // Simplified color logic
-
-        // Exact logic from Reference:
-        // const col=!online?'#FF6B6B':expiring?'#FF6B35':sc.c;
         const scColor = COLORS[v.status] || '#999';
         const finalColor = !v.isOnline ? '#FF6B6B' : (isExpiring ? '#FF6B35' : scColor);
 
         el.style.backgroundColor = finalColor;
-        el.style.width = '12px';
-        el.style.height = '12px';
+        el.style.width = '24px'; // Increased for better clickability
+        el.style.height = '24px';
         el.style.borderRadius = '50%';
         el.style.border = '2px solid #fff';
-        el.style.boxShadow = '0 0 4px rgba(0,0,0,0.3)';
+        el.style.boxShadow = '0 0 6px rgba(0,0,0,0.4)';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        el.style.fontSize = label === '<1' ? '8px' : '11px';
+        el.style.fontWeight = 'bold';
+        el.style.color = '#000';
+        el.style.fontFamily = 'IBM Plex Mono';
+        el.innerText = label;
 
         const icon = L.divIcon({
             className: '',
             html: el,
-            iconSize: [12, 12]
+            iconSize: [24, 24]
         });
 
         // Ensure v.location exists and has lat/lng, otherwise fallback to v.lat/v.lng if they exist
@@ -229,18 +231,30 @@ export const updateMapMarkers = (vehicles) => {
         const marker = L.marker([lat, lng], { icon });
 
         // Popup
+        const creditDisplay = label === '<1' ? 'EXPIRING' : (label === 'G' ? 'GRACE' : (label === 'L' ? 'LOCKED' : `${label} Days Left`));
+
         marker.bindPopup(`
-            <div style="font-family:'IBM Plex Mono'; font-size:11px; line-height:1.6; color:#fff">
-                <div style="font-weight:bold; color:${finalColor}">${v.id}</div>
-                <div>${v.model} • ${v.plate}</div>
-                <div style="opacity:0.7">${v.customer || 'No Customer'}</div>
-                <div style="margin-top:4px; font-size:10px">
-                    ${v.isOnline ? '🟢 Online' : '🔴 Offline ' + (v.lastPing ? new Date(v.lastPing).toLocaleTimeString() : '')}
+            <div style="font-family:'IBM Plex Mono'; font-size:12px; line-height:1.5; color:#000; min-width:200px; padding:4px">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:10px">
+                    <div style="font-weight:800; font-size:15px; color:#000">${v.customer || 'No Customer'}</div>
+                    <div style="font-size:10px; padding:2px 6px; background:${finalColor}25; border:1px solid ${finalColor}; border-radius:4px; color:#000; font-weight:700; white-space:nowrap">${creditDisplay}</div>
+                </div>
+                <div style="font-size:12px; font-weight:600; color:#555; margin-bottom:10px">📞 ${v.phone || '-'}</div>
+                
+                <div style="border-top:1px solid rgba(0,0,0,0.1); padding-top:8px; margin-bottom:8px">
+                    <div style="font-weight:700; color:#333; font-size:11px">${v.id} • ${v.plate}</div>
+                    <div style="opacity:0.7; font-size:11px">${v.model}</div>
+                </div>
+
+                <div style="font-size:10px; display:flex; align-items:center; gap:5px; font-weight:600">
+                    ${v.isOnline ?
+                `<span style="color:#16a34a">🟢 Online (${timeAgo(v.lastPing)})</span>` :
+                `<span style="color:#dc2626">🔴 Offline (${timeAgo(v.lastPing)})</span>`}
                 </div>
             </div>
         `, {
             closeButton: false,
-            className: 'custom-popup-dark' // Need css for this
+            className: 'custom-popup-light'
         });
 
         marker.on('click', () => {

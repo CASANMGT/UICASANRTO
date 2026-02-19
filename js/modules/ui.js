@@ -330,10 +330,22 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
             onmouseover="this.style.background='var(--s2)'" 
             onmouseout="this.style.background=''">
             <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--t2)">${t.id}</td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
+                <div>${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                <div style="font-size:10px; opacity:0.7">${new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+            </td>
             <td style="padding:10px 12px; font-size:13px">${t.vehicleId}</td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div style="font-weight:600">${t.customer}</div>
+                <div style="font-size:10px; color:var(--t3)">${t.customerPhone || '-'}</div>
+            </td>
             <td style="padding:10px 12px">
-                <span style="font-size:11px; padding:2px 8px; background:var(--s3); border-radius:20px; color:var(--t2)">${t.program || t.type || 'RTO'}</span>
+                <div style="font-size:11px; font-weight:700; color:var(--t1); margin-bottom:2px">
+                    ${(t.partnerId || '').charAt(0).toUpperCase() + (t.partnerId || '').slice(1)} • ${t.brand || '—'}
+                </div>
+                <span style="font-size:10px; padding:1px 6px; background:var(--s3); border-radius:4px; color:var(--t2); border:1px solid var(--b1)">
+                    ${t.program || t.type || 'RTO'}
+                </span>
             </td>
             <td style="padding:10px 12px; font-size:12px; color:var(--t3)">${t.method || '-'}</td>
             <td style="padding:10px 12px; text-align:right; font-family:'IBM Plex Mono'; font-size:13px; font-weight:600">${formatRupiah(t.amount)}</td>
@@ -435,8 +447,9 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
                             <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
                                 <tr style="text-align:left; color:var(--t3)">
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">TX ID</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">DATE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">DATE & TIME</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">VEHICLE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">USER / PHONE</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">PROGRAM</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">METHOD</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px; text-align:right">AMOUNT</th>
