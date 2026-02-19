@@ -1,5 +1,5 @@
 [build]
-  publish = "casan_rto"
+  publish = "."
 
 # Serve JS modules with correct MIME type (required for ES Modules)
 [[headers]]
