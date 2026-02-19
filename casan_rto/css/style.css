@@ -1,0 +1,124 @@
+/* Main Variables & Reset */
+:root {
+    /* Colors */
+    --bg: #07090E;
+    --s1: #0C1018;
+    /* Surface 1 */
+    --s2: #111723;
+    /* Surface 2 */
+    --s3: #1A2234;
+    /* Surface 3 */
+
+    --b1: #1E2A3E;
+    /* Border 1 */
+    --b2: #2A3A52;
+    /* Border 2 */
+
+    --ac: #00E5C3;
+    /* Accent Teal */
+
+    /* Status Colors */
+    --g: #34D399;
+    /* Green/Active */
+    --w: #FBBF24;
+    /* Warning/Yellow/Grace */
+    --d: #F87171;
+    /* Danger/Red/Immobilized */
+    --bl: #60A5FA;
+    /* Blue/Rental */
+    --p: #A78BFA;
+    /* Purple/RTO */
+    --o: #FB923C;
+    /* Orange */
+    --exp: #FF6B35;
+    /* Expiring Orange */
+
+    /* Text */
+    --t1: #F0F4F8;
+    /* Primary */
+    --t2: #94A3B8;
+    /* Secondary */
+    --t3: #5B6B82;
+    /* Muted */
+
+    /* Font */
+    --font-ui: 'DM Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--t1);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+    /* App-like feel */
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+}
+
+input,
+button,
+select,
+textarea {
+    font-family: inherit;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--b2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--t3);
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
+}
+
+.text-green {
+    color: var(--g);
+}
+
+.text-red {
+    color: var(--d);
+}
+
+.text-orange {
+    color: var(--o);
+}
+
+.bg-red {
+    background: var(--d);
+}
+
+.bg-green {
+    background: var(--g);
+}
+
+.sticky-filters {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    padding: 10px 0;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--s3);
+}

@@ -1,0 +1,431 @@
+/* Component Styles */
+
+/* Cards */
+.card {
+    background: var(--s1);
+    border: 1px solid var(--b1);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    background: var(--s2);
+    border-color: var(--b2);
+}
+
+/* Stats Bar */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    padding: 0 20px 16px;
+}
+
+.stat-card {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-card h3 {
+    font-size: 11px;
+    color: var(--t2);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card .value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--t1);
+}
+
+/* Vehicle List */
+.vehicle-list {
+    flex: 1;
+    min-height: 0;
+    /* Critical: allows flex child to shrink and scroll */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Vehicle Card - Compact */
+.vehicle-card {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    position: relative;
+    border-left: 3px solid transparent;
+    /* Status indicator */
+}
+
+.vehicle-card.expanded {
+    background: var(--s2);
+    border-color: var(--b2);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+}
+
+.vc-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 10px 14px;
+    gap: 12px;
+}
+
+.vc-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    color: var(--t1);
+    min-width: 60px;
+}
+
+.vc-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ... existing badge styles ... */
+
+.vc-prog {
+    color: var(--t3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: none;
+    /* Removed restrictive max-width */
+    flex: 1;
+    min-width: 60px;
+}
+
+.vc-cust {
+    color: var(--t1);
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    /* Important for flex child truncation */
+}
+
+.vc-credits {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+}
+
+.vc-online {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 60px;
+    justify-content: flex-end;
+    color: var(--t2);
+    font-size: 11px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.dot.green {
+    background: var(--g);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
+}
+
+.dot.red {
+    background: var(--d);
+}
+
+.vc-expand {
+    color: var(--t3);
+    font-size: 10px;
+    margin-left: 8px;
+    transition: transform 0.2s;
+}
+
+.vehicle-card.expanded .vc-expand {
+    transform: rotate(180deg);
+}
+
+/* Vehicle Card - Expanded Body */
+.vc-body {
+    width: 100%;
+    border-top: 1px solid var(--b1);
+    padding: 16px;
+    display: none;
+    /* JS toggles this */
+    background: var(--s1);
+    animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vehicle-card.expanded .vc-body {
+    display: block;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.info-item label {
+    display: block;
+    font-size: 10px;
+    color: var(--t3);
+    margin-bottom: 2px;
+}
+
+.info-item span {
+    font-size: 13px;
+    color: var(--t1);
+    font-weight: 500;
+}
+
+.credits-block {
+    background: var(--s3);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--b1);
+}
+
+.credits-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--t2);
+}
+
+.credits-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--t1);
+}
+
+.progress-track {
+    height: 6px;
+    background: var(--b1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--ac);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.alert-box {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+}
+
+.alert-box.expiring {
+    background: rgba(255, 107, 53, 0.1);
+    border: 1px solid var(--exp);
+    color: var(--exp);
+}
+
+.alert-box.grace {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid var(--w);
+    color: var(--w);
+}
+
+.alert-box.immob {
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid var(--d);
+    color: var(--d);
+}
+
+.action-row {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: var(--ac);
+    color: #000;
+}
+
+.btn-primary:hover {
+    background: #00C4A7;
+}
+
+.btn-secondary {
+    background: var(--b2);
+    color: var(--t1);
+}
+
+.btn-secondary:hover {
+    background: var(--b1);
+}
+
+.btn-danger {
+    background: rgba(248, 113, 113, 0.15);
+    color: var(--d);
+    border: 1px solid var(--d);
+}
+
+.btn-danger:hover {
+    background: rgba(248, 113, 113, 0.25);
+}
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background: var(--s1);
+    border: 1px solid var(--b2);
+    border-radius: 12px;
+    width: 440px;
+    max-width: 90vw;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay.active .modal {
+    transform: translateY(0);
+}
+
+.modal h2 {
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: var(--t1);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--t2);
+    margin-bottom: 6px;
+}
+
+.form-control {
+    width: 100%;
+    background: var(--s2);
+    border: 1px solid var(--b1);
+    color: var(--t1);
+    padding: 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--ac);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes expPulse {
+    0% {
+        border-color: rgba(255, 107, 53, 0.2);
+    }
+
+    50% {
+        border-color: var(--exp);
+    }
+
+    100% {
+        border-color: rgba(255, 107, 53, 0.2);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
