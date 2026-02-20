@@ -58,13 +58,17 @@ casan_rto/
 | Legend: Online / Offline / Running counts | ✅ |
 | Focus on vehicle from sidebar | ✅ |
 
-### 📋 Fleet Sidebar
+### 👤 Rider KYC & Profiles
 | Feature | Status |
 |---------|--------|
-| Vehicle list with status badges | ✅ |
-| Clickable rows → focus vehicle on map | ✅ |
-| Grace/Immobilized countdown timers | ✅ |
-| Expiry credit-day warning bar | ✅ |
+| **High-Density Program Strip:** Filter by cards (consistent with Finance) | ✅ |
+| **Program-Level KPI Detail:** Live active/grace/immob counts per scheme | ✅ |
+| **Behavioral Summary Card:** Contextual health stats for active filter | ✅ |
+| **Risk-Based Data Correlation:** incidents linked to user risk label | ✅ |
+| **Quick Filter Badges:** Click table Program → filter list instantly | ✅ |
+| Export CSV for filtered rider list | ✅ |
+| Global search (Name, Phone, NIK) | ✅ |
+| Sorting by Name, Risk, and Join Date | ✅ |
 
 ### � Programs & Collections Management
 | Feature | Status |

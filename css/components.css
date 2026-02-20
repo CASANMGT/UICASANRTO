@@ -472,3 +472,67 @@
         transform: translateY(0);
     }
 }
+
+/* Version Badge & Changelog */
+.version-badge {
+    background: var(--s3);
+    border: 1px solid var(--b2);
+    color: var(--t2);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    box-shadow: 0 0 0 transparent;
+}
+
+.version-badge:hover {
+    background: var(--b1);
+    color: var(--t1);
+    border-color: var(--p);
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.2);
+    transform: translateY(-1px);
+}
+
+.pulse-dot {
+    width: 6px;
+    height: 6px;
+    background: #A78BFA;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    box-shadow: 0 0 8px #A78BFA;
+}
+
+.pulse-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background: #A78BFA;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: badge-pulse 2s infinite ease-out;
+}
+
+@keyframes badge-pulse {
+    0% {
+        width: 6px;
+        height: 6px;
+        opacity: 0.8;
+    }
+
+    100% {
+        width: 18px;
+        height: 18px;
+        opacity: 0;
+    }
+}

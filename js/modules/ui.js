@@ -1076,23 +1076,40 @@ export const renderUserListView = () => {
                     </div>
                 </td>
                 <td>
-                    <div style="font-size:12px">${u.phone}</div>
-                    <div style="font-size:10px; color:var(--t3)">${u.address.substring(0, 20)}...</div>
-                </td>
-                <td>
-                    ${u.vehicleIds.length > 0 ? `<span style="font-size:10px; background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size:10px">—</span>'}
-                </td>
-                <td>
                     <div style="display:flex; gap:4px; flex-wrap:wrap">
                         ${u.vehicleIds.map(id => {
             const v = state.vehicles.find(veh => veh.id === id);
             if (!v) return null;
             const prog = state.programs.find(p => p.id === v.programId);
-            return prog ? `${prog.shortName} ${prog.type}` : v.programType;
-        }).filter(Boolean).map(p => `
-                            <span style="font-size:10px; background:var(--s2); border:1px solid var(--bd); padding:1px 6px; border-radius:4px; color:var(--t2); font-weight:700">
-                                ${p}
-                            </span>`).join('')}
+            if (!prog) return null;
+            return `
+                                <span class="vl-pill" 
+                                      style="font-size:10px; background:var(--s2); border:1px solid var(--bd); padding:1px 6px; border-radius:4px; color:var(--t2); font-weight:700; cursor:pointer"
+                                      onclick="event.stopPropagation(); window.setUserProgramFilter('${prog.id}')">
+                                    ${prog.shortName} ${prog.type}
+                                </span>`;
+        }).filter(Boolean).join('')}
+                    </div>
+                </td>
+                <td>${progressHtml}</td>
+                <td>
+                    <div style="display:flex; justify-content:center; gap:4px">
+                        ${(() => {
+                const v = state.vehicles.find(veh => veh.userId === u.userId);
+                if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
+                return `
+                                ${v.immobilizeLog?.length > 0 ? `
+                                    <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                                        🔒 ${v.immobilizeLog.length}
+                                    </div>
+                                ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                                ${v.graceEncounters > 0 ? `
+                                    <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                                        ⚠️ ${v.graceEncounters}
+                                    </div>
+                                ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                            `;
+            })()}
                     </div>
                 </td>
                 <td>
@@ -1101,44 +1118,125 @@ export const renderUserListView = () => {
                         ${u.riskLabel} (${u.riskScore})
                     </div>
                 </td>
-                <td>${progressHtml}</td>
-                <td style="color:${u.missedPayments > 0 ? '#EF4444' : 'var(--t2)'}">${u.missedPayments}</td>
+                <td>
+                    ${u.vehicleIds.length > 0 ? `<span style="font-size:10px; background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size:10px">—</span>'}
+                </td>
+                <td>
+                    <div style="font-size:12px">${u.phone}</div>
+                    <div style="font-size:10px; color:var(--t3)">${u.address.substring(0, 20)}...</div>
+                </td>
                 <td>${new Date(u.joinDate).toLocaleDateString()}</td>
-                <td><button class="vl-pill">👤 Profile</button></td>
+                <td><button class="vl-pill" onclick="window.openUserDrawer('${u.userId}')">👤 Profile</button></td>
             </tr>`;
     }).join('');
+
+    const allUsers = getUsers({}); // Get all users for pill counts
+    const programStats = state.programs.map(p => {
+        return {
+            id: p.id,
+            count: allUsers.filter(u => {
+                const uv = state.vehicles.find(v => v.userId === u.userId);
+                return uv && uv.programId === p.id;
+            }).length
+        };
+    });
+
+    // Detailed Stats for active filter
+    let activeProgramStats = null;
+    if (userListFilter.program !== 'all') {
+        const progUsers = users; // already filtered by getUsers(userListFilter)
+        const progVehicles = progUsers.map(u => state.vehicles.find(v => v.userId === u.userId)).filter(Boolean);
+        activeProgramStats = {
+            total: progUsers.length,
+            active: progVehicles.filter(v => v.status === 'active').length,
+            grace: progVehicles.filter(v => v.status === 'grace').length,
+            immob: progVehicles.filter(v => v.status === 'immobilized').length,
+            paused: progVehicles.filter(v => v.status === 'paused').length,
+            health: Math.round((progVehicles.filter(v => v.status === 'active').length / progVehicles.length) * 100) || 0
+        };
+    }
 
     elUserListContent.innerHTML = `
         <div class="vl-container">
             <div class="vl-header">
-                <h2 class="vl-title">Rider KYC & Profiles</h2>
+                <div>
+                    <h2 class="vl-title">Rider KYC & Profiles</h2>
+                    <div style="font-size:11px; color:var(--t3); margin-top:2px">Operational Behavioral Auditing</div>
+                </div>
                 <div style="display:flex; gap:10px; align-items:center">
                     <button class="vl-pill" onclick="window.exportUsersCSV()">📥 Export CSV</button>
-                    <div class="vl-count">${users.length} Active Users</div>
+                    <div class="vl-count">${users.length} Riders Displayed</div>
                 </div>
             </div>
-            <div class="vl-controls">
-                <input type="text" class="vl-search" placeholder="Search name, phone, NIK..." value="${userListFilter.search}" id="uSearch">
-                <select class="vl-search" id="uProgram" style="max-width:200px">
-                    <option value="all">All Programs</option>
-                    ${state.programs.map(p => `<option value="${p.id}" ${userListFilter.program === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-                </select>
-                <div class="vl-filter-pills">
-                    ${['all', 'Low', 'Medium', 'High'].map(r => `
-                        <div class="vl-pill ${userListFilter.risk === r ? 'active' : ''}" onclick="window.setUserRiskFilter('${r}')">${r.toUpperCase()} RISK</div>
-                    `).join('')}
+
+            ${activeProgramStats ? `
+            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin-bottom:20px; background:var(--s2); padding:16px; border-radius:12px; border:1px solid var(--bd)">
+                <div style="border-right:1px solid var(--bd)">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Program Health</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--g)">${activeProgramStats.health}%</div>
                 </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Active Assets</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--t1)">${activeProgramStats.active}</div>
+                </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:#F59E0B; font-weight:800; text-transform:uppercase">In Grace</div>
+                    <div style="font-size:22px; font-weight:800; color:#F59E0B">${activeProgramStats.grace}</div>
+                </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:#EF4444; font-weight:800; text-transform:uppercase">Immobilized</div>
+                    <div style="font-size:22px; font-weight:800; color:#EF4444">${activeProgramStats.immob}</div>
+                </div>
+                <div style="padding-left:12px">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Total Riders</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--p)">${activeProgramStats.total}</div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Finance-consistent Program Strip -->
+            <div class="fns" style="margin-bottom:20px; padding-bottom:10px">
+                <div class="pc ${userListFilter.program === 'all' ? 'active' : ''}" 
+                     style="cursor:pointer; border-left:4px solid var(--t3)"
+                     onclick="window.setUserProgramFilter('all')">
+                    <h4 style="margin:0 0 8px">All Programs <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">GLOBAL</span></h4>
+                    <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--p)">${allUsers.length}</div>
+                    <div style="font-size:11px; color:var(--t3); margin-top:4px">Consolidated Rider KYC</div>
+                </div>
+
+                ${state.programs.map(p => {
+        const stats = programStats.find(s => s.id === p.id);
+        const borderColor = p.partnerId === 'tangkas' ? '#A78BFA' : (p.partnerId === 'maka' ? '#60A5FA' : '#FB923C');
+
+        // Specific stats for this program card
+        const progVehicles = state.vehicles.filter(v => v.programId === p.id);
+        const activeCount = progVehicles.filter(v => v.status === 'active').length;
+
+        return `
+                        <div class="pc ${userListFilter.program === p.id ? 'active' : ''}" 
+                             style="cursor:pointer; border-left:4px solid ${borderColor}"
+                             onclick="window.setUserProgramFilter('${p.id}')">
+                            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
+                            <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${stats?.count || 0}</div>
+                            <div style="font-size:11px; color:var(--t3); margin-top:4px">${activeCount}/${progVehicles.length} active units</div>
+                        </div>
+                    `;
+    }).join('')}
+            </div>
+
+            <div class="vl-controls" style="margin-bottom:20px">
+                <input type="text" class="vl-search" placeholder="Search name, phone, NIK..." value="${userListFilter.search}" id="uSearch">
             </div>
             <table class="vl-table">
                 <thead>
                     <tr>
                         <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
-                        <th>CONTACT</th>
-                        <th>VEHICLE</th>
                         <th>PROGRAM</th>
-                        <th onclick="window.setUserSort('riskScore')">RISK SCORE</th>
                         <th>PROGRESS</th>
-                        <th onclick="window.setUserSort('missedPayments')">MISSED</th>
+                        <th style="text-align:center">COLLECTION AUDIT</th>
+                        <th onclick="window.setUserSort('riskScore')">RISK SCORE</th>
+                        <th>VEHICLE</th>
+                        <th>CONTACT</th>
                         <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
                         <th>ACTIONS</th>
                     </tr>
@@ -1157,12 +1255,12 @@ export const renderUserListView = () => {
         userListPage = 1;
         renderUserListView();
     });
+};
 
-    document.getElementById('uProgram').addEventListener('change', (e) => {
-        userListFilter.program = e.target.value;
-        userListPage = 1;
-        renderUserListView();
-    });
+window.setUserProgramFilter = (p) => {
+    userListFilter.program = p;
+    userListPage = 1;
+    renderUserListView();
 };
 
 window.setUserRiskFilter = (r) => { userListFilter.risk = r; userListPage = 1; renderUserListView(); };
@@ -1259,6 +1357,31 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
             </div>
 
             <div class="drawer-section">
+                <div class="drawer-section-title">Collection Audit</div>
+                <div style="display:flex; gap:8px">
+                    ${v.immobilizeLog?.length > 0 ? `
+                        <div style="flex:1; background:#EF444411; border:1px solid #EF444422; padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size:20px">🔒</div>
+                            <div style="font-size:14px; font-weight:800; color:#EF4444">${v.immobilizeLog.length}</div>
+                            <div style="font-size:9px; color:var(--t3); font-weight:700">LOCKS</div>
+                        </div>
+                    ` : ''}
+                    ${v.graceEncounters > 0 ? `
+                        <div style="flex:1; background:#F59E0B11; border:1px solid #F59E0B22; padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size:20px">⚠️</div>
+                            <div style="font-size:14px; font-weight:800; color:#F59E0B">${v.graceEncounters}</div>
+                            <div style="font-size:9px; color:var(--t3); font-weight:700">GRACE</div>
+                        </div>
+                    ` : ''}
+                    ${!v.immobilizeLog?.length && !v.graceEncounters ? `
+                        <div style="flex:1; background:var(--g)11; border:1px solid var(--g)22; padding:12px; border-radius:8px; text-align:center">
+                            <div style="color:var(--g); font-weight:800; font-size:13px">CLEAN COLLECTION HISTORY</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <div class="drawer-section">
                 <div class="drawer-section-title">Rider Info</div>
                 <div class="drawer-field"><span class="drawer-field-label">NIK</span><span class="drawer-field-value">${v.nik}</span></div>
                 <div class="drawer-field"><span class="drawer-field-label">Phone</span><span class="drawer-field-value">${v.phone}</span></div>
@@ -1351,9 +1474,19 @@ window.openUserDrawer = (userId, pushToStack = true) => {
                         <div style="font-size:10px; color:var(--t3); font-weight:700">RISK SCORE</div>
                         <div style="font-size:20px; font-weight:800; color:${riskColor}">${u.riskScore}</div>
                     </div>
-                    <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--b1)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">MISSED PMTS</div>
-                        <div style="font-size:20px; font-weight:800; color:#EF4444">${u.missedPayments}</div>
+                    <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--bd)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700; margin-bottom:4px">COLLECTION AUDIT</div>
+                        <div style="display:flex; gap:6px">
+                            ${(() => {
+            const v = vehicles[0];
+            if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
+            return `
+                                    ${v.immobilizeLog?.length > 0 ? `<div style="background:#EF444422; color:#EF4444; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">🔒 ${v.immobilizeLog.length}</div>` : ''}
+                                    ${v.graceEncounters > 0 ? `<div style="background:#F59E0B22; color:#F59E0B; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">⚠️ ${v.graceEncounters}</div>` : ''}
+                                    ${!v.immobilizeLog?.length && !v.graceEncounters ? '<span style="color:var(--g); font-weight:700; font-size:12px">Clean History</span>' : ''}
+                                `;
+        })()}
+                        </div>
                     </div>
                 </div>
                 <div class="drawer-field"><span class="drawer-field-label">Job</span><span class="drawer-field-value">${getOccupationEmoji(u.occupation)} ${u.occupation}</span></div>
@@ -2157,6 +2290,72 @@ window.selectCPItem = (idx) => {
         if (programTab) programTab.click();
         // Maybe scroll to it? renderProgramListView will show all.
     }
+};
+
+window.openChangelogModal = () => {
+    const elOverlay = document.getElementById('gpsModalOverlay');
+    const elTitle = document.getElementById('gpsModalTitle');
+    const elContent = document.getElementById('gpsModalContent');
+
+    if (!elOverlay || !elTitle || !elContent) return;
+
+    elTitle.innerText = "Platform Updates — v1.2.0";
+    elContent.innerHTML = `
+        <div style="padding:4px">
+            <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                    <h3 style="margin:0; font-size:16px; color:var(--p)">✨ Latest Release: v1.2.0</h3>
+                    <span style="font-size:11px; color:var(--t3); font-family:var(--font-mono)">2026-02-20</span>
+                </div>
+                <p style="font-size:12px; color:var(--t2); line-height:1.6">This update introduces major enhancements to <strong>Collection Intelligence</strong>, <strong>Risk Correlation</strong>, and <strong>Visual Auditing</strong> for the RTO fleet.</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:20px">
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:#22C55E; border-radius:50%"></span> NEW FEATURES
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>Visual Collections Audit:</strong> New 🔒 (Lock) and ⚠️ (Grace) status badges in the Program list for instant reporting recognition.</li>
+                        <li><strong>Risk-Based Data Correlation:</strong> Historical behavior now statistically linked to User Risk Profiles.</li>
+                        <li><strong>Executive Analytics Popouts:</strong> Interactive health/maturity cards with deep-dive variance reporting.</li>
+                        <li><strong>Data Audit Breakdown:</strong> Transparent mathematical logic overlays for all KPI percentages.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:var(--p); border-radius:50%"></span> SYSTEM IMPROVEMENTS
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>High-Density Stats Bar:</strong> Context-aware 6-column grid providing tailored KPIs for every navigation view.</li>
+                        <li><strong>Optimized Audit Flow:</strong> Reordered Program columns to prioritize cause-and-effect relationship between behavior and risk.</li>
+                        <li><strong>Standardized Viewports:</strong> Universal 20-items-per-page pagination across all dashboard modules.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:#FACC15; border-radius:50%"></span> CRITICAL FIXES
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li>Resolved a <strong>ReferenceError</strong> preventing the Programs tab from rendering in specific filters.</li>
+                        <li>Synchronized <strong>Collection Health</strong> math across all top-level cards and report popouts.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top:30px; padding-top:20px; border-top:1px solid var(--b1); text-align:center">
+                <button class="vl-pill" onclick="window.closeGPSModal()" style="width:120px">Got it, thanks!</button>
+            </div>
+        </div>
+    `;
+    elOverlay.classList.add('active');
+};
+
+window.closeGPSModal = () => {
+    const elOverlay = document.getElementById('gpsModalOverlay');
+    if (elOverlay) elOverlay.classList.remove('active');
 };
 
 // Event Listeners for Input
