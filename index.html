@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/map_controls.css">
     <link rel="stylesheet" href="css/credit_bar.css">
     <link rel="stylesheet" href="css/finance_strip.css">
+    <link rel="stylesheet" href="css/vehicle_list.css">
 
     <!-- External Libs -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
@@ -69,9 +70,12 @@
 
         <!-- Navigation -->
         <nav class="nav-tabs">
-            <div class="nav-tab active" data-tab="fleet">🗺️ Fleet & Tracking</div>
+            <div class="nav-tab active" data-tab="users">👤 Users</div>
+            <div class="nav-tab" data-tab="programs">🤝 Programs</div>
             <div class="nav-tab" data-tab="finance">💰 Finance</div>
-            <div class="nav-tab" data-tab="gps">📡 GPS Devices</div>
+            <div class="nav-tab" data-tab="vehicles">🏍️ Vehicles</div>
+            <div class="nav-tab" data-tab="fleet">🗺️ Fleet Tracking</div>
+            <div class="nav-tab" data-tab="gps">📡 GPS List</div>
         </nav>
 
         <!-- Filters -->
@@ -85,8 +89,8 @@
 
         <!-- Main Content -->
         <main class="view-container">
-            <!-- Fleet Tab -->
-            <div id="fleetView" class="dashboard-grid">
+            <!-- Fleet Tab (Hidden by default) -->
+            <div id="fleetView" class="dashboard-grid hidden">
                 <div id="map" class="map-container">
                     <!-- Leaflet Map -->
                     <!-- Map Filters Overlay -->
@@ -124,7 +128,34 @@
                     <!-- Injected via ui.js -->
                 </div>
             </div>
+
+            <!-- Vehicle List Tab (Hidden by default) -->
+            <div id="vehicleListView" class="view-container hidden">
+                <div id="vehicleListContent"
+                    style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <!-- User List Tab (Visible by default) -->
+            <div id="userListView" class="view-container">
+                <div id="userListContent"
+                    style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                </div>
+            </div>
+
+            <!-- Programs Tab (Hidden by default) -->
+            <div id="programListView" class="view-container hidden">
+                <div id="programListContent"
+                    style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                </div>
+            </div>
         </main>
+
+        <!-- Detail Drawer -->
+        <div id="drawerBackdrop" class="drawer-backdrop"></div>
+        <div id="detailDrawer" class="detail-drawer">
+            <div id="drawerContent"></div>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -139,6 +170,24 @@
         <div class="modal">
             <h2>🏖️ Holiday Pause</h2>
             <div id="holidayModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Command Palette Overlay -->
+    <div id="commandPaletteOverlay" class="modal-overlay">
+        <div class="command-palette">
+            <div class="cp-header">
+                <input type="text" id="cpInput" placeholder="Search vehicles, riders, RTO IDs... (Esc to close)"
+                    autocomplete="off">
+            </div>
+            <div id="cpResults" class="cp-results">
+                <div class="cp-hint">Type to search the fleet...</div>
+            </div>
+            <div class="cp-footer">
+                <span><b>↵</b> to select</span>
+                <span><b>↑↓</b> to navigate</span>
+                <span><b>esc</b> to close</span>
+            </div>
         </div>
     </div>
 

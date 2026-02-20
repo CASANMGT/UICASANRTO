@@ -17,7 +17,7 @@
 /* Stats Bar — horizontal grid on desktop */
 .stats-bar {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 10px;
     padding: 6px 20px 10px;
     align-items: stretch;

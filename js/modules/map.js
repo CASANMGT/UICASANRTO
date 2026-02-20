@@ -14,7 +14,9 @@ const mapFilters = {
     paused: true,
     available: true,
     online: true,
-    offline: true
+    offline: true,
+    running: true,
+    stopped: true
 };
 
 // Colors for each status
@@ -29,6 +31,20 @@ const COLORS = {
     offline: '#FF6B6B'
 };
 
+// Icons for each filter button
+const ICONS = {
+    active: '✅',
+    expiring: '⚠️',
+    grace: '⏳',
+    immobilized: '🔒',
+    paused: '⏸',
+    available: '🔵',
+    online: '🟢',
+    offline: '🔴',
+    running: '🏃',
+    stopped: '🅿️'
+};
+
 // Labels for filter buttons
 const LABELS = {
     active: 'Active',
@@ -38,7 +54,15 @@ const LABELS = {
     paused: 'Paused',
     available: 'Available',
     online: 'Online',
-    offline: 'Offline'
+    offline: 'Offline',
+    running: 'Running',
+    stopped: 'Stopped'
+};
+
+// Helper: bearing degrees → compass label
+const bearingLabel = (deg) => {
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(deg / 45) % 8];
 };
 
 
@@ -60,32 +84,8 @@ export const initMap = (onVehicleSelect) => {
 
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    // Cluster Group with Custom Styling
-    markers = L.markerClusterGroup({
-        maxClusterRadius: 40,
-        iconCreateFunction: function (cluster) {
-            const count = cluster.getChildCount();
-            return L.divIcon({
-                html: `<div style="
-                    width:32px; height:32px; 
-                    background:rgba(0, 229, 195, 0.2); 
-                    border:2px solid #00E5C3; 
-                    border-radius:50%; 
-                    color:#000; 
-                    display:flex; 
-                    align-items:center; 
-                    justify-content:center; 
-                    font-weight:bold;
-                    backdrop-filter: blur(4px);
-                    font-family: 'IBM Plex Mono';
-                    font-size: 12px;
-                ">${count}</div>`,
-                className: 'custom-cluster',
-                iconSize: [32, 32]
-            });
-        }
-    });
-
+    // No clustering — show all markers individually
+    markers = L.layerGroup();
     map.addLayer(markers);
 
     // Store callback
@@ -97,35 +97,60 @@ export const renderMapControls = (vehicles) => {
     if (!elMock) return;
 
     // Filters
-    const keys = ['active', 'expiring', 'grace', 'immobilized', 'paused', 'available', 'online', 'offline'];
-    const html = keys.map(k => {
-        const c = COLORS[k];
+    // Status filters
+    const statusKeys = ['active', 'expiring', 'grace', 'immobilized', 'paused', 'available', 'online', 'offline'];
+    // Movement filters (separate row)
+    const moveKeys = ['running', 'stopped'];
+
+    const allKeys = [...statusKeys, ...moveKeys];
+
+    const renderBtns = (keys) => keys.map(k => {
+        const c = COLORS[k] || '#aaa';
         const isOn = mapFilters[k];
+        const icon = ICONS[k] || '●';
         return `
         <button class="mfb ${isOn ? 'on' : ''}" 
             onclick="window.toggleMapFilter('${k}')"
-            style="${isOn ? 'border-color:' + c + '40' : ''}">
-            <div class="dot" style="background:${c}"></div>
-            <span>${LABELS[k]}</span>
+            title="${LABELS[k]}"
+            style="
+                flex-direction:column; gap:2px; padding:6px 8px; min-width:50px;
+                ${isOn ? 'border-color:' + c + '; background:' + c + '22;' : 'opacity:0.5;'}
+            ">
+            <span style="font-size:18px; line-height:1">${icon}</span>
+            <span style="font-size:9px; font-weight:600; letter-spacing:0.02em">${LABELS[k]}</span>
         </button>`;
     }).join('');
 
-    // Prepend to body or map container? index.html has #mapFilters INSIDE #map.
-    // We already have a div inside map.
-    // But we need to define toggleMapFilter globally or attach listeners.
-
-    // We'll use a container overlay
     let overlay = document.querySelector('.mf');
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'mf';
         document.getElementById('map').appendChild(overlay);
     }
-    overlay.innerHTML = html;
+
+    // Select All / None row
+    const quickBtns = `
+        <button class="mfb on" onclick="window.selectAllFilters()" 
+            style="flex-direction:column; gap:2px; padding:6px 8px; min-width:44px; border-color:#00E5C3; background:#00E5C322; color:#00E5C3">
+            <span style="font-size:16px">☑️</span>
+            <span style="font-size:9px; font-weight:600">All</span>
+        </button>
+        <button class="mfb" onclick="window.selectNoneFilters()"
+            style="flex-direction:column; gap:2px; padding:6px 8px; min-width:44px; opacity:0.6">
+            <span style="font-size:16px">🚫</span>
+            <span style="font-size:9px; font-weight:600">None</span>
+        </button>
+        <div style="width:1px;background:rgba(255,255,255,0.2);margin:0 3px;align-self:stretch"></div>`;
+
+    overlay.innerHTML = quickBtns +
+        renderBtns(statusKeys) +
+        '<div style="width:1px;background:rgba(255,255,255,0.15);margin:0 3px"></div>' +
+        renderBtns(moveKeys);
 
     // Legend
     const onlineCount = vehicles.filter(v => v.isOnline).length;
     const offlineCount = vehicles.length - onlineCount;
+    const runningCount = vehicles.filter(v => v.isOnline && v.status !== 'immobilized' && (v.speed || 0) > 5).length;
 
     let leg = document.querySelector('.mleg');
     if (!leg) {
@@ -134,26 +159,26 @@ export const renderMapControls = (vehicles) => {
         document.getElementById('map').appendChild(leg);
     }
     leg.innerHTML = `
-        <div class="lg">
-            <div class="lg-d" style="background:var(--g)"></div>
-            <span>${onlineCount} Online</span>
-        </div>
-        <div class="lg">
-            <div class="lg-d" style="background:#FF6B6B"></div>
-            <span>${offlineCount} Offline</span>
-        </div>
+        <div class="lg"><div class="lg-d" style="background:var(--g)"></div><span>${onlineCount} Online</span></div>
+        <div class="lg"><div class="lg-d" style="background:#FF6B6B"></div><span>${offlineCount} Offline</span></div>
+        <div class="lg"><div class="lg-d" style="background:#60a5fa"></div><span>${runningCount} Running</span></div>
     `;
 
-    // Global toggle handler
+    // Global handlers
     window.toggleMapFilter = (key) => {
         mapFilters[key] = !mapFilters[key];
-        // Re-render controls to show state change
-        renderMapControls(vehicles); // We need vehicles list... or just update classes?
-        // Better: trigger updateMapMarkers with stored vehicles?
-        // We don't have stored vehicles here.
-        // We should dispatch event or just re-run updateMapMarkers if we had access to data.
-        // For now, let's dispatch event
+        renderMapControls(vehicles);
         window.dispatchEvent(new CustomEvent('map-filter-toggle', { detail: { key, vehicles } }));
+    };
+    window.selectAllFilters = () => {
+        allKeys.forEach(k => mapFilters[k] = true);
+        renderMapControls(vehicles);
+        window.dispatchEvent(new CustomEvent('map-filter-toggle', { detail: { vehicles } }));
+    };
+    window.selectNoneFilters = () => {
+        allKeys.forEach(k => mapFilters[k] = false);
+        renderMapControls(vehicles);
+        window.dispatchEvent(new CustomEvent('map-filter-toggle', { detail: { vehicles } }));
     };
 };
 
@@ -171,9 +196,10 @@ export const updateMapMarkers = (vehicles) => {
 
     vehicles.forEach(v => {
         const isExpiring = !!v.creditExpiry;
+        // Locked or offline vehicles CANNOT be running
+        const isRunning = v.status !== 'immobilized' && v.isOnline && (v.speed || 0) > 5;
 
         // Map Filter Logic
-        // ... (existing logic)
         if (isExpiring) {
             if (!mapFilters.expiring) return;
         } else {
@@ -184,78 +210,115 @@ export const updateMapMarkers = (vehicles) => {
         if (v.isOnline && !mapFilters.online) return;
         if (!v.isOnline && !mapFilters.offline) return;
 
+        // Running/Stopped filter
+        if (isRunning && !mapFilters.running) return;
+        if (!isRunning && !mapFilters.stopped) return;
+
         // Create Marker
         const credits = v.credits || 0;
-
-        let label = '';
-        if (v.status === 'active') {
-            label = isExpiring ? '<1' : credits;
-        } else if (v.status === 'grace') {
-            label = 'G'; // Indicate Grace period
-        } else if (v.status === 'immobilized') {
-            label = 'L'; // Indicate Locked
-        }
-
-        const el = document.createElement('div');
-        el.className = 'marker-custom';
         const scColor = COLORS[v.status] || '#999';
         const finalColor = !v.isOnline ? '#FF6B6B' : (isExpiring ? '#FF6B35' : scColor);
+        const bearing = v.bearing || 0;
 
-        el.style.backgroundColor = finalColor;
-        el.style.width = '24px'; // Increased for better clickability
-        el.style.height = '24px';
-        el.style.borderRadius = '50%';
-        el.style.border = '2px solid #fff';
-        el.style.boxShadow = '0 0 6px rgba(0,0,0,0.4)';
-        el.style.display = 'flex';
-        el.style.alignItems = 'center';
-        el.style.justifyContent = 'center';
-        el.style.fontSize = label === '<1' ? '8px' : '11px';
-        el.style.fontWeight = 'bold';
-        el.style.color = '#000';
-        el.style.fontFamily = 'IBM Plex Mono';
-        el.innerText = label;
+        // Directional arrow icon
+        let iconHtml;
+        if (isRunning) {
+            // Bold glowing directional arrow for running vehicles
+            iconHtml = `<div style="
+                width:36px; height:36px;
+                transform: rotate(${bearing}deg);
+                display:flex; align-items:center; justify-content:center;
+                filter: drop-shadow(0 0 6px ${finalColor}) drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+            ">
+                <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="18,2 30,32 18,24 6,32" fill="${finalColor}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+                    <polygon points="18,7 26,28 18,21 10,28" fill="${finalColor}CC" stroke="none"/>
+                </svg>
+            </div>`;
+        } else {
+            // Bold circle pin for stopped vehicles
+            iconHtml = `<div style="
+                width:28px; height:28px;
+                background: radial-gradient(circle at 40% 35%, ${finalColor}EE, ${finalColor});
+                border: 3px solid rgba(255,255,255,0.9);
+                border-radius: 50%;
+                box-shadow: 0 0 8px ${finalColor}99, 0 3px 6px rgba(0,0,0,0.5);
+                display:flex; align-items:center; justify-content:center;
+                font-size:12px;
+            ">■</div>`;
+        }
 
         const icon = L.divIcon({
             className: '',
-            html: el,
-            iconSize: [24, 24]
+            html: iconHtml,
+            iconSize: isRunning ? [36, 36] : [28, 28],
+            iconAnchor: isRunning ? [18, 18] : [14, 14]
         });
 
-        // Ensure v.location exists and has lat/lng, otherwise fallback to v.lat/v.lng if they exist
         const lat = v.location?.lat || v.lat;
         const lng = v.location?.lng || v.lng;
-
-        if (!lat || !lng) return; // Skip if no valid coordinates
+        if (!lat || !lng) return;
 
         const marker = L.marker([lat, lng], { icon });
 
-        // Popup
-        const creditDisplay = label === '<1' ? 'EXPIRING' : (label === 'G' ? 'GRACE' : (label === 'L' ? 'LOCKED' : `${label} Days Left`));
+        // Build credit/grace info row for popup
+        const creditDaysLeft = v.credits || 0;
+        const isGrace = v.status === 'grace';
+        const graceDaysLeft = isGrace && v.graceExpiry
+            ? Math.max(0, Math.ceil((new Date(v.graceExpiry) - Date.now()) / 86400000))
+            : 0;
+
+        const creditRow = isExpiring
+            ? `<div style="background:#FF6B3522; border:1px solid #FF6B35; border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size:10px; color:#FF6B35; font-weight:700">⚠️ EXPIRING TODAY</div>
+                <div style="font-size:11px; color:#333">Credit expires within 24h</div>
+               </div>`
+            : isGrace
+                ? `<div style="background:#F59E0B22; border:1px solid #F59E0B; border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size:10px; color:#F59E0B; font-weight:700">⏳ GRACE PERIOD</div>
+                <div style="font-size:11px; color:#333">${graceDaysLeft} rest days remaining</div>
+               </div>`
+                : v.status === 'immobilized'
+                    ? `<div style="background:#EF444422; border:1px solid #EF4444; border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size:10px; color:#EF4444; font-weight:700">🔒 IMMOBILIZED</div>
+                <div style="font-size:11px; color:#333">Vehicle relay locked</div>
+               </div>`
+                    : `<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+                <div style="text-align:center; background:#22C55E22; border:1px solid #22C55E44; border-radius:6px; padding:4px 10px; flex:1">
+                    <div style="font-size:18px; font-weight:800; color:#22C55E; font-family:'IBM Plex Mono'">${creditDaysLeft}</div>
+                    <div style="font-size:9px; color:#555; font-weight:600">CREDIT DAYS</div>
+                </div>
+                <div style="text-align:center; background:#60a5fa22; border:1px solid #60a5fa44; border-radius:6px; padding:4px 10px; flex:1">
+                    <div style="font-size:18px; font-weight:800; color:#60a5fa; font-family:'IBM Plex Mono'">${v.totalDays || 30}</div>
+                    <div style="font-size:9px; color:#555; font-weight:600">CYCLE DAYS</div>
+                </div>
+               </div>`;
+
+        const speedText = isRunning
+            ? `🏃 ${v.speed} km/h · ${bearingLabel(bearing)}`
+            : '■ Stopped';
 
         marker.bindPopup(`
-            <div style="font-family:'IBM Plex Mono'; font-size:12px; line-height:1.5; color:#000; min-width:200px; padding:4px">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:10px">
-                    <div style="font-weight:800; font-size:15px; color:#000">${v.customer || 'No Customer'}</div>
-                    <div style="font-size:10px; padding:2px 6px; background:${finalColor}25; border:1px solid ${finalColor}; border-radius:4px; color:#000; font-weight:700; white-space:nowrap">${creditDisplay}</div>
+            <div style="font-family:'IBM Plex Mono'; font-size:12px; line-height:1.5; color:#000; min-width:220px; padding:4px">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:8px">
+                    <div style="font-weight:800; font-size:14px; color:#000">${v.customer || 'No Customer'}</div>
+                    <div style="font-size:10px; padding:2px 6px; background:${finalColor}25; border:1px solid ${finalColor}; border-radius:4px; color:${finalColor}; font-weight:700; white-space:nowrap">${v.status.toUpperCase()}</div>
                 </div>
-                <div style="font-size:12px; font-weight:600; color:#555; margin-bottom:10px">📞 ${v.phone || '-'}</div>
-                
-                <div style="border-top:1px solid rgba(0,0,0,0.1); padding-top:8px; margin-bottom:8px">
-                    <div style="font-weight:700; color:#333; font-size:11px">${v.id} • ${v.plate}</div>
-                    <div style="opacity:0.7; font-size:11px">${v.model}</div>
-                </div>
+                <div style="font-size:11px; font-weight:600; color:#555; margin-bottom:8px">📞 ${v.phone || '-'} &nbsp;|&nbsp; 🏍️ ${v.plate}</div>
 
-                <div style="font-size:10px; display:flex; align-items:center; gap:5px; font-weight:600">
+                ${creditRow}
+
+                <div style="border-top:1px solid rgba(0,0,0,0.08); padding-top:6px; margin-bottom:6px">
+                    <div style="font-weight:700; color:#333; font-size:11px">${v.id} — ${v.model}</div>
+                </div>
+                <div style="font-size:11px; font-weight:700; margin-bottom:4px; color:${isRunning ? '#16a34a' : '#888'}">${speedText}</div>
+                <div style="font-size:10px; font-weight:600">
                     ${v.isOnline ?
                 `<span style="color:#16a34a">🟢 Online (${timeAgo(v.lastPing)})</span>` :
                 `<span style="color:#dc2626">🔴 Offline (${timeAgo(v.lastPing)})</span>`}
                 </div>
             </div>
-        `, {
-            closeButton: false,
-            className: 'custom-popup-light'
-        });
+        `, { closeButton: false, className: 'custom-popup-light', maxWidth: 280 });
 
         marker.on('click', () => {
             if (map.onVehicleSelect) map.onVehicleSelect(v.id);
@@ -270,15 +333,7 @@ export const focusVehicleOnMap = (id) => {
     const marker = markerMap.get(id);
     if (marker) {
         map.flyTo(marker.getLatLng(), 15);
-
-        // Open popup if clustered?
-        // markers.zoomToShowLayer(marker, () => {
-        //    marker.openPopup();
-        // });
-        // Standard cluster plugin method:
-        markers.zoomToShowLayer(marker, () => {
-            marker.openPopup();
-        });
+        setTimeout(() => marker.openPopup(), 600);
     }
 };
 
