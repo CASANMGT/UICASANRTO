@@ -77,7 +77,7 @@ casan_rto/
 | Feature | Status |
 |---------|--------|
 | Paginated transactions (25/page) | ✅ |
-| **CREDIT DAYS column** (7 / 14 / 30 days per transaction) | ✅ |
+| **CREDIT DAYS column** (1, 2, 3, 5, 7, 15 days packages) | ✅ |
 | Payment method column | ✅ |
 | Program filter (per-program revenue & stats) | ✅ |
 | Clickable program earnings strip | ✅ |
@@ -103,10 +103,11 @@ All data is generated client-side in `store.js` — no backend required.
 
 | Entity | Key Fields |
 |--------|-----------|
-| **Vehicle** | `id`, `status`, `programId`, `partnerId`, `credits`, `bearing`, `speed`, `isOnline`, `isRunning`, `rider`, `plate`, `brand`, `model` |
-| **Transaction** | `id`, `vehicleId`, `date`, `amount`, `method`, `status`, `creditDays` (7/14/30) |
-| **GPS Device** | `id`, `imei`, `vehicleId`, `vehiclePlate`, `vehicleBrand`, `vehicleModel`, `sim`, `status`, `lat`, `lng` |
-| **Program** | `id`, `name`, `type` (RTO/Rent), `price/day`, `graceDays` |
+| **Vehicle** | `id`, `status`, `programId`, `partnerId`, `credits`, `bearing`, `speed`, `isOnline`, `isRunning`, `rider`, `plate` |
+| **User** | `userId`, `name`, `gender` (90% M / 10% F), `nik`, `phone`, `riskLabel`, `vehicleId` (Strict 1:1) |
+| **Transaction** | `id`, `vehicleId`, `date`, `amount`, `method`, `status`, `creditDays` (1, 2, 3, 5, 7, 15) |
+| **GPS Device** | `id`, `imei`, `vehicleId`, `vehiclePlate`, `sim`, `status`, `lat`, `lng` |
+| **Program** | `id`, `name`, `type` (RTO/Rent), `price/day`, `graceDays` (Standardized to 1) |
 | **Partner** | `id`, `name`, `color` |
 
 ---
