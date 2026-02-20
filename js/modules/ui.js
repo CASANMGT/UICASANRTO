@@ -26,6 +26,7 @@ let userListFilter = { partner: 'all', risk: 'all', search: '', program: 'all', 
 let selectedProgramId = 'all';
 let vehicleListPage = 1;
 let userListPage = 1;
+let programListPage = 1;
 
 // Drawer navigation history
 let drawerStack = [];
@@ -395,8 +396,8 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     const container = document.getElementById('financeContent');
     if (!container) return;
 
-    // --- Pagination (25 per page) ---
-    const PAGE_SIZE = 25;
+    // --- Pagination (20 per page) ---
+    const PAGE_SIZE = 20;
     if (!window.financePage) window.financePage = 1;
     const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
     if (window.financePage > totalPages) window.financePage = 1;
@@ -926,7 +927,7 @@ export const renderVehicleListView = () => {
     if (!elVehicleListContent) return;
 
     const vehicles = getAllVehicles(vehicleListFilter);
-    const PAGE_SIZE = 25;
+    const PAGE_SIZE = 20;
     const totalPages = Math.ceil(vehicles.length / PAGE_SIZE) || 1;
     if (vehicleListPage > totalPages) vehicleListPage = totalPages;
     const paginated = vehicles.slice((vehicleListPage - 1) * PAGE_SIZE, vehicleListPage * PAGE_SIZE);
@@ -1037,7 +1038,7 @@ export const renderUserListView = () => {
     if (!elUserListContent) return;
 
     const users = getUsers(userListFilter);
-    const PAGE_SIZE = 25;
+    const PAGE_SIZE = 20;
     const totalPages = Math.ceil(users.length / PAGE_SIZE) || 1;
     if (userListPage > totalPages) userListPage = totalPages;
     const paginated = users.slice((userListPage - 1) * PAGE_SIZE, userListPage * PAGE_SIZE);
@@ -1171,6 +1172,7 @@ window.setUserSort = (field) => {
     renderUserListView();
 };
 window.changeUserPage = (delta) => { userListPage += delta; renderUserListView(); };
+window.changeProgramPage = (delta) => { programListPage += delta; renderProgramListView(); };
 
 // ─── DETAIL DRAWER LOGIC ──────────────────────────────────────────────────────
 
@@ -1519,7 +1521,19 @@ export const renderProgramListView = () => {
         }
     }
 
-    const tableRows = displayVehicles.map(v => {
+    // Calculate display-level stats for the top bar
+    const totalUnits = displayVehicles.length || 1;
+    const activeUnits = displayVehicles.filter(v => v.status === 'active').length;
+    const healthPct = Math.round((activeUnits / totalUnits) * 100);
+    const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
+
+    // --- Pagination (20 per page) ---
+    const PAGE_SIZE = 20;
+    const totalPages = Math.ceil(displayVehicles.length / PAGE_SIZE) || 1;
+    if (programListPage > totalPages) programListPage = totalPages;
+    const paginated = displayVehicles.slice((programListPage - 1) * PAGE_SIZE, programListPage * PAGE_SIZE);
+
+    const tableRows = paginated.map(v => {
         const prog = getRTOProgress(v);
         const lastPayment = v.lastPaymentDate ? new Date(v.lastPaymentDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—';
         const statusColor = v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : '#EF4444');
@@ -1543,15 +1557,26 @@ export const renderProgramListView = () => {
                 <td style="text-align:center">
                     <div style="font-weight:800; font-size:13px; color:${v.credits > 2 ? 'var(--t1)' : '#EF4444'}">${v.credits}d</div>
                 </td>
+                <td style="text-align:center">
+                    <div style="display:flex; justify-content:center; gap:4px">
+                        ${v.immobilizeLog?.length > 0 ? `
+                            <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                                🔒 ${v.immobilizeLog.length}
+                            </div>
+                        ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                        ${v.graceEncounters > 0 ? `
+                            <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                                ⚠️ ${v.graceEncounters}
+                            </div>
+                        ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                    </div>
+                </td>
                 <td>
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px">
                         <div style="width:8px; height:8px; border-radius:50%; background:${riskColor}; box-shadow:0 0 8px ${riskColor}66"></div>
                         <div style="font-weight:700; font-size:11px; color:var(--t1)">${rider?.riskLabel || 'Medium'} Risk</div>
                     </div>
                     <div style="font-size:9px; color:var(--t3)">${rider?.riskLabel === 'High' ? 'Unstable payment profile' : (rider?.riskLabel === 'Low' ? 'Reliable daily payer' : 'Standard RTO profile')}</div>
-                </td>
-                <td style="text-align:center">
-                    <div style="font-size:13px; font-weight:600; color:${v.graceEncounters > 2 ? '#F59E0B' : 'var(--t3)'}">${v.graceEncounters || 0}x</div>
                 </td>
                 <td>
                     <div style="font-weight:800; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ac); letter-spacing:0.02em">${v.plate}</div>
@@ -1626,16 +1651,17 @@ export const renderProgramListView = () => {
                     
                     <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('health', '${selectedProgramId}')">
                         <div class="label">Collection Health ℹ️</div>
-                        <div class="value" style="color:var(--p)">${85 + (displayVehicles.length % 15)}%</div>
+                        <div class="value" style="color:var(--p)">${healthPct}%</div>
                         <div class="program-tooltip">
                             <strong>Audit Detail Available</strong><br>
-                            Click to open full collection health report and risk variance analysis.
+                            Logic: (Active / Total) × 100.<br>
+                            Click to open full collection health report.
                         </div>
                     </div>
 
                     <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('maturity', '${selectedProgramId}')">
                         <div class="label">Fleet Maturity ℹ️</div>
-                        <div class="value" style="color:var(--ac)">${displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0}%</div>
+                        <div class="value" style="color:var(--ac)">${maturityPct}%</div>
                         <div class="program-tooltip">
                             <strong>Maturity Forecast Available</strong><br>
                             Click to view asset recovery progress and ownership transfer forecasts.
@@ -1651,8 +1677,8 @@ export const renderProgramListView = () => {
                                     <th>Program / RTO ID</th>
                                     <th>Rider / Contact</th>
                                     <th style="text-align:center">Credit</th>
+                                    <th style="text-align:center">Collections Audit</th>
                                     <th>Risk Audit</th>
-                                    <th style="text-align:center">Grace Hist</th>
                                     <th>Nopol / Model</th>
                                     <th style="text-align:center">Status</th>
                                     <th style="text-align:right">Last Payment</th>
@@ -1667,8 +1693,15 @@ export const renderProgramListView = () => {
                     </div>
                 </div>
 
-                <div style="padding:12px 20px; border-top:1px solid var(--b1); font-size:11px; color:var(--t3); font-weight:600; background:var(--s2)">
-                    Displaying ${displayVehicles.length} integrated monitoring records.
+                <div style="padding:12px 20px; border-top:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center; background:var(--s2); font-size:11px; font-weight:600">
+                    <div style="color:var(--t3)">
+                        Displaying ${(programListPage - 1) * PAGE_SIZE + 1}–${Math.min(programListPage * PAGE_SIZE, displayVehicles.length)} of ${displayVehicles.length} integrated monitoring records.
+                    </div>
+                    <div class="vl-pagination" style="margin-top:0">
+                        <button class="vl-page-btn" onclick="window.changeProgramPage(-1)" ${programListPage === 1 ? 'disabled' : ''}>Prev</button>
+                        <span style="color:var(--t2)">Page ${programListPage} of ${totalPages}</span>
+                        <button class="vl-page-btn" onclick="window.changeProgramPage(1)" ${programListPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1806,65 +1839,119 @@ window.popoutProgramStats = (type, programId) => {
     let title = '';
     let html = '';
 
+    // Calculate real-time stats
+    const displayVehicles = programId === 'all'
+        ? state.vehicles
+        : state.vehicles.filter(v => v.programId === programId);
+
+    const total = displayVehicles.length || 1;
+    const activeCount = displayVehicles.filter(v => v.status === 'active').length;
+    const healthPct = Math.round((activeCount / total) * 100);
+    const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
+
     if (type === 'health') {
-        title = `Collection Health Audit: ${p.name} `;
-        html = `
-    <div style = "padding:20px" >
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px">
-                    <div class="card" style="padding:15px; background:var(--s3)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">PAYMENT VARIANCE</div>
-                        <div style="font-size:24px; font-weight:800; color:#22C55E">-2.4% <span style="font-size:12px; font-weight:400; color:var(--t3)">vs Target</span></div>
-                    </div>
-                    <div class="card" style="padding:15px; background:var(--s3)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">ARREARS INDEX</div>
-                        <div style="font-size:24px; font-weight:800; color:#F59E0B">1.8 <span style="font-size:12px; font-weight:400; color:var(--t3)">Risk Score</span></div>
-                    </div>
-                </div>
-                <h4 style="margin-bottom:10px">Risk Factors</h4>
-                <ul style="color:var(--t2); font-size:13px; line-height:1.6">
-                    <li>94% of riders have paid within the last 7 days.</li>
-                    <li>Arrears mostly concentrated in "Tangkas Go" RTO scheme (Jakarta North).</li>
-                    <li>Grace period extensions have decreased by 15% this month.</li>
-                </ul>
-                <div style="margin-top:20px; display:flex; justify-content:flex-end">
-                    <button class="btn primary" onclick="window.closeModal('gps')">Got it</button>
-                </div>
-            </div>
-    `;
-    } else {
-        title = `Fleet Maturity Snapshot: ${p.name}`;
+        const healthColor = healthPct > 95 ? '#22C55E' : (healthPct > 90 ? '#F59E0B' : '#EF4444');
+        const variance = (healthPct - 100).toFixed(1);
+
+        title = `Collection Health Audit: ${p.shortName}`;
         html = `
             <div style="padding:20px">
-                <div style="height:10px; background:var(--b1); border-radius:50px; margin-bottom:15px; overflow:hidden">
-                    <div style="width:65%; height:100%; background:var(--ac); border-radius:50px; box-shadow: 0 0 10px var(--ac)55"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px">
+                    <div class="card" style="padding:15px; background:var(--s3)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700">COLLECTION HEALTH</div>
+                        <div style="font-size:24px; font-weight:800; color:${healthColor}">${healthPct}%</div>
+                    </div>
+                    <div class="card" style="padding:15px; background:var(--s3)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700">PAYMENT VARIANCE</div>
+                        <div style="font-size:24px; font-weight:800; color:${variance < 0 ? '#EF4444' : '#22C55E'}">${variance}% <span style="font-size:12px; font-weight:400; color:var(--t3)">vs Target</span></div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1); margin-bottom:20px">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📋 Data Audit Breakdown</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px">
+                        <div style="color:var(--t3)">Total Assets:</div>
+                        <div style="text-align:right; font-weight:700; color:var(--t1)">${total} Units</div>
+                        <div style="color:var(--t3)">Healthy (Active):</div>
+                        <div style="text-align:right; font-weight:700; color:#22C55E">${activeCount} Units</div>
+                        <div style="color:var(--t3)">Non-Performing:</div>
+                        <div style="text-align:right; font-weight:700; color:#EF4444">${total - activeCount} Units</div>
+                    </div>
+                    <div style="margin-top:12px; font-size:10px; color:var(--t3); border-top:1px solid var(--b1); padding-top:8px">
+                        Calculation: (Active / Total) × 100 = <strong>${healthPct}%</strong>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">🧠 Executive Intelligence</h4>
+                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Health is calculated by the ratio of <strong>Active</strong> (Paid) units vs total assigned units. Higher percentages indicate strong payment discipline.</p>
+                    
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#22C55E; font-weight:700">● GOOD (>95%)</span>
+                            <span style="color:var(--t3)">Operational Excellence</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#F59E0B; font-weight:700">● WARNING (90-95%)</span>
+                            <span style="color:var(--t3)">Increase collection rigor</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#EF4444; font-weight:700">● CRITICAL (<90%)</span>
+                            <span style="color:var(--t3)">Review rider risk profiles</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:25px; display:flex; justify-content:flex-end">
+                    <button class="btn primary" onclick="window.closeModals()">Close Audit</button>
+                </div>
+            </div>
+        `;
+    } else {
+        const maturityColor = maturityPct > 75 ? '#22C55E' : (maturityPct > 25 ? 'var(--ac)' : '#F59E0B');
+
+        title = `Fleet Maturity Snapshot: ${p.shortName}`;
+        html = `
+            <div style="padding:20px">
+                <div style="height:12px; background:var(--b1); border-radius:50px; margin-bottom:15px; overflow:hidden; border:1px solid var(--s3)">
+                    <div style="width:${maturityPct}%; height:100%; background:${maturityColor}; border-radius:50px; box-shadow: 0 0 10px ${maturityColor}55"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:25px">
                     <span style="font-size:11px; color:var(--t3); font-weight:600">NEW 0%</span>
-                    <span style="font-size:13px; font-weight:800; color:var(--ac)">FLEET AVG: 65% RECOVERY</span>
+                    <span style="font-size:14px; font-weight:800; color:${maturityColor}">${maturityPct}% AVG RECOVERY</span>
                     <span style="font-size:11px; color:var(--t3); font-weight:600">OWNED 100%</span>
                 </div>
-                <h4 style="margin-bottom:12px; font-size:14px; color:var(--t1)">Ownership Transfer Forecast</h4>
-                <table class="vl-table" style="font-size:12px">
-                    <tr style="border-bottom:1px solid var(--b1)">
-                        <td style="padding:10px 0; color:var(--t2)">Next 30 Days</td>
-                        <td style="padding:10px 0; text-align:right; font-weight:700; color:var(--ac)">12 Units</td>
-                    </tr>
-                    <tr style="border-bottom:1px solid var(--b1)">
-                        <td style="padding:10px 0; color:var(--t2)">Next 90 Days</td>
-                        <td style="padding:10px 0; text-align:right; font-weight:700; color:var(--ac)">45 Units</td>
-                    </tr>
-                </table>
-                <p style="margin-top:20px; font-size:12px; color:var(--t3); line-height:1.5">Maturity reflects the portion of total fleet lease value already recovered via daily RTO installments. High maturity indicates impending equity transfers.</p>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📈 Lifecycle Benchmarks</h4>
+                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the fleet. This determines when assets transition from RTO to full ownership.</p>
+                    
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#22C55E; font-weight:700">● HIGH (>75%)</span>
+                            <span style="color:var(--t3)">Impending Equity Transfer</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:var(--ac); font-weight:700">● MID (25-75%)</span>
+                            <span style="color:var(--t3)">Operational Stable Phase</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#F59E0B; font-weight:700">● EARLY (<25%)</span>
+                            <span style="color:var(--t3)">Growth & Deployment</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-top:25px; display:flex; justify-content:flex-end">
-                    <button class="btn primary" onclick="window.closeModal('gps')">Close Audit</button>
+                    <button class="btn primary" onclick="window.closeModals()">Close Audit</button>
                 </div>
             </div>
-    `;
+        `;
     }
 
     document.getElementById('gpsModalTitle').innerText = title;
     document.getElementById('gpsModalContent').innerHTML = html;
-    document.getElementById('gpsModalOverlay').classList.add('open');
+    document.getElementById('gpsModalOverlay').classList.add('active');
 };
 
 window.selectProgram = (programId) => {

@@ -9,12 +9,12 @@ export const partners = [
 ];
 
 const initialPrograms = [
-    { id: 'P-TK-RTO', name: 'Zeeho RTO', shortName: 'Zeeho', partnerId: 'tangkas', type: 'RTO', price: 38000, grace: 7 },
-    { id: 'P-TK-RNT', name: 'Zeeho Rent', shortName: 'Zeeho', partnerId: 'tangkas', type: 'Rent', price: 30000, grace: 5 },
-    { id: 'P-MK-RTO', name: 'Maka RTO', shortName: 'Maka', partnerId: 'maka', type: 'RTO', price: 35000, grace: 7 },
-    { id: 'P-MK-RNT', name: 'Maka Rent', shortName: 'Maka', partnerId: 'maka', type: 'Rent', price: 28000, grace: 5 },
-    { id: 'P-UN-RTO', name: 'United RTO', shortName: 'Unitd', partnerId: 'united', type: 'RTO', price: 32000, grace: 7 },
-    { id: 'P-UN-RNT', name: 'United Rent', shortName: 'Unitd', partnerId: 'united', type: 'Rent', price: 25000, grace: 5 }
+    { id: 'P-TK-RTO', name: 'Zeeho RTO', shortName: 'Zeeho', partnerId: 'tangkas', type: 'RTO', price: 38000, grace: 1 },
+    { id: 'P-TK-RNT', name: 'Zeeho Rent', shortName: 'Zeeho', partnerId: 'tangkas', type: 'Rent', price: 30000, grace: 1 },
+    { id: 'P-MK-RTO', name: 'Maka RTO', shortName: 'Maka', partnerId: 'maka', type: 'RTO', price: 35000, grace: 1 },
+    { id: 'P-MK-RNT', name: 'Maka Rent', shortName: 'Maka', partnerId: 'maka', type: 'Rent', price: 28000, grace: 1 },
+    { id: 'P-UN-RTO', name: 'United RTO', shortName: 'Unitd', partnerId: 'united', type: 'RTO', price: 32000, grace: 1 },
+    { id: 'P-UN-RNT', name: 'United Rent', shortName: 'Unitd', partnerId: 'united', type: 'Rent', price: 25000, grace: 1 }
 ];
 
 export let programs = [...initialPrograms];
@@ -377,6 +377,23 @@ export const initData = () => {
         v.customer = user.name; // sync name
         v.phone = user.phone;
         user.vehicleIds = [v.id]; // Strict 1:1
+
+        // Calibrate collection history based on user risk
+        if (user.riskLabel === 'Low') {
+            v.graceEncounters = randInt(0, 1);
+            v.immobilizeLog = [];
+        } else if (user.riskLabel === 'Medium') {
+            v.graceEncounters = randInt(1, 4);
+            if (random() < 0.2) v.immobilizeLog = [{ action: 'lock', timestamp: new Date(Date.now() - 15 * 86400000).toISOString(), reason: 'Grace limit' }];
+        } else { // High Risk
+            v.graceEncounters = randInt(4, 9);
+            const locks = randInt(2, 5);
+            v.immobilizeLog = Array.from({ length: locks }, (_, i) => ({
+                action: 'lock',
+                timestamp: new Date(Date.now() - (i + 1) * 7 * 86400000).toISOString(),
+                reason: 'Payment delinquency'
+            }));
+        }
     });
 
     // Compute user transaction stats
