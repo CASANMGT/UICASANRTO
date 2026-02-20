@@ -66,11 +66,25 @@ casan_rto/
 | Grace/Immobilized countdown timers | ✅ |
 | Expiry credit-day warning bar | ✅ |
 
-### 📊 Stats Bar
+### � Programs & Collections Management
 | Feature | Status |
 |---------|--------|
-| Active, Grace, Immobilized, Paused, Available counts | ✅ |
-| Online / Offline indicators | ✅ |
+| **Multi-Scheme Sidebar** for partner programs | ✅ |
+| **Collections Audit:** Visual badges (🔒/⚠️) for incidents | ✅ |
+| **Risk Audit:** Executive reasoning and color coding | ✅ |
+| **Interactive Analytics:** Health & Maturity popouts | ✅ |
+| **Data Audit Breakdown:** Logic transparency overlays | ✅ |
+| **Full CRUD** for pricing, grace, and holiday rules | ✅ |
+| **CSV Export** for fleet and scheme auditing | ✅ |
+
+### �📊 Executive Stats Bar
+| Feature | Status |
+|---------|--------|
+| High-density 6-column grid | ✅ |
+| **Context-Aware KPIs** switching per navigation tab | ✅ |
+| Active, Grace, Immobilized, Paused counts | ✅ |
+| KYC Status, Success Rate, and Online/Offline counts | ✅ |
+| Secondary trend indicators and coloring | ✅ |
 | Compact horizontal scroll on mobile | ✅ |
 
 ### 💳 Finance Tab
@@ -94,6 +108,30 @@ casan_rto/
 | Location with lat/lng + last ping time | ✅ |
 | Address lookup (mock) | ✅ |
 | Add / Edit / Delete GPS device modals | ✅ |
+
+---
+
+## 📈 Operational Intelligence
+
+The Programs dashboard uses data-driven logic to evaluate scheme performance.
+
+### ⚖️ Collection Health Logic
+Collection health represents the ratio of **performing** vs **non-performing** assets within a scheme.
+- **Formula:** `(Active Units / Total Assigned Units) × 100`
+- **[Performing] Healthy Active:** Assets with positive credit balance (`active`).
+- **[Non-Performing]:** Assets in `grace` (expired credit) or `immobilized` (locked/non-payment).
+
+**Executive Benchmarks:**
+- **● GOOD (>95%):** Operational Excellence. Payments are synchronized with daily usage.
+- **● WARNING (90-95%):** Risk Alert. Requires immediate collection rigor and rider follow-up.
+- **● CRITICAL (<90%):** Intervention Phase. Review rider risk profiles and consider asset recovery.
+
+### 🏗️ Fleet Maturity Logic
+Maturity reflects the average equity recovery across the program's lifecycle.
+- **Formula:** `Average(RTO Progress %)` across all assigned vehicles.
+- **0-25% (Early):** Growth & deployment phase. High upfront capital exposure.
+- **25-75% (Mid):** Operational stability phase. Positive cashflow recovery.
+- **>75% (High):** Impending ownership transfer. Final lifecycle stage.
 
 ---
 
