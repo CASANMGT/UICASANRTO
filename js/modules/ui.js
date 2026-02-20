@@ -2299,15 +2299,15 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates — v1.2.0";
+    elTitle.innerText = "Platform Updates — v1.3.0";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size:16px; color:var(--p)">✨ Latest Release: v1.2.0</h3>
+                    <h3 style="margin:0; font-size:16px; color:var(--p)">✨ Latest Release: v1.3.0</h3>
                     <span style="font-size:11px; color:var(--t3); font-family:var(--font-mono)">2026-02-20</span>
                 </div>
-                <p style="font-size:12px; color:var(--t2); line-height:1.6">This update introduces major enhancements to <strong>Collection Intelligence</strong>, <strong>Risk Correlation</strong>, and <strong>Visual Auditing</strong> for the RTO fleet.</p>
+                <p style="font-size:12px; color:var(--t2); line-height:1.6">This update streamlines <strong>Infrastructure Monitoring</strong> with a new Station List UX and enhances <strong>Financial Intelligence</strong> with transaction summaries.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
@@ -2316,10 +2316,10 @@ window.openChangelogModal = () => {
                         <span style="width:6px; height:6px; background:#22C55E; border-radius:50%"></span> NEW FEATURES
                     </h4>
                     <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Visual Collections Audit:</strong> New 🔒 (Lock) and ⚠️ (Grace) status badges in the Program list for instant reporting recognition.</li>
-                        <li><strong>Risk-Based Data Correlation:</strong> Historical behavior now statistically linked to User Risk Profiles.</li>
-                        <li><strong>Executive Analytics Popouts:</strong> Interactive health/maturity cards with deep-dive variance reporting.</li>
-                        <li><strong>Data Audit Breakdown:</strong> Transparent mathematical logic overlays for all KPI percentages.</li>
+                        <li><strong>Station List UX Redesign:</strong> High-density card layout for real-time infrastructure tracking.</li>
+                        <li><strong>Hierarchical Infrastructure:</strong> Nested device/socket views within station records.</li>
+                        <li><strong>Finance Summary KPIs:</strong> Live tracking for Paid, Pending, and Failed transaction clusters.</li>
+                        <li><strong>Hardware Audit Intelligence:</strong> Integrated IMEI and SIM carrier details in GPS management.</li>
                     </ul>
                 </div>
 
@@ -2328,9 +2328,8 @@ window.openChangelogModal = () => {
                         <span style="width:6px; height:6px; background:var(--p); border-radius:50%"></span> SYSTEM IMPROVEMENTS
                     </h4>
                     <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>High-Density Stats Bar:</strong> Context-aware 6-column grid providing tailored KPIs for every navigation view.</li>
-                        <li><strong>Optimized Audit Flow:</strong> Reordered Program columns to prioritize cause-and-effect relationship between behavior and risk.</li>
-                        <li><strong>Standardized Viewports:</strong> Universal 20-items-per-page pagination across all dashboard modules.</li>
+                        <li><strong>Stacked Map Filters:</strong> Redesigned overlay with emoji branding and improved vertical density.</li>
+                        <li><strong>Module Sync:</strong> Program filters now propagate consistently across Users, Vehicles, and Finance.</li>
                     </ul>
                 </div>
 
@@ -2339,8 +2338,7 @@ window.openChangelogModal = () => {
                         <span style="width:6px; height:6px; background:#FACC15; border-radius:50%"></span> CRITICAL FIXES
                     </h4>
                     <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li>Resolved a <strong>ReferenceError</strong> preventing the Programs tab from rendering in specific filters.</li>
-                        <li>Synchronized <strong>Collection Health</strong> math across all top-level cards and report popouts.</li>
+                        <li>Fixed marker popup trigger logic following the removal of Leaflet clustering.</li>
                     </ul>
                 </div>
             </div>

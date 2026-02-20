@@ -70,6 +70,14 @@ casan_rto/
 | Global search (Name, Phone, NIK) | ✅ |
 | Sorting by Name, Risk, and Join Date | ✅ |
 
+### 🏢 Station & Infrastructure
+| Feature | Status |
+|---------|--------|
+| **Card-Based Station UX:** High-density monitoring cards | ✅ |
+| **Hierarchical Device List:** Devices & sockets grouped by station | ✅ |
+| **Live Connectivity Audit:** IMEI/SIM status per device | ✅ |
+| **Map Integration:** "View on Map" direct focus action | ✅ |
+
 ### � Programs & Collections Management
 | Feature | Status |
 |---------|--------|
@@ -91,10 +99,11 @@ casan_rto/
 | Secondary trend indicators and coloring | ✅ |
 | Compact horizontal scroll on mobile | ✅ |
 
-### 💳 Finance Tab
+### 💰 Finance Tab
 | Feature | Status |
 |---------|--------|
 | Paginated transactions (25/page) | ✅ |
+| **Transaction Summaries:** Paid, Pending, Failed KPI cards | ✅ |
 | **CREDIT DAYS column** (1, 2, 3, 5, 7, 15 days packages) | ✅ |
 | Payment method column | ✅ |
 | Program filter (per-program revenue & stats) | ✅ |

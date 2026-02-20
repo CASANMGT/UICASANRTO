@@ -2,6 +2,21 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.3.0] - 2026-02-20
+
+### Added
+- **Station List UX Redesign:** Transitioned to a high-density card-based layout for station monitoring.
+- **Hierarchical Device structure:** Stations now contain a nested list of associated devices and sockets for better organization.
+- **Enhanced Finance Analytics:** Integrated summary cards for "Paid", "Pending", and "Failed" transactions to track collection health.
+- **GPS Connectivity Intelligence:** Added **IMEI** and **SIM** details (carrier/usage) to the GPS list for improved hardware auditing.
+
+### Changed
+- **Map Filter UI:** Improved filter buttons with a stacked icon+label layout and distinct emoji branding.
+- **Universal Program Synchronization:** Integrated the Finance program filter logic into the User and Vehicle views for cross-module consistency.
+
+### Fixed
+- **Map Interaction:** Fixed bug where marking popups failed to open after market clustering was disabled.
+
 ## [1.2.0] - 2026-02-20
 
 ### Added
