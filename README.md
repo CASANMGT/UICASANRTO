@@ -33,6 +33,7 @@ casan_rto/
         ├── map.js              # Leaflet map, directional markers, filters
         ├── finance.js          # Finance stats & transaction calculations
         ├── gps.js              # GPS device CRUD & status helpers
+        ├── rto.js              # RTO Application & Pickup management
         └── utils.js            # Shared helpers (formatRupiah, timeAgo, etc.)
 ```
 
@@ -88,6 +89,16 @@ casan_rto/
 | **Data Audit Breakdown:** Logic transparency overlays | ✅ |
 | **Full CRUD** for pricing, grace, and holiday rules | ✅ |
 | **CSV Export** for fleet and scheme auditing | ✅ |
+
+### 📋 RTO Application Management
+| Feature | Status |
+|---------|--------|
+| **Consolidated Sidebar UI:** Applications, Pickup, Score, WA | ✅ |
+| **Unified Application Queue:** Real-time filtering and search | ✅ |
+| **Automated Point System:** Configurable score dimensions | ✅ |
+| **Pickup Scheduling:** Calendar-based driver appointments | ✅ |
+| **WA Template Persistence:** Editable scenarios with LocalStorage | ✅ |
+| **Interactive WA Preview:** Verification modal before sending | ✅ |
 
 ### �📊 Executive Stats Bar
 | Feature | Status |
@@ -199,11 +210,19 @@ All data is generated client-side in `store.js` — no backend required.
 
 ## 🔮 Roadmap
 
-- **Program List tab** — full terms, rates, grace/holiday/buyout rules
-- **Partner/Dealer tab** — locations, banking, CASAN contract, metrics
-- **Fleet Detail modal** — STNK/BPKB docs, battery SoH, vehicle lifecycle
-- **Alerts panel** — STNK expiry, PKB tax due, GPS offline, battery degraded
-- **Real backend** — Supabase / Firebase for live data sync
+The project follows a multi-phase evolution strategy focusing on scale, data-integrity, and industrial observability.
+
+**[View Detailed Roadmap →](roadmap.md)**
+
+- **Phase 1:** Feature Completion (Program Management, Dealer Portal).
+- **Phase 2:** Backend Migration (Real-time DB & Auth).
+- **Phase 3:** High-Density Analytics & Industrial Observability.
+
+---
+
+## 🛠️ Operator Skills
+
+The system is designed for high-density operations. See **[Skills.md](Skills.md)** for the operator competency framework.
 
 ---
 

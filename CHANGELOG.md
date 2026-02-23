@@ -2,6 +2,21 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.4.0] - 2026-02-23
+
+### Added
+- **RTO Application Management:** Consolidated multiple RTO tabs into a unified "Application" view with a sidebar navigation for Applications, Pickup Schedule, Score Config, and WA Templates.
+- **Interactive WhatsApp Preview:** Implemented a new "WA Driver" mechanism featuring an editable preview modal before redirection to WhatsApp Web.
+- **Variable Injection:** Added automated parsing for `{nama}`, `{app_id}`, `{program}`, `{score}`, `{dealer}`, and `{missing_docs}` into message templates.
+- **Persistence Engine:** Added `localStorage` support for persisting custom Score Configurations and WhatsApp Template overrides.
+
+### Changed
+- **Navigation UX:** Streamlined the top navigation bar by grouping operational RTO workflows into a dedicated sub-navigation sidebar.
+
+### Fixed
+- **Dashboard Layout:** Resolved critical flexbox gap issues where RTO sub-views were pushed to the bottom of the viewport.
+- **Template Rendering:** Fixed JS string literal issues that caused Score Config controls to render as raw code strings.
+
 ## [1.3.0] - 2026-02-20
 
 ### Added

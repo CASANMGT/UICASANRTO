@@ -51,7 +51,7 @@
                         <span>RTO & Rental — Jabodetabek</span>
                         <div class="version-badge" onclick="window.openChangelogModal()">
                             <span class="pulse-dot"></span>
-                            v1.3.0
+                            v1.4.0
                         </div>
                     </div>
                 </div>
@@ -82,6 +82,7 @@
             <div class="nav-tab" data-tab="vehicles">🏍️ Vehicles</div>
             <div class="nav-tab" data-tab="fleet">🗺️ Fleet Tracking</div>
             <div class="nav-tab" data-tab="gps">📡 GPS List</div>
+            <div class="nav-tab" data-tab="rto-applications">📋 Application</div>
         </nav>
 
         <!-- Filters -->
@@ -155,13 +156,298 @@
                     style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
                 </div>
             </div>
-        </main>
 
-        <!-- Detail Drawer -->
-        <div id="drawerBackdrop" class="drawer-backdrop"></div>
-        <div id="detailDrawer" class="detail-drawer">
-            <div id="drawerContent"></div>
-        </div>
+            <!-- RTO Applications Tab -->
+            <div id="rto-applicationsView" class="view-container hidden">
+                <div class="adm" style="flex:1; width:100%; height:100%; border-radius:0;">
+                    <!-- Admin Sidebar -->
+                    <div class="adm-side">
+                        <div class="adm-nav">
+                            <div class="adm-ns">Menu</div>
+                            <div class="adm-ni on" id="adm-ni-apps" onclick="window.rto.switchRtoTab('apps', this)">
+                                <div class="adm-ni-ic">📋</div>
+                                <div class="adm-ni-l">Applications</div>
+                            </div>
+                            <div class="adm-ni" id="adm-ni-pickup" onclick="window.rto.switchRtoTab('pickup', this)">
+                                <div class="adm-ni-ic">🛵</div>
+                                <div class="adm-ni-l">Pickup Schedule</div>
+                            </div>
+                            <div class="adm-ni" id="adm-ni-score" onclick="window.rto.switchRtoTab('score', this)">
+                                <div class="adm-ni-ic">⚙️</div>
+                                <div class="adm-ni-l">Score Config</div>
+                            </div>
+                            <div class="adm-ni" id="adm-ni-wa" onclick="window.rto.switchRtoTab('wa', this)">
+                                <div class="adm-ni-ic">📱</div>
+                                <div class="adm-ni-l">WA Templates</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Main Content -->
+                    <div class="adm-main">
+                        <div class="adm-cnt" style="padding: 24px;">
+                            <!-- Applications View -->
+                            <div class="av on" id="adm-apps">
+                                <div id="rto-applicationsContent" style="display:contents;">
+                                    <div class="kpi-row">
+                                        <div class="kpi">
+                                            <div class="kpi-l">Total</div>
+                                            <div class="kpi-v" style="color:var(--dt1)" id="kpi-tot">—</div>
+                                            <div class="kpi-d" style="color:var(--dac)">↑ +12 week</div>
+                                        </div>
+                                        <div class="kpi">
+                                            <div class="kpi-l">Pending</div>
+                                            <div class="kpi-v" style="color:var(--dw)" id="kpi-pnd">—</div>
+                                            <div class="kpi-d" style="color:var(--dt3)">Awaiting</div>
+                                        </div>
+                                        <div class="kpi">
+                                            <div class="kpi-l">Approved</div>
+                                            <div class="kpi-v" style="color:var(--dg)" id="kpi-apr">—</div>
+                                            <div class="kpi-d" style="color:var(--dg)">rate</div>
+                                        </div>
+                                        <div class="kpi">
+                                            <div class="kpi-l">Declined</div>
+                                            <div class="kpi-v" style="color:var(--dd)" id="kpi-dec">—</div>
+                                            <div class="kpi-d" style="color:var(--dt3)">rate</div>
+                                        </div>
+                                        <div class="kpi">
+                                            <div class="kpi-l">Avg Score</div>
+                                            <div class="kpi-v" style="color:var(--dac)" id="kpi-avg">—</div>
+                                            <div class="kpi-d" style="color:var(--dt3)">Last 30d</div>
+                                        </div>
+                                    </div>
+                                    <div class="apps-c">
+                                        <div class="apps-hd">
+                                            <span class="apps-t">Application Queue</span>
+                                            <div class="af-row">
+                                                <button class="afb on" onclick="setAdmFlt('all',this)">All</button>
+                                                <button class="afb" onclick="setAdmFlt('pending',this)">Pending</button>
+                                                <button class="afb" onclick="setAdmFlt('review',this)">Review</button>
+                                                <button class="afb"
+                                                    onclick="setAdmFlt('approved',this)">Approved</button>
+                                                <button class="afb"
+                                                    onclick="setAdmFlt('declined',this)">Declined</button>
+                                                <input class="adm-srch" placeholder="Search name, ID, area..."
+                                                    oninput="admSrch(this.value)" style="margin-left:6px">
+                                            </div>
+                                        </div>
+                                        <div class="tbl-w">
+                                            <table class="atbl">
+                                                <thead>
+                                                    <tr>
+                                                        <th>App ID</th>
+                                                        <th>Applicant</th>
+                                                        <th>Partner</th>
+                                                        <th>Program</th>
+                                                        <th>Profesi</th>
+                                                        <th>Income</th>
+                                                        <th>Score</th>
+                                                        <th>Decision</th>
+                                                        <th>Missing Docs</th>
+                                                        <th>Submitted</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="adm-tbody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="dp" id="detail-panel">
+                                        <div class="dp-hdr">
+                                            <div class="dp-t" id="dp-t">Detail</div><button class="dp-x"
+                                                onclick="document.getElementById('detail-panel').classList.remove('show')">✕</button>
+                                        </div>
+                                        <div class="dp-grid" id="dp-grid"></div>
+                                        <div class="sp-sec">
+                                            <div class="sp-t">Score Breakdown</div>
+                                            <div class="sp-grid" id="sp-grid"></div>
+                                        </div>
+                                        <div id="dp-miss-sec"
+                                            style="display:none;padding:10px 12px;border-top:1px solid var(--db1);background:rgba(251,191,36,.025)">
+                                            <div
+                                                style="font-size:9px;font-weight:800;color:var(--dw);margin-bottom:5px">
+                                                ⚠ Missing
+                                                Documents</div>
+                                            <div id="dp-miss-items" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                                        </div>
+                                        <div class="ov-sec">
+                                            <div class="ov-t">✏️ Manual Override</div>
+                                            <div class="ov-row"><input class="ov-in" id="ov-note"
+                                                    placeholder="Analyst note..."><select class="ov-in ov-sel"
+                                                    id="ov-adj">
+                                                    <option value="0">Adj: 0</option>
+                                                    <option value="5">+5 pts</option>
+                                                    <option value="10">+10 pts</option>
+                                                    <option value="-5">-5 pts</option>
+                                                    <option value="-10">-10 pts</option>
+                                                </select><button class="ov-btn" onclick="saveOv()">Save</button></div>
+                                            <div class="ov-log" id="ov-log"></div>
+                                        </div>
+                                        <div class="da-sec">
+                                            <button class="da-btn da-ap" onclick="admDec('approved')">✅ Approve</button>
+                                            <button class="da-btn da-ap"
+                                                style="background:var(--dac1);border-color:rgba(0,229,195,.25);color:var(--dac)"
+                                                onclick="admDec('auto')">⚡ Auto-Approve</button>
+                                            <button class="da-btn da-re" onclick="admDec('review')">🔍 Manual
+                                                Review</button>
+                                            <button class="da-btn da-de" onclick="admDec('declined')">❌ Decline</button>
+                                            <button class="da-btn da-wa" onclick="admWA()">📱 WA Driver</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pickup Schedule View -->
+                            <div class="av" id="adm-pickup">
+                                <div id="rto-pickupContent" style="display:contents;">
+                                    <div class="pu-layout">
+                                        <!-- Left: Pickup queue -->
+                                        <div class="pu-left">
+                                            <div
+                                                style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                                                <div style="font-size:12px;font-weight:800;color:var(--dt1)">🛵 Pickup
+                                                    Queue
+                                                </div>
+                                                <div style="display:flex;gap:4px">
+                                                    <button class="afb on" id="puf-all"
+                                                        onclick="setPUF('all',this)">All</button>
+                                                    <button class="afb" id="puf-waiting"
+                                                        onclick="setPUF('waiting',this)">Waiting</button>
+                                                    <button class="afb" id="puf-scheduled"
+                                                        onclick="setPUF('scheduled',this)">Scheduled</button>
+                                                    <button class="afb" id="puf-done"
+                                                        onclick="setPUF('done',this)">Done</button>
+                                                </div>
+                                            </div>
+                                            <div id="pu-list"></div>
+                                        </div>
+                                        <!-- Right: Detail / Scheduler -->
+                                        <div class="pu-right" id="pu-detail">
+                                            <div style="padding:40px;text-align:center;color:var(--dt3)">
+                                                <div style="font-size:32px;margin-bottom:8px">🛵</div>
+                                                <div style="font-size:11px">Pilih aplikasi di kiri untuk setup pickup
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Score Config View -->
+                            <div class="av" id="adm-score">
+                                <div id="rto-scoreContent" style="display:contents;">
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                        <div>
+                                            <div
+                                                style="font-size:12px;font-weight:800;color:var(--dt1);margin-bottom:10px">
+                                                ⚙️ Bobot
+                                                Dimensi Skor (Total 100 poin)</div>
+                                            <div class="sc-cfg-card">
+                                                <div class="sc-dim-list" id="sc-dim-list"></div>
+                                                <div
+                                                    style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--db1);margin-top:4px">
+                                                    <span style="font-size:10px;color:var(--dt3)">Total:</span>
+                                                    <span class="mono"
+                                                        style="font-size:13px;font-weight:800;color:var(--dac)"
+                                                        id="sc-total-disp">100</span>
+                                                </div>
+                                                <div style="padding:0 12px 12px;display:flex;gap:6px">
+                                                    <button class="ov-btn" style="flex:1" onclick="saveCfg()">💾 Simpan
+                                                        Config</button>
+                                                    <button class="ov-btn" onclick="resetCfg()">↺ Reset Default</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div
+                                                style="font-size:12px;font-weight:800;color:var(--dt1);margin-bottom:10px">
+                                                📐 Threshold
+                                                Keputusan</div>
+                                            <div class="sc-cfg-card">
+                                                <div id="sc-thresh-list"></div>
+                                                <div style="padding:10px 12px;border-top:1px solid var(--db1)">
+                                                    <div
+                                                        style="font-size:9px;font-weight:700;color:var(--dt1);margin-bottom:8px">
+                                                        📋
+                                                        Aturan DSR</div>
+                                                    <div id="sc-dsr-cfg"></div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                style="font-size:12px;font-weight:800;color:var(--dt1);margin:12px 0 8px">
+                                                🏢 Program
+                                                Min. Income</div>
+                                            <div class="sc-cfg-card">
+                                                <div id="sc-prog-cfg"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- WA Templates View -->
+                            <div class="av" id="adm-wa">
+                                <div id="rto-waContent" style="display:contents;">
+                                    <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;height:100%">
+                                        <div>
+                                            <div
+                                                style="font-size:12px;font-weight:800;color:var(--dt1);margin-bottom:8px">
+                                                📱 Skenario
+                                                Template</div>
+                                            <div id="wa-scen-list"></div>
+                                        </div>
+                                        <div>
+                                            <div
+                                                style="font-size:12px;font-weight:800;color:var(--dt1);margin-bottom:8px">
+                                                ✏️ Edit
+                                                Template</div>
+                                            <div class="sc-cfg-card" id="wa-edit-panel" style="padding:14px">
+                                                <div
+                                                    style="font-size:9px;font-weight:700;color:var(--dt2);letter-spacing:.8px;margin-bottom:6px">
+                                                    TEMPLATE AKTIF: <span id="wa-scen-name"
+                                                        style="color:var(--dac)">—</span></div>
+                                                <div style="font-size:9px;color:var(--dt3);margin-bottom:8px">Variabel:
+                                                    <span class="mono" style="color:var(--dac)">{nama}</span> <span
+                                                        class="mono" style="color:var(--dp)">{app_id}</span> <span
+                                                        class="mono" style="color:var(--dg)">{program}</span> <span
+                                                        class="mono" style="color:var(--dw)">{score}</span> <span
+                                                        class="mono" style="color:var(--dbl)">{dealer}</span>
+                                                </div>
+                                                <textarea class="ov-in" id="wa-tmpl-txt"
+                                                    style="width:100%;height:200px;resize:vertical;font-size:11px;font-family:'IBM Plex Mono',monospace;line-height:1.6;padding:10px"
+                                                    placeholder="Pilih skenario..."></textarea>
+                                                <div style="display:flex;gap:6px;margin-top:8px">
+                                                    <button class="ov-btn" style="flex:1" onclick="saveWA()">💾 Simpan
+                                                        Template</button>
+                                                    <button class="ov-btn" onclick="previewWA()">👁 Preview</button>
+                                                    <button class="ov-btn" onclick="resetWA()">↺ Reset</button>
+                                                </div>
+                                                <div id="wa-preview"
+                                                    style="display:none;margin-top:10px;padding:12px;background:var(--ds3);border-radius:8px;border:1px solid var(--db1)">
+                                                    <div
+                                                        style="font-size:9px;font-weight:700;color:var(--dac);margin-bottom:6px">
+                                                        PREVIEW (sample data)</div>
+                                                    <div id="wa-preview-txt"
+                                                        style="font-size:11px;color:var(--dt1);white-space:pre-line;line-height:1.6">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- closes adm-cnt -->
+                    </div> <!-- closes adm-main -->
+                </div> <!-- closes adm -->
+            </div> <!-- closes view-container -->
+    </div> <!-- closes main-content? -->
+    </main>
+
+    <!-- Detail Drawer -->
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    <div id="detailDrawer" class="detail-drawer">
+        <div id="drawerContent"></div>
+    </div>
     </div>
 
     <!-- Modals -->
