@@ -1,55 +1,50 @@
-$port = 5501
-$path = "C:\Users\claux\.gemini\antigravity\scratch\casan_rto"
-
-Write-Host "Starting simple HTTP server at http://localhost:$port"
-Write-Host "Press Ctrl+C to stop"
-
+$port = 5502
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
 $listener.Start()
 
-while ($listener.IsListening) {
-    $context = $listener.GetContext()
-    $request = $context.Request
-    $response = $context.Response
-    
-    $localPath = $path + $request.Url.LocalPath
-    
-    # Simple routing to index.html for root
-    if ($request.Url.LocalPath -eq "/") {
-        $localPath = $path + "\index.html"
-    }
-    
-    # Validate path prevents directory traversal
-    if (-not $localPath.StartsWith($path)) {
-        $response.StatusCode = 403
-        $response.Close()
-        continue
-    }
+Write-Host "Server started at http://localhost:$port/"
+Write-Host "Press Ctrl+C to stop."
 
-    if (Test-Path $localPath -PathType Leaf) {
-        try {
-            # MIME Types
-            $extension = [System.IO.Path]::GetExtension($localPath)
-            switch ($extension) {
-                ".html" { $contentType = "text/html" }
-                ".css"  { $contentType = "text/css" }
-                ".js"   { $contentType = "application/javascript" }
-                ".png"  { $contentType = "image/png" }
-                ".jpg"  { $contentType = "image/jpeg" }
-                default { $contentType = "application/octet-stream" }
-            }
-            
-            $content = [System.IO.File]::ReadAllBytes($localPath)
-            $response.ContentType = $contentType
-            $response.ContentLength64 = $content.Length
-            $response.OutputStream.Write($content, 0, $content.Length)
-        } catch {
-            $response.StatusCode = 500
+try {
+    while ($listener.IsListening) {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
+
+        $path = $request.Url.LocalPath.TrimStart('/')
+        if ([string]::IsNullOrWhiteSpace($path)) {
+            $path = "index.html"
         }
-    } else {
-        $response.StatusCode = 404
+
+        $filePath = Join-Path (Get-Location) $path
+        
+        # Security: ensure file is within current directory
+        $currentDir = (Get-Location).Path
+        $resolved = Resolve-Path $filePath -ErrorAction SilentlyContinue 
+        if ($null -ne $resolved -and !$resolved.Path.StartsWith($currentDir)) {
+             $response.StatusCode = 403
+        }
+        elseif (Test-Path $filePath -PathType Leaf) {
+            $extension = [System.IO.Path]::GetExtension($filePath).ToLower()
+            $contentType = switch ($extension) {
+                ".html" { "text/html" }
+                ".css"  { "text/css" }
+                ".js"   { "application/javascript" }
+                ".png"  { "image/png" }
+                ".jpg"  { "image/jpeg" }
+                ".svg"  { "image/svg+xml" }
+                default { "application/octet-stream" }
+            }
+            $response.ContentType = $contentType
+            $buffer = [System.IO.File]::ReadAllBytes($filePath)
+            $response.ContentLength64 = $buffer.Length
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+        } else {
+            $response.StatusCode = 404
+        }
+        $response.Close()
     }
-    
-    $response.Close()
+} finally {
+    $listener.Stop()
 }

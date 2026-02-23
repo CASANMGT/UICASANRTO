@@ -14,13 +14,13 @@
 }
 
 .vl-title {
-    font-size: 18px;
+    font-size: var(--text-3xl);
     font-weight: 700;
     color: var(--t1);
 }
 
 .vl-count {
-    font-size: 12px;
+    font-size: var(--text-base);
     color: var(--t2);
     background: var(--s2);
     padding: 2px 10px;
@@ -44,7 +44,7 @@
     border: 1px solid var(--bd);
     background: var(--s2);
     color: var(--t1);
-    font-size: 13px;
+    font-size: var(--text-lg);
     font-family: inherit;
     outline: none;
     transition: border-color .2s;
@@ -63,7 +63,7 @@
 .vl-pill {
     padding: 5px 12px;
     border-radius: 20px;
-    font-size: 11px;
+    font-size: var(--text-md);
     font-weight: 600;
     border: 1px solid var(--bd);
     background: var(--s2);
@@ -87,7 +87,7 @@
 .vl-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: var(--text-base);
 }
 
 .vl-table thead th {
@@ -98,7 +98,7 @@
     text-align: left;
     font-weight: 700;
     color: var(--t2);
-    font-size: 10px;
+    font-size: var(--text-sm);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     border-bottom: 1px solid var(--bd);
@@ -113,7 +113,7 @@
 
 .vl-table thead th .sort-arrow {
     margin-left: 4px;
-    font-size: 10px;
+    font-size: var(--text-sm);
     opacity: .4;
 }
 
@@ -139,15 +139,15 @@
 
 /* Status left border on rows */
 .vl-table tbody tr[data-status="active"] {
-    border-left: 3px solid #22C55E;
+    border-left: 3px solid var(--c-success);
 }
 
 .vl-table tbody tr[data-status="grace"] {
-    border-left: 3px solid #F59E0B;
+    border-left: 3px solid var(--c-warning);
 }
 
 .vl-table tbody tr[data-status="immobilized"] {
-    border-left: 3px solid #EF4444;
+    border-left: 3px solid var(--c-danger);
 }
 
 .vl-table tbody tr[data-status="paused"] {
@@ -155,7 +155,7 @@
 }
 
 .vl-table tbody tr[data-status="available"] {
-    border-left: 3px solid #3B82F6;
+    border-left: 3px solid var(--c-info);
 }
 
 /* Status pill */
@@ -163,7 +163,7 @@
     display: inline-block;
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: var(--text-sm);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .03em;
@@ -191,7 +191,7 @@
 }
 
 .vl-credit-label {
-    font-size: 11px;
+    font-size: var(--text-md);
     font-weight: 700;
     font-family: 'IBM Plex Mono', monospace;
 }
@@ -226,7 +226,7 @@
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 11px;
+    font-size: var(--text-md);
     color: #fff;
     flex-shrink: 0;
 }
@@ -238,7 +238,7 @@
     gap: 4px;
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: var(--text-sm);
     font-weight: 700;
 }
 
@@ -254,7 +254,7 @@
 .vl-page-btn {
     padding: 6px 14px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: var(--text-base);
     font-weight: 600;
     border: 1px solid var(--bd);
     background: var(--s2);
@@ -274,7 +274,7 @@
 }
 
 .vl-page-info {
-    font-size: 12px;
+    font-size: var(--text-base);
     color: var(--t2);
     font-weight: 600;
 }
@@ -335,7 +335,7 @@
     background: none;
     border: none;
     color: var(--t2);
-    font-size: 20px;
+    font-size: var(--text-4xl);
     cursor: pointer;
     padding: 4px;
     transition: color .2s;
@@ -353,19 +353,19 @@
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 18px;
+    font-size: var(--text-3xl);
     color: #fff;
     flex-shrink: 0;
 }
 
 .drawer-name {
-    font-size: 16px;
+    font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--t1);
 }
 
 .drawer-sub {
-    font-size: 12px;
+    font-size: var(--text-base);
     color: var(--t2);
     margin-top: 2px;
 }
@@ -380,7 +380,7 @@
 }
 
 .drawer-section-title {
-    font-size: 11px;
+    font-size: var(--text-md);
     font-weight: 700;
     color: var(--t2);
     text-transform: uppercase;
@@ -394,7 +394,7 @@
     display: flex;
     justify-content: space-between;
     padding: 4px 0;
-    font-size: 12px;
+    font-size: var(--text-base);
 }
 
 .drawer-field-label {
@@ -418,7 +418,7 @@
 .drawer-action-btn {
     padding: 7px 14px;
     border-radius: 6px;
-    font-size: 11px;
+    font-size: var(--text-md);
     font-weight: 700;
     border: 1px solid var(--bd);
     background: var(--s2);
@@ -434,8 +434,8 @@
 }
 
 .drawer-action-btn.danger {
-    border-color: #EF4444;
-    color: #EF4444;
+    border-color: var(--c-danger);
+    color: var(--c-danger);
 }
 
 .drawer-action-btn.danger:hover {
@@ -445,7 +445,7 @@
 /* Mini table inside drawer */
 .drawer-mini-table {
     width: 100%;
-    font-size: 11px;
+    font-size: var(--text-md);
     border-collapse: collapse;
 }
 
@@ -454,7 +454,7 @@
     padding: 6px 8px;
     font-weight: 700;
     color: var(--t2);
-    font-size: 9px;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     border-bottom: 1px solid var(--bd);
 }
@@ -470,11 +470,11 @@
     gap: 10px;
     padding: 8px 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    font-size: 11px;
+    font-size: var(--text-md);
 }
 
 .drawer-log-icon {
-    font-size: 14px;
+    font-size: var(--text-xl);
     flex-shrink: 0;
 }
 
@@ -484,7 +484,7 @@
 
 .drawer-log-time {
     color: var(--t2);
-    font-size: 10px;
+    font-size: var(--text-sm);
 }
 
 /* User-specific: linked vehicle cards */
@@ -533,7 +533,7 @@
     border: none;
     color: var(--t2);
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--text-lg);
     cursor: pointer;
     padding: 0;
     margin-right: 12px;
@@ -551,20 +551,20 @@
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 20px;
-    font-size: 13px;
+    font-size: var(--text-lg);
     line-height: 1.4;
 }
 
 .drawer-alert.warning {
-    background: #F59E0B22;
-    border: 1px solid #F59E0B44;
-    color: #F59E0B;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--c-warning);
 }
 
 .drawer-alert.expired {
-    background: #EF444422;
-    border: 1px solid #EF444444;
-    color: #EF4444;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--c-danger);
 }
 
 /* ── Command Palette ──────────────────────────────────────────────── */
@@ -606,7 +606,7 @@
     background: none;
     border: none;
     color: var(--t1);
-    font-size: 18px;
+    font-size: var(--text-3xl);
     outline: none;
     font-family: inherit;
 }
@@ -643,7 +643,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: var(--text-2xl);
 }
 
 .cp-info {
@@ -651,13 +651,13 @@
 }
 
 .cp-name {
-    font-size: 14px;
+    font-size: var(--text-xl);
     font-weight: 700;
     color: var(--t1);
 }
 
 .cp-sub {
-    font-size: 11px;
+    font-size: var(--text-md);
     color: var(--t3);
 }
 
@@ -665,7 +665,7 @@
     padding: 20px;
     text-align: center;
     color: var(--t3);
-    font-size: 13px;
+    font-size: var(--text-lg);
 }
 
 .cp-footer {
@@ -674,7 +674,7 @@
     border-top: 1px solid var(--bd);
     display: flex;
     gap: 16px;
-    font-size: 10px;
+    font-size: var(--text-sm);
     color: var(--t3);
 }
 

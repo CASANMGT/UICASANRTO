@@ -1,6 +1,6 @@
-import { initData, state, getFilteredVehicles, getStats, getContextStats } from './modules/store.js';
+import { initData, state, getFilteredVehicles, getStats, getContextStats, simulateMovement } from './modules/store.js';
 import { initMap, updateMapMarkers, focusVehicleOnMap, resizeMap } from './modules/map.js';
-import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, openCommandPalette, closeCommandPalette } from './modules/ui.js';
+import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, renderProgramsTable, openCommandPalette, closeCommandPalette } from './modules/ui.js';
 import { getFinanceStats, getTransactions, getProgramStats } from './modules/finance.js';
 import { getGpsDevices, getGpsStats, getGpsById, createGpsDevice, updateGpsDevice, deleteGpsDevice } from './modules/gps.js';
 import * as rtoLogic from './modules/rto.js';
@@ -41,12 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCountdowns();
         }, 1000);
 
+        // Movement Simulation Loop (every 3 seconds)
+        setInterval(() => {
+            simulateMovement();
+            if (activeTab === 'fleet') {
+                const filtered = getFilteredVehicles();
+                updateMapMarkers(filtered);
+                // Optionally update list too if not too heavy, but map is priority
+                // renderVehicleList(filtered, (id) => focusVehicleOnMap(id));
+            }
+        }, 3000);
+
         // Force render update after short delay to ensure DOM is ready and Finance is populated
         setTimeout(() => {
             resizeMap();
             updateFinance();
-            updateView();
-            updateUsers();
         }, 200);
 
         // Listen for pagination
@@ -62,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('FATAL APP ERROR:', err);
         // Show error on screen
         const errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:16px;z-index:9999;font-family:monospace;font-size:13px;white-space:pre-wrap;';
+        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:16px;z-index:9999;font-family:monospace;font-size: var(--text-lg);white-space:pre-wrap;';
         errDiv.textContent = `FATAL APP ERROR:\n${err.message}\n\nStack:\n${err.stack}`;
         document.body.prepend(errDiv);
     }
@@ -119,7 +128,7 @@ function updateUsers() {
 }
 
 function updatePrograms() {
-    renderProgramListView();
+    renderProgramsTable();
 }
 
 // Global for inline onclick on pagination buttons in the finance table
@@ -159,7 +168,7 @@ function setupEventListeners() {
 
                 const target = tab.dataset.tab;
                 activeTab = target; // Track context
-                const showFleet = target === 'fleet';
+                const showRtoFleet = target === 'rto-fleet';
                 const showFinance = target === 'finance';
                 const showGps = target === 'gps';
                 const showVehicles = target === 'vehicles';
@@ -169,29 +178,40 @@ function setupEventListeners() {
                 const showRtoPickup = target === 'rto-pickup';
                 const showRtoScore = target === 'rto-score';
                 const showRtoWA = target === 'rto-wa';
+                const showProgramSettings = target === 'program-settings';
+                const showFleet = target === 'fleet';
 
-                const fleetView = document.getElementById('fleetView');
+                const rtoFleetView = document.getElementById('rto-fleetView');
                 const financeView = document.getElementById('financeView');
                 const gpsView = document.getElementById('gpsView');
                 const vehicleListView = document.getElementById('vehicleListView');
                 const userListView = document.getElementById('userListView');
-                const programListView = document.getElementById('programListView');
+                const programsView = document.getElementById('programsView');
                 const rtoAppsView = document.getElementById('rto-applicationsView');
                 const rtoPickupView = document.getElementById('rto-pickupView');
                 const rtoScoreView = document.getElementById('rto-scoreView');
                 const rtoWAView = document.getElementById('rto-waView');
+                const programSettingsView = document.getElementById('program-settingsView');
+                const fleetView = document.getElementById('fleetView');
 
-                if (fleetView) fleetView.classList.toggle('hidden', !showFleet);
+                if (rtoFleetView) rtoFleetView.classList.toggle('hidden', !showRtoFleet);
                 if (financeView) financeView.classList.toggle('hidden', !showFinance);
                 if (gpsView) gpsView.classList.toggle('hidden', !showGps);
                 if (vehicleListView) vehicleListView.classList.toggle('hidden', !showVehicles);
                 if (userListView) userListView.classList.toggle('hidden', !showUsers);
-                if (programListView) programListView.classList.toggle('hidden', !showPrograms);
+                if (programsView) programsView.classList.toggle('hidden', !showPrograms);
                 if (rtoAppsView) rtoAppsView.classList.toggle('hidden', !showRtoApps);
                 if (rtoPickupView) rtoPickupView.classList.toggle('hidden', !showRtoPickup);
                 if (rtoScoreView) rtoScoreView.classList.toggle('hidden', !showRtoScore);
                 if (rtoWAView) rtoWAView.classList.toggle('hidden', !showRtoWA);
+                if (programSettingsView) programSettingsView.classList.toggle('hidden', !showProgramSettings);
+                if (fleetView) fleetView.classList.toggle('hidden', !showFleet);
 
+                if (showRtoFleet) {
+                    resizeMap();
+                    updateView();
+                    renderProgramListView();
+                }
                 if (showFleet) {
                     resizeMap();
                     updateView();
@@ -357,3 +377,129 @@ function setupEventListeners() {
     // Close modal
     window.addEventListener('gps-modal-close', () => closeGpsModal());
 }
+
+// ── Program Settings CRUD ──────────────────────────────────────────────────
+window.createProgram = () => {
+    const name = document.getElementById('new-prog-name')?.value;
+    const partner = document.getElementById('new-prog-partner')?.value;
+    const brand = document.getElementById('new-prog-brand')?.value;
+    const model = document.getElementById('new-prog-model')?.value;
+    const score = document.getElementById('new-prog-score')?.value;
+
+    if (!name || !partner || !brand || !model || !score) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    const newId = 'P-' + brand.substring(0, 2).toUpperCase() + '-' + Date.now().toString().substring(8);
+
+    state.programs.unshift({
+        id: newId,
+        name: name,
+        shortName: brand,
+        motorModel: model,
+        partnerId: partner.toLowerCase(),
+        type: 'RTO',
+        price: 35000,
+        grace: 1,
+        targetScore: parseInt(score, 10)
+    });
+
+    document.getElementById('new-prog-name').value = '';
+    document.getElementById('new-prog-partner').value = '';
+    document.getElementById('new-prog-brand').value = '';
+    document.getElementById('new-prog-model').value = '';
+    document.getElementById('new-prog-score').value = '60';
+
+    if (window.rto && window.rto.t) window.rto.t("Program Created: " + name);
+    window.renderActivePrograms();
+};
+
+window.renderActivePrograms = () => {
+    const list = document.getElementById('active-programs-list');
+    if (!list) return;
+
+    list.innerHTML = state.programs.filter(p => p.type === 'RTO').map(p => `
+        <div class="sc-dim-card prog-card" style="cursor:pointer; padding: 12px; background: var(--s0); border: 1px solid var(--b1); border-radius: 6px; transition: border-color 0.2s;" onclick="window.selectProgramSetting('${p.id}', this)">
+            <div style="font-weight:700; color:var(--dw); font-size: var(--text-base);">${p.name}</div>
+            <div style="font-size: var(--text-xs); color:var(--dt3); margin-top:4px;">Partner: ${p.partnerId.toUpperCase()} | Model: ${p.motorModel || 'N/A'} | Target Score: ${p.targetScore || 60}</div>
+        </div>
+    `).join('');
+};
+
+window.selectProgramSetting = (pid, el) => {
+    // Highlight active card
+    document.querySelectorAll('.prog-card').forEach(c => c.style.borderColor = 'var(--b1)');
+    if (el) el.style.borderColor = 'var(--dac)';
+
+    const prog = state.programs.find(p => p.id === pid);
+    const container = document.getElementById('prog-rto-listings');
+    if (!container || !prog) return;
+
+    if (!window.rtoLogic) return;
+
+    // Filter applications loosely matching the brand/partner
+    let matchingApps = window.rtoLogic.APPLICATIONS.filter(a => a.program.includes(prog.shortName) || a.program.includes(prog.name));
+
+    // Fallback: Just grab random apps for demo purposes if none strictly match
+    if (matchingApps.length === 0) {
+        matchingApps = window.rtoLogic.APPLICATIONS.sort(() => 0.5 - Math.random()).slice(0, 4);
+    }
+
+    let html = `<div style="font-weight:700; color:var(--dt1); margin-bottom:12px; font-size:var(--text-md);">Applicants for ${prog.name}</div>`;
+
+    if (matchingApps.length === 0) {
+        html += `<div style="text-align:center; padding: 20px; color:var(--dt3);">No applicants found for ${prog.name}.</div>`;
+    } else {
+        html += `<div style="display:flex; flex-direction:column; gap:8px;">`;
+        matchingApps.forEach(app => {
+            let badgeBg = 'var(--dw1)';
+            let badgeCol = 'var(--dw)';
+            if (app.status === 'approved') { badgeBg = 'var(--dg1)'; badgeCol = 'var(--dg)'; }
+            if (app.status === 'declined') { badgeBg = 'var(--dd1)'; badgeCol = 'var(--dd)'; }
+
+            html += `
+                <div style="background: var(--s0); border: 1px solid var(--b1); border-radius: 6px; padding: 12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:700; color:var(--dw); font-size:var(--text-sm);">${app.applicant}</div>
+                        <div style="font-size:var(--text-xs); color:var(--dt3); margin-top:2px;">${app.id} | Score: <span style="color:var(--dac); font-weight:700;">${app.score || 'N/A'}</span></div>
+                    </div>
+                    <div style="padding: 4px 8px; border-radius: 4px; font-size: var(--text-2xs); font-weight:800; background: ${badgeBg}; color: ${badgeCol}; text-transform:uppercase;">
+                        ${app.status}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+
+    container.innerHTML = html;
+};
+window.updatePrograms = updatePrograms;
+
+window.selectProgram = (pid) => {
+    state.filter.program = pid;
+    // Switch to RTO Fleet tab
+    const rtoTab = document.querySelector('.nav-tab[data-tab="rto-fleet"]');
+    if (rtoTab) rtoTab.click();
+
+    // Explicitly update fleet view with the new filter
+    updateView();
+};
+
+window.rto.openProgramModal = (pid) => {
+    // TBD: Modern modal implementation
+    if (pid) {
+        const p = state.programs.find(prog => prog.id === pid);
+        alert("Editing " + p.name + " (Modal implementation pending)");
+    } else {
+        alert("Creating new program (Modal implementation pending)");
+    }
+};
+
+window.rto.confirmDeleteProgram = (pid) => {
+    if (confirm("Are you sure you want to delete program " + pid + "?")) {
+        state.programs = state.programs.filter(p => p.id !== pid);
+        renderProgramsTable();
+    }
+};

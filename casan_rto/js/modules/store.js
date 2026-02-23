@@ -100,10 +100,10 @@ export const initData = () => {
             credits = 0;
         }
 
-        // Locations (Jabodetabek)
-        // Center roughly Jakarta -6.2, 106.8
-        const lat = -6.2 + (random() - 0.5) * 0.3;
-        const lng = 106.8 + (random() - 0.5) * 0.4;
+        // Locations (Jabodetabek - Focus on Land)
+        // Center: -6.25, 106.85 (South/East Jakarta / Depok / Bekasi)
+        const lat = -6.25 + (random() - 0.5) * 0.2; // -6.35 to -6.15 (Avoids North Coast)
+        const lng = 106.85 + (random() - 0.5) * 0.3; // 106.7 to 107.0
 
         // Online logic
         const lastPing = new Date(now - randInt(0, 10 * oneDay)); // Up to 10 days ago
@@ -126,11 +126,21 @@ export const initData = () => {
         const nikNum = `3${randInt(100, 999)}${randInt(10, 99)}${randInt(100000, 999999)}${randInt(1000, 9999)}`;
         const addr = `${randArr(streets)} No. ${randInt(1, 150)}, ${randArr(kecamatans)}, ${randArr(kotas)}`;
 
+        // Map realistic models to partners
+        let motorModel = partner.name + ' Basic';
+        if (partner.id === 'tangkas') motorModel = randArr(['V8', 'X7', 'E1']);
+        if (partner.id === 'united') motorModel = randArr(['MX1200', 'T1800', 'TX1800']);
+        if (partner.id === 'maka') motorModel = randArr(['Maka One', 'Maka Pro']);
+
+        const operator = randArr(['Gojek', 'Grab', 'Maxim', 'ShopeeFood', 'Personal']);
+
         const vehicle = {
             id: `CSN-${String(i).padStart(3, '0')}`,
             rtoId: `RTO-2026-${program.shortName.toUpperCase()}-${String(i).padStart(3, '0')}`,
             plate: `B ${randInt(1000, 9999)} ${String.fromCharCode(65 + randInt(0, 25))}${String.fromCharCode(65 + randInt(0, 25))}${String.fromCharCode(65 + randInt(0, 25))}`,
-            model: partner.name + (isRto ? ' RTO' : ' Rent'),
+            model: motorModel,
+            brand: partner.name,
+            operator: operator,
             partnerId: partner.id,
             programId: program.id,
             programType: isRto ? 'RTO' : 'Rent',
@@ -473,13 +483,12 @@ export const getContextStats = (tab) => {
 
         case 'fleet':
         default:
-            const moving = fleet.filter(v => v.isOnline && v.speed > 0).length;
-            const parked = fleet.filter(v => v.isOnline && v.speed === 0).length;
-            const noSignal = fleet.filter(v => !v.isOnline && v.status !== 'available').length;
-            const lowBat = fleet.filter(v => v.battery < 30).length;
-            const avgSpeed = moving > 0 ? Math.round(fleet.filter(v => v.isOnline && v.speed > 0).reduce((s, v) => s + v.speed, 0) / moving) : 0;
-            const alerts = fleet.filter(v => v.battery < 20 || (!v.isOnline && v.status !== 'available' && v.status !== 'paused')).length;
-            return { moving, parked, noSignal, lowBat, avgSpeed, alerts };
+            const moving = fleet.filter(v => v.isOnline && v.speed > 5).length;
+            const parked = fleet.filter(v => v.isOnline && v.speed <= 5).length;
+            const noSignal = fleet.filter(v => !v.isOnline && v.status !== 'available' && v.status !== 'paused').length;
+            const available = fleet.filter(v => v.status === 'available').length;
+            const alerts = fleet.filter(v => (v.battery < 20 && v.status !== 'available') || (!v.isOnline && v.status !== 'available' && v.status !== 'paused')).length;
+            return { total: fleet.length, moving, parked, noSignal, alerts, available };
     }
 };
 
@@ -543,6 +552,8 @@ export const getStats = () => {
     const expiring = fleet.filter(v => v.creditExpiry !== null).length;
     const grace = fleet.filter(v => v.status === 'grace').length;
     const immobilized = fleet.filter(v => v.status === 'immobilized').length;
+    const paused = fleet.filter(v => v.status === 'paused').length;
+    const available = fleet.filter(v => v.status === 'available').length;
     const online = fleet.filter(v => v.isOnline).length;
 
     // Mock Revenue Calculation
@@ -554,6 +565,8 @@ export const getStats = () => {
         expiring,
         grace,
         immobilized,
+        paused,
+        available,
         online,
         revenue
     };
@@ -576,4 +589,55 @@ export const updateProgram = (id, data) => {
 export const deleteProgram = (id) => {
     state.programs = state.programs.filter(p => p.id !== id);
     programs = state.programs; // Sync deprecated export
+};
+// Real-time Simulation Loop
+export const simulateMovement = () => {
+    state.vehicles.forEach(v => {
+        // Only move online vehicles that aren't immobilized
+        if (!v.isOnline || v.status === 'immobilized' || v.status === 'paused') {
+            v.speed = 0;
+            return;
+        }
+
+        // 1. Update Speed
+        // Gradually change speed or stay around a target
+        const deltaSpeed = (Math.random() - 0.5) * 10;
+        v.speed = Math.max(0, Math.min(80, (v.speed || 30) + deltaSpeed));
+
+        if (v.speed > 5) {
+            // 2. Update Bearing (small turns)
+            const deltaBearing = (Math.random() - 0.5) * 20;
+            v.bearing = (v.bearing + deltaBearing + 360) % 360;
+
+            // 3. Update Lat/Lng based on speed and bearing
+            // Very rough approximation: 1 degree lat is ~111km
+            // speed is km/h -> km/min -> degrees/min
+            const kmPerMin = v.speed / 60;
+            const degPerMin = kmPerMin / 111;
+            const step = degPerMin / 20; // Assuming 3s interval (60/3 = 20 steps per min)
+
+            const rad = (v.bearing * Math.PI) / 180;
+            v.lat += Math.cos(rad) * step;
+            v.lng += Math.sin(rad) * step;
+
+            // Boundary checks (Keep within Jabodetabek Land)
+            // Jakarta coastline is roughly at -6.1 (Latitude)
+            if (v.lat > -6.12) { v.lat = -6.12; v.bearing = 180; } // Don't go into the sea (North)
+            if (v.lat < -6.40) { v.lat = -6.40; v.bearing = 0; }   // Stay within Greater Jakarta (South)
+            if (v.lng > 107.05) { v.lng = 107.05; v.bearing = 270; } // East (Bekasi)
+            if (v.lng < 106.65) { v.lng = 106.65; v.bearing = 90; }  // West (Tangerang)
+        }
+    });
+
+    // Update GPS devices to match vehicle locations
+    state.gpsDevices.forEach(d => {
+        if (d.vehicleId) {
+            const v = state.vehicles.find(veh => veh.id === d.vehicleId);
+            if (v) {
+                d.lat = v.lat;
+                d.lng = v.lng;
+                d.lastPing = new Date().toISOString();
+            }
+        }
+    });
 };

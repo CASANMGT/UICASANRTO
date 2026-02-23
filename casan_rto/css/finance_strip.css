@@ -54,7 +54,7 @@
 
 .pc h4 {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--text-xl);
     color: var(--t1);
     display: flex;
     justify-content: space-between;
@@ -63,7 +63,7 @@
 }
 
 .pc .sub {
-    font-size: 11px;
+    font-size: var(--text-md);
     color: var(--t3);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -71,7 +71,7 @@
 }
 
 .pc .val {
-    font-size: 18px;
+    font-size: var(--text-3xl);
     font-weight: 700;
     color: var(--t1);
     letter-spacing: -0.5px;

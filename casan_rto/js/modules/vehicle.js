@@ -27,6 +27,7 @@ export const getRTOProgress = (vehicle) => {
         paidRp,
         remainingRp,
         daysLeft,
+        monthsLeft: Math.round(daysLeft / 30),
         daysElapsed: Math.round(elapsedDays),
         totalDays,
         monthsElapsed: Math.round(elapsedDays / 30) // deprecated but kept for UI compatibility if needed

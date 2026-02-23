@@ -2,20 +2,35 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.4.1] - 2026-02-24
+
+### 🚀 Fleet Observability & Simulation
+- **Real-time Movement Engine:** Implemented a new simulation logic that calculates vehicle position, speed, and bearing every 3 seconds.
+- **Geographical Integrity:** Hardened movement boundaries to ensure vehicle markers stay on land within Greater Jakarta (Jabodetabek) and avoid "drifting" into the sea.
+- **Vertical Panoramic Layout:** Transitioned Fleet Tracking to a 60/40 vertical split (Map Top / Sidebar Bottom), maximizing geographic visibility for larger fleet monitoring.
+- **Operational Status Labels:** Shifted marker status reporting from generic "Online/Offline" to actionable "**Running**" (moving) and "**Stopped**" (online but stationary) labels.
+
+### 🎨 Dashboard & UI Refinement
+- **Consolidated Navigation:** Renamed "Programs" to **"RTO Fleet"** (operations) and "Program Settings" to **"Programs"** (administration) for clearer module distinction.
+- **KPI Top Bar Overhaul:** Implemented context-aware KPIs for Fleet Tracking: *Total Fleet, Running, Stopped, No Signal, Risk Alerts, and Idle Assets*.
+- **Status Guide Elevation:** Relocated and redesigned the **Status Guide** to the top of the fleet sidebar with an high-visibility primary header and expanded default state.
+- **Improved Pagination:** Standardized the Fleet Tracking list to **10 items per page** for better information density and scrolling efficiency.
+- **Available Filter:** Added the missing "Available" status filter to the fleet monitoring sidebar.
+- **Sub-Nav Layout Fix:** Resolved a critical flexbox overlap issue where the global stats bar obstructed RTO sub-navigation pills.
+
+### 🔧 System Stability
+- **Data Load Integrity:** Fixed a race condition/bug that intermittently prevented mock data from populating the dashboard views.
+- **Badge Readability:** Increased font size and refined padding for status capsules (ACTIVE, GRACE, IMMOBILIZED) across all tables.
+- **Progress Bar Synchronization:** Unified the RTO Progress bar styling with the User KYC list for a consistent visual language.
+
 ## [1.4.0] - 2026-02-23
 
-### Added
-- **RTO Application Management:** Consolidated multiple RTO tabs into a unified "Application" view with a sidebar navigation for Applications, Pickup Schedule, Score Config, and WA Templates.
-- **Interactive WhatsApp Preview:** Implemented a new "WA Driver" mechanism featuring an editable preview modal before redirection to WhatsApp Web.
-- **Variable Injection:** Added automated parsing for `{nama}`, `{app_id}`, `{program}`, `{score}`, `{dealer}`, and `{missing_docs}` into message templates.
-- **Persistence Engine:** Added `localStorage` support for persisting custom Score Configurations and WhatsApp Template overrides.
-
-### Changed
-- **Navigation UX:** Streamlined the top navigation bar by grouping operational RTO workflows into a dedicated sub-navigation sidebar.
-
-### Fixed
-- **Dashboard Layout:** Resolved critical flexbox gap issues where RTO sub-views were pushed to the bottom of the viewport.
-- **Template Rendering:** Fixed JS string literal issues that caused Score Config controls to render as raw code strings.
+### 📋 RTO Application Management
+- **Unified Application Suite:** Consolidated RTO tabs into a professional "Application" view with sidebar navigation (Applications, Pickup Schedule, Score Config, WA Templates).
+- **Driver Communication Engine:** Implemented an interactive "WA Driver" mechanism with editable previews and automated variable injection (`{nama}`, `{app_id}`, `{score}`, etc.).
+- **Interactive Programs Table:** Replaced the legacy 3-column view with a centralized administrative data table featuring full Edit/Delete actions.
+- **Pickup Intelligence:** Added a calendar-based scheduling system for managing driver appointments at partner dealers.
+- **Persistence Layer:** Integrated `localStorage` support for custom Risk Score configurations and WhatsApp template overrides.
 
 ## [1.3.0] - 2026-02-20
 

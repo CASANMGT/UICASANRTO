@@ -9,16 +9,18 @@ const elStatsBar = document.getElementById('statsBar');
 const elStatusFilters = document.getElementById('statusFilters');
 
 // New Elements for Vehicle/User List
-const elVehicleListContent = document.getElementById('vehicleListContent');
+const elRtoFleetContent = document.getElementById('rto-fleetContent');
 const elUserListContent = document.getElementById('userListContent');
-const elDetailDrawer = document.getElementById('detailDrawer');
+const elVehicleListContent = document.getElementById('vehicleListContent');
+const elProgramsTableWrapper = document.getElementById('programs-table-wrapper');
 const elDrawerBackdrop = document.getElementById('drawerBackdrop');
+const elDetailDrawer = document.getElementById('detailDrawer');
 const elDrawerContent = document.getElementById('drawerContent');
-const elProgramListContent = document.getElementById('programListContent');
 
 // State for UI
 let expandedCardId = null;
 let currentPage = 1;
+let statusGuideExpanded = true;
 
 // State for new lists
 let vehicleListFilter = { partner: 'all', status: 'all', search: '', program: 'all', sortBy: 'id', sortDir: 'asc' };
@@ -27,6 +29,23 @@ let selectedProgramId = 'all';
 let vehicleListPage = 1;
 let userListPage = 1;
 let programListPage = 1;
+
+let rtoListPage = 1;
+window.rtoListFilter = {
+    operator: 'all',
+    brand: 'all',
+    programName: 'all',
+    model: 'all'
+};
+
+window.setRtoFilter = (key, val) => {
+    window.rtoListFilter[key] = val;
+    window.rtoListPage = 1;
+    // We only call renderProgramListView if the UI is open
+    if (document.getElementById('programListContent')) {
+        import('./ui.js').then(ui => ui.renderProgramListView());
+    }
+};
 
 // Drawer navigation history
 let drawerStack = [];
@@ -47,37 +66,37 @@ export const resetPagination = () => {
 export const renderStats = (stats, tab = 'fleet') => {
     if (!elStatsBar) return;
 
+    // Hide global stats bar for RTO tabs because they have their own KPI row
+    if (tab && (tab.startsWith('rto-') || tab === 'gps' || tab === 'programs')) {
+        elStatsBar.style.display = 'none';
+        return;
+    } else {
+        elStatsBar.style.display = 'flex';
+    }
+
     let html = '';
     const format = (v) => typeof v === 'number' ? v.toLocaleString() : v;
 
     switch (tab) {
         case 'users':
             html = `
-                <div class="card stat-card"><h3>Verified</h3><div class="value" style="color:#22C55E">${format(stats.verified)}</div></div>
+                <div class="card stat-card"><h3>Verified</h3><div class="value" style="color:var(--c-success)">${format(stats.verified)}</div></div>
                 <div class="card stat-card"><h3>Active Riders</h3><div class="value" style="color:var(--ac)">${format(stats.activeRiders)}</div></div>
-                <div class="card stat-card"><h3>High Risk</h3><div class="value" style="color:#EF4444">${format(stats.highRisk)}</div></div>
+                <div class="card stat-card"><h3>High Risk</h3><div class="value" style="color:var(--c-danger)">${format(stats.highRisk)}</div></div>
                 <div class="card stat-card"><h3>Avg Risk</h3><div class="value" style="color:var(--p)">${stats.avgRisk}</div></div>
-                <div class="card stat-card"><h3>KYC Pending</h3><div class="value" style="color:#F59E0B">${format(stats.kycPending)}</div></div>
+                <div class="card stat-card"><h3>KYC Pending</h3><div class="value" style="color:var(--c-warning)">${format(stats.kycPending)}</div></div>
                 <div class="card stat-card"><h3>New (30d)</h3><div class="value" style="color:var(--g)">${format(stats.newRiders)}</div></div>
             `;
             break;
 
         case 'programs':
-            html = `
-                <div class="card stat-card"><h3>Schemes</h3><div class="value">${format(stats.activeSchemes)}</div></div>
-                <div class="card stat-card"><h3>Portfolio Health</h3><div class="value" style="color:#22C55E">${stats.health}%</div></div>
-                <div class="card stat-card"><h3>RTO Units</h3><div class="value" style="color:var(--ac)">${format(stats.rtoUnits)}</div></div>
-                <div class="card stat-card"><h3>Avg Maturity</h3><div class="value" style="color:var(--p)">${stats.maturity}%</div></div>
-                <div class="card stat-card"><h3>In Grace</h3><div class="value" style="color:#F59E0B">${format(stats.inGrace)}</div></div>
-                <div class="card stat-card"><h3>Expiring (7d)</h3><div class="value" style="color:#EF4444">${format(stats.expiringSoon)}</div></div>
-            `;
-            break;
+            return;
 
         case 'finance':
             html = `
                 <div class="card stat-card"><h3>Total Revenue</h3><div class="value" style="color:var(--p)">${formatShortCurrency(stats.revenue)}</div></div>
-                <div class="card stat-card"><h3>Monthly (Feb)</h3><div class="value" style="color:#22C55E">${formatShortCurrency(stats.monthly)}</div></div>
-                <div class="card stat-card"><h3>Arrears Bal.</h3><div class="value" style="color:#EF4444">${formatShortCurrency(stats.arrears)}</div></div>
+                <div class="card stat-card"><h3>Monthly (Feb)</h3><div class="value" style="color:var(--c-success)">${formatShortCurrency(stats.monthly)}</div></div>
+                <div class="card stat-card"><h3>Arrears Bal.</h3><div class="value" style="color:var(--c-danger)">${formatShortCurrency(stats.arrears)}</div></div>
                 <div class="card stat-card"><h3>Success Rate</h3><div class="value" style="color:var(--ac)">${stats.successRate}%</div></div>
                 <div class="card stat-card"><h3>Daily Avg</h3><div class="value" style="color:var(--t2)">${formatShortCurrency(stats.dailyAvg)}</div></div>
                 <div class="card stat-card"><h3>Pending Payout</h3><div class="value" style="color:var(--t3)">${formatShortCurrency(stats.pendingPayout)}</div></div>
@@ -87,8 +106,8 @@ export const renderStats = (stats, tab = 'fleet') => {
         case 'vehicles':
             html = `
                 <div class="card stat-card"><h3>Total Fleet</h3><div class="value">${format(stats.total)}</div></div>
-                <div class="card stat-card"><h3>Operational</h3><div class="value" style="color:#22C55E">${format(stats.active)}</div></div>
-                <div class="card stat-card"><h3>STNK < 30d</h3><div class="value" style="color:#F59E0B">${format(stats.stnkSoon)}</div></div>
+                <div class="card stat-card"><h3>Operational</h3><div class="value" style="color:var(--c-success)">${format(stats.active)}</div></div>
+                <div class="card stat-card"><h3>STNK < 30d</h3><div class="value" style="color:var(--c-warning)">${format(stats.stnkSoon)}</div></div>
                 <div class="card stat-card"><h3>GPS Online %</h3><div class="value" style="color:var(--ac)">${stats.gpsOnline}%</div></div>
                 <div class="card stat-card"><h3>In Service</h3><div class="value" style="color:var(--p)">${format(stats.inService)}</div></div>
                 <div class="card stat-card"><h3>Idle Assets</h3><div class="value" style="color:var(--t3)">${format(stats.idleAssets)}</div></div>
@@ -100,26 +119,67 @@ export const renderStats = (stats, tab = 'fleet') => {
                 <div class="card stat-card"><h3>Total Stock</h3><div class="value">${format(stats.total)}</div></div>
                 <div class="card stat-card"><h3>Assigned</h3><div class="value" style="color:var(--ac)">${format(stats.assigned)}</div></div>
                 <div class="card stat-card"><h3>Spares</h3><div class="value" style="color:var(--p)">${format(stats.spares)}</div></div>
-                <div class="card stat-card"><h3>Warranty Warn</h3><div class="value" style="color:#EF4444">${format(stats.warrantySoon)}</div></div>
+                <div class="card stat-card"><h3>Warranty Warn</h3><div class="value" style="color:var(--c-danger)">${format(stats.warrantySoon)}</div></div>
                 <div class="card stat-card"><h3>Offline Gear</h3><div class="value" style="color:var(--t3)">${format(stats.offlineGear)}</div></div>
-                <div class="card stat-card"><h3>Update Req.</h3><div class="value" style="color:#F59E0B">${format(stats.updateReq)}</div></div>
+                <div class="card stat-card"><h3>Update Req.</h3><div class="value" style="color:var(--c-warning)">${format(stats.updateReq)}</div></div>
             `;
             break;
 
         case 'fleet':
         default:
             html = `
-                <div class="card stat-card"><h3>Moving Now</h3><div class="value" style="color:#22C55E">${format(stats.moving)}</div></div>
-                <div class="card stat-card"><h3>Parked/Idle</h3><div class="value" style="color:var(--ac)">${format(stats.parked)}</div></div>
-                <div class="card stat-card"><h3>No Signal (Crit)</h3><div class="value" style="color:#EF4444">${format(stats.noSignal)}</div></div>
-                <div class="card stat-card"><h3>Low Battery</h3><div class="value" style="color:#F59E0B">${format(stats.lowBat)}</div></div>
-                <div class="card stat-card"><h3>Avg Speed</h3><div class="value" style="color:var(--p)">${stats.avgSpeed} kmh</div></div>
-                <div class="card stat-card"><h3>Active Alerts</h3><div class="value" style="color:var(--d)">${format(stats.alerts)}</div></div>
+                <div class="card stat-card"><h3>Total Fleet</h3><div class="value">${format(stats.total)}</div></div>
+                <div class="card stat-card"><h3>Running</h3><div class="value" style="color:var(--c-success)">${format(stats.moving)}</div></div>
+                <div class="card stat-card"><h3>Stopped</h3><div class="value" style="color:var(--ac)">${format(stats.parked)}</div></div>
+                <div class="card stat-card"><h3>No Signal</h3><div class="value" style="color:var(--c-danger)">${format(stats.noSignal)}</div></div>
+                <div class="card stat-card"><h3>Risk / Alerts</h3><div class="value" style="color:var(--d)">${format(stats.alerts)}</div></div>
+                <div class="card stat-card"><h3>Idle Assets</h3><div class="value" style="color:var(--t3)">${format(stats.available)}</div></div>
             `;
             break;
     }
 
     elStatsBar.innerHTML = html;
+};
+
+export const renderProgramsTable = () => {
+    const wrapper = document.getElementById('programs-table-wrapper');
+    if (!wrapper) return;
+
+    const rows = state.programs.map(p => `
+        <tr style="border-bottom:1px solid var(--b1); cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--s1)'" onmouseout="this.style.background=''" onclick="window.selectProgram('${p.id}')">
+            <td style="padding:16px 12px; font-family:'IBM Plex Mono'; color:var(--t2)">${p.id}</td>
+            <td style="padding:16px 12px; font-weight:700; color:var(--t1)">${p.name}</td>
+            <td style="padding:16px 12px;"><span class="badge" style="background:${p.partnerId === 'tangkas' ? '#A78BFA' : (p.partnerId === 'maka' ? '#60A5FA' : '#FB923C')}; color:#000; font-weight:800">${p.partnerId.toUpperCase()}</span></td>
+            <td style="padding:16px 12px; font-weight:500">${p.motorModel || '—'}</td>
+            <td style="padding:16px 12px; font-family:'IBM Plex Mono'">${formatRupiah(p.price)}/d</td>
+            <td style="padding:16px 12px;"><span style="color:var(--dac); font-weight:800">${p.targetScore || 60}+</span></td>
+            <td style="padding:16px 12px; text-align:right">
+                <button class="btn btn-secondary" style="padding:4px 8px; font-size:var(--text-xs)" onclick="event.stopPropagation(); window.rto.openProgramModal('${p.id}')">Edit</button>
+                <button class="btn btn-secondary" style="padding:4px 8px; font-size:var(--text-xs); color:var(--c-danger); border-color:var(--c-danger)" onclick="event.stopPropagation(); window.rto.confirmDeleteProgram('${p.id}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+
+    wrapper.innerHTML = `
+        <div class="card" style="padding:0; overflow:hidden; border:1px solid var(--b1);">
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead style="background:var(--s1); color:var(--t3); font-size: var(--text-xs); text-transform:uppercase; letter-spacing:0.8px;">
+                    <tr>
+                        <th style="padding:12px; font-weight:600">Program ID</th>
+                        <th style="padding:12px; font-weight:600">Name</th>
+                        <th style="padding:12px; font-weight:600">Partner</th>
+                        <th style="padding:12px; font-weight:600">Motor Model</th>
+                        <th style="padding:12px; font-weight:600">Price</th>
+                        <th style="padding:12px; font-weight:600">Target Score</th>
+                        <th style="padding:12px; font-weight:600; text-align:right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: var(--text-base); color:var(--t1)">
+                    ${rows || '<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--t3)">No programs configured</td></tr>'}
+                </tbody>
+            </table>
+        </div>
+    `;
 };
 
 export const renderFilters = (activeFilter, stats) => {
@@ -135,6 +195,7 @@ export const renderFilters = (activeFilter, stats) => {
         { id: 'grace', label: `Grace (${s.grace})`, cls: 'btn-danger-light' },
         { id: 'immobilized', label: `Locked (${s.immobilized})`, cls: 'btn-danger' },
         { id: 'paused', label: `Paused (${s.paused})`, cls: 'btn-secondary' },
+        { id: 'available', label: `Available (${s.available})`, cls: 'btn-secondary' },
         { id: 'online', label: `Online (${s.online})`, cls: 'btn-info' },
         // { id: 'offline', label: `Offline (${s.offline})`, cls: 'btn-secondary' } // Optional, can clutter
     ];
@@ -171,7 +232,7 @@ export const renderVehicleList = (vehicles, onCardClick) => {
     }
 
     // Pagination Logic
-    const itemsPerPage = 20;
+    const itemsPerPage = 10;
     const totalPages = Math.ceil(vehicles.length / itemsPerPage);
 
     // Ensure current page is valid
@@ -183,16 +244,24 @@ export const renderVehicleList = (vehicles, onCardClick) => {
     const listHtml = paginated.map(v => {
         const isExpanded = expandedCardId === v.id;
 
-        // Badges
-        let badgesHtml = '';
-        if (v.status === 'active') badgesHtml += `<span class="badge active">ACTIVE</span>`;
-        if (v.status === 'grace') badgesHtml += `<span class="badge grace">GRACE</span>`;
-        if (v.status === 'immobilized') badgesHtml += `<span class="badge immobilized">IMMOBILIZED</span>`;
-        if (v.status === 'paused') badgesHtml += `<span class="badge" style="background:var(--bl);color:#fff">PAUSED</span>`;
-        if (v.status === 'available') badgesHtml += `<span class="badge" style="background:var(--t3);color:#fff">AVAIL</span>`;
-        if (v.creditExpiry) badgesHtml += `<span class="badge expiring">⚠ EXPIRING</span>`;
+        // Online/Offline Indicator (Data Integrity)
+        const onlineStatusHtml = v.isOnline
+            ? `<span class="badge" style="background:var(--c-success); color:#fff; border:none; display:inline-flex; align-items:center; gap:4px">● ONLINE</span>`
+            : `<span class="badge" style="background:#6B7280; color:#fff; border:none">OFFLINE</span>`;
 
-        badgesHtml += `<span class="badge ${v.programType === 'RTO' ? 'rto' : 'rent'}">${v.programType}</span>`;
+        // Badges
+        const badgesHtml = `
+            <div style="display:flex; gap:6px; flex-wrap:wrap">
+                ${v.status === 'active' ? '<span class="badge active">ACTIVE</span>' : ''}
+                ${v.status === 'grace' ? '<span class="badge grace">GRACE</span>' : ''}
+                ${v.status === 'immobilized' ? '<span class="badge immobilized">IMMOBILIZED</span>' : ''}
+                ${v.status === 'paused' ? '<span class="badge" style="background:var(--bl);color:#fff">PAUSED</span>' : ''}
+                ${v.status === 'available' ? '<span class="badge" style="background:var(--t3);color:#fff">AVAIL</span>' : ''}
+                ${v.creditExpiry ? '<span class="badge expiring">⚠ EXPIRING</span>' : ''}
+                <span class="badge ${v.programType === 'RTO' ? 'rto' : 'rent'}">${v.programType}</span>
+                ${onlineStatusHtml}
+            </div>
+        `;
 
         // Status Line Color
         let borderStyle = '';
@@ -202,14 +271,14 @@ export const renderVehicleList = (vehicles, onCardClick) => {
 
         // Countdown Display
         let countdownHtml = '';
-        if (v.status === 'grace' && v.graceExpiry) {
-            countdownHtml = `<span id="cd-${v.id}" class="text-orange" style="color:var(--w); font-weight:bold" data-type="grace" data-expiry="${v.graceExpiry}">00:00:00</span>`;
-        } else if (v.creditExpiry) {
-            countdownHtml = `<span id="cd-${v.id}" class="text-orange" style="font-weight:bold" data-type="credit" data-expiry="${v.creditExpiry}">00:00:00</span>`;
-        } else if (v.status === 'immobilized') {
+        if (v.status === 'immobilized') {
             countdownHtml = `<span style="color:var(--d); font-weight:bold">LOCKED</span>`;
         } else if (v.status === 'paused') {
             countdownHtml = `<span style="color:var(--t2)">PAUSED</span>`;
+        } else if (v.status === 'grace' && v.graceExpiry) {
+            countdownHtml = `<span id="cd-${v.id}" class="text-orange" style="color:var(--w); font-weight:bold" data-type="grace" data-expiry="${v.graceExpiry}">00:00:00</span>`;
+        } else if (v.creditExpiry) {
+            countdownHtml = `<span id="cd-${v.id}" class="text-orange" style="font-weight:bold" data-type="credit" data-expiry="${v.creditExpiry}">00:00:00</span>`;
         } else if (v.credits > 0) {
             countdownHtml = `${v.credits}d`;
         } else {
@@ -236,12 +305,12 @@ export const renderVehicleList = (vehicles, onCardClick) => {
                         <div>
                             <div class="cbl">CREDITS</div>
                             <div class="cbv" style="color:${v.credits < 3 ? 'var(--d)' : (v.credits < 7 ? 'var(--w)' : 'var(--g)')}">
-                                ${v.status === 'grace' || v.status === 'immobilized' ? '0' : Math.floor(v.credits)} <span style="font-size:10px;font-weight:500;color:var(--t3)">days</span>
+                                ${v.status === 'grace' || v.status === 'immobilized' ? '0' : Math.floor(v.credits)} <span style="font-size: var(--text-sm);font-weight:500;color:var(--t3)">days</span>
                             </div>
                         </div>
                         <div style="text-align:right">
                             <div class="cbl">RATE</div>
-                            <div style="font-size:12px;font-weight:700;color:var(--t1)">${formatRupiah(v.dailyRate)}/d</div>
+                            <div style="font-size: var(--text-base);font-weight:700;color:var(--t1)">${formatRupiah(v.dailyRate)}/d</div>
                         </div>
                     </div>
                     <div class="cbt">
@@ -254,7 +323,7 @@ export const renderVehicleList = (vehicles, onCardClick) => {
                 </div>
                 ` : ''}
 
-                <div class="action-row">
+                <div class="action-row" style="margin-top: 16px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="window.dispatchAction('pay', '${v.id}')">💰 Pay / Unlock</button>
                     <button class="btn btn-secondary" onclick="window.dispatchAction('holiday', '${v.id}')">🏖️ Holiday</button>
                     <button class="btn btn-danger" onclick="window.dispatchAction('lock', '${v.id}')">🔒 Lock</button>
@@ -270,8 +339,8 @@ export const renderVehicleList = (vehicles, onCardClick) => {
                 <div class="vc-header">
                     <div class="vc-id">${v.id}</div>
                     <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0">
+                        <div class="vc-cust" style="font-size: var(--text-base); font-weight:700; color:var(--t1)">${v.customer || 'Available'}</div>
                         <div class="vc-badges" style="flex-wrap:wrap">${badgesHtml}</div>
-                        <div class="vc-cust" style="font-size:12px">${v.customer || 'No Customer'}</div>
                     </div>
                     <div class="vc-credits">${countdownHtml}</div>
                     <div class="vc-online">
@@ -289,13 +358,13 @@ export const renderVehicleList = (vehicles, onCardClick) => {
         <div style="display:flex; justify-content:center; gap:8px; padding:10px; align-items:center">
             <button class="btn btn-secondary" style="padding:4px 8px" 
                 onclick="window.changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>◀</button>
-            <span style="font-size:12px; color:var(--t2)">Page ${currentPage} of ${totalPages}</span>
+            <span style="font-size: var(--text-base); color:var(--t2)">Page ${currentPage} of ${totalPages}</span>
             <button class="btn btn-secondary" style="padding:4px 8px" 
                 onclick="window.changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>
         </div>
     ` : '';
 
-    elVehicleList.innerHTML = listHtml + paginationHtml;
+    elVehicleList.innerHTML = paginationHtml + listHtml;
 
     // Attach Click Handlers for Expansion
     document.querySelectorAll('.vehicle-card').forEach(card => {
@@ -303,10 +372,11 @@ export const renderVehicleList = (vehicles, onCardClick) => {
             if (e.target.tagName === 'BUTTON') return;
             const id = card.dataset.id;
             expandedCardId = (expandedCardId === id) ? null : id;
-            onCardClick(expandedCardId); // Re-render logic handled by app controller usually
+            renderVehicleList(vehicles, onCardClick); // Re-render to show expansion
+            if (onCardClick) onCardClick(expandedCardId);
         });
     });
-};
+}
 
 /* Action Dispatcher Helper */
 window.dispatchAction = (action, id) => {
@@ -408,36 +478,40 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     const rows = paginated.map(t => {
         const statusColor = t.status === 'paid' ? 'var(--g)' : (t.status === 'failed' ? 'var(--r)' : 'var(--w)');
         const statusLabel = (t.status || 'paid').toUpperCase();
+        const v = state.vehicles ? state.vehicles.find(veh => veh.id === t.vehicleId) : null;
+        const name = t.customer || (v && v.customer) || '—';
+        const phone = t.customerPhone || (v && v.phone) || '—';
+
         return `
         <tr style="border-bottom:1px solid var(--s3); transition:background 0.15s" 
             onmouseover="this.style.background='var(--s2)'" 
             onmouseout="this.style.background=''">
-            <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--t2)">${t.id}</td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
+            <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size: var(--text-base); color:var(--t2)">${t.id}</td>
+            <td style="padding:10px 12px; font-size: var(--text-base); color:var(--t2)">
                 <div>${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                <div style="font-size:10px; opacity:0.7">${new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+                <div style="font-size: var(--text-sm); opacity:0.7">${new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
             </td>
-            <td style="padding:10px 12px; font-size:13px">${t.vehicleId}</td>
-            <td style="padding:10px 12px; font-size:12px">
-                <div style="font-weight:600">${t.customer}</div>
-                <div style="font-size:10px; color:var(--t3)">${t.customerPhone || '-'}</div>
+            <td style="padding:10px 12px; font-size: var(--text-lg)">${t.vehicleId}</td>
+            <td style="padding:10px 12px; font-size: var(--text-base)">
+                <div style="font-weight:600">${name}</div>
+                <div style="font-size: var(--text-sm); color:var(--t3)">${phone}</div>
             </td>
             <td style="padding:10px 12px">
-                <div style="font-size:11px; font-weight:700; color:var(--t1); margin-bottom:2px">
+                <div style="font-size: var(--text-md); font-weight:700; color:var(--t1); margin-bottom:2px">
                     ${(t.partnerId || '').charAt(0).toUpperCase() + (t.partnerId || '').slice(1)} • ${t.brand || '—'}
                 </div>
-                <span style="font-size:10px; padding:1px 6px; background:var(--s3); border-radius:4px; color:var(--t2); border:1px solid var(--b1)">
+                <span style="font-size: var(--text-sm); padding:1px 6px; background:var(--s3); border-radius:4px; color:var(--t2); border:1px solid var(--b1)">
                     ${t.program || t.type || 'RTO'}
                 </span>
             </td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t3)">${t.method || '-'}</td>
-            <td style="padding:10px 12px; font-size:12px">
+            <td style="padding:10px 12px; font-size: var(--text-base); color:var(--t3)">${t.method || '-'}</td>
+            <td style="padding:10px 12px; font-size: var(--text-base)">
                 <div style="font-weight:700; font-family:'IBM Plex Mono'; color:var(--ac)">${t.creditDays || 7}d</div>
-                <div style="font-size:10px; color:var(--t3)">Credit Days</div>
+                <div style="font-size: var(--text-sm); color:var(--t3)">Credit Days</div>
             </td>
-            <td style="padding:10px 12px; text-align:right; font-family:'IBM Plex Mono'; font-size:13px; font-weight:600">${formatRupiah(t.amount)}</td>
+            <td style="padding:10px 12px; text-align:right; font-family:'IBM Plex Mono'; font-size: var(--text-lg); font-weight:600">${formatRupiah(t.amount)}</td>
             <td style="padding:10px 12px">
-                <span style="font-size:11px; font-weight:600; color:${statusColor}">${statusLabel}</span>
+                <span style="font-size: var(--text-md); font-weight:600; color:${statusColor}">${statusLabel}</span>
             </td>
         </tr>`;
     }).join('');
@@ -445,12 +519,12 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     // --- Pagination Controls ---
     const txPagination = totalPages > 1 ? `
     <div style="padding:12px 16px; border-top:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center; flex-shrink:0">
-        <span style="font-size:12px; color:var(--t3)">${start + 1}–${Math.min(start + PAGE_SIZE, transactions.length)} of ${transactions.length}</span>
+        <span style="font-size: var(--text-base); color:var(--t3)">${start + 1}–${Math.min(start + PAGE_SIZE, transactions.length)} of ${transactions.length}</span>
         <div style="display:flex; gap:6px; align-items:center">
-            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px"
+            <button class="btn btn-secondary" style="padding:4px 10px; font-size: var(--text-base)"
                 onclick="window.changeFinancePage(-1)" ${window.financePage === 1 ? 'disabled' : ''}>◀</button>
-            <span style="font-size:12px; color:var(--t2); min-width:80px; text-align:center">Page ${window.financePage} / ${totalPages}</span>
-            <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px"
+            <span style="font-size: var(--text-base); color:var(--t2); min-width:80px; text-align:center">Page ${window.financePage} / ${totalPages}</span>
+            <button class="btn btn-secondary" style="padding:4px 10px; font-size: var(--text-base)"
                 onclick="window.changeFinancePage(1)" ${window.financePage === totalPages ? 'disabled' : ''}>Next ▶</button>
         </div>
     </div>` : '';
@@ -468,9 +542,9 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
         return `
         <div class="pc" style="border-left:4px solid ${borderColor}; cursor:pointer" 
              onclick="window.dispatchEvent(new CustomEvent('finance-program-change', {detail:'${p.id}'}))">
-            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
-            <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${formatRupiah(p.totalEarnings)}</div>
-            <div style="font-size:11px; color:var(--t3); margin-top:4px">${p.activeCount}/${p.vehicleCount} active units</div>
+            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size: var(--text-sm);opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
+            <div style="font-size: var(--text-5xl); font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${formatRupiah(p.totalEarnings)}</div>
+            <div style="font-size: var(--text-md); color:var(--t3); margin-top:4px">${p.activeCount}/${p.vehicleCount} active units</div>
         </div>`;
     }).join('')}
     </div>` : '';
@@ -482,11 +556,11 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-shrink:0">
                 <div>
                     <h2 style="margin:0 0 4px">Finance Overview</h2>
-                    <div style="color:var(--t3); font-size:13px">Revenue streams and transaction history</div>
+                    <div style="color:var(--t3); font-size: var(--text-lg)">Revenue streams and transaction history</div>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px">
-                    <label style="font-size:12px; color:var(--t3)">Filter by Program:</label>
-                    <select id="programFilter" class="form-control" style="width:180px; font-size:13px">
+                    <label style="font-size: var(--text-base); color:var(--t3)">Filter by Program:</label>
+                    <select id="programFilter" class="form-control" style="width:180px; font-size: var(--text-lg)">
                         <option value="all">All Programs</option>
                         ${programOptions}
                     </select>
@@ -525,21 +599,21 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
                 <div class="card" style="display:flex; flex-direction:column; overflow:hidden">
                     <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="margin:0">Recent Transactions</h3>
-                        <span style="font-size:12px; color:var(--t3)">${transactions.length} records</span>
+                        <span style="font-size: var(--text-base); color:var(--t3)">${transactions.length} records</span>
                     </div>
                     <div style="overflow-x:auto">
-                        <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:600px">
+                        <table style="width:100%; border-collapse:collapse; font-size: var(--text-lg); min-width:600px">
                             <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
                                 <tr style="text-align:left; color:var(--t3)">
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">TX ID</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">DATE & TIME</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">VEHICLE</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">USER / PHONE</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">PROGRAM</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">METHOD</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">CREDIT DAYS</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px; text-align:right">AMOUNT</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">STATUS</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">TX ID</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">DATE & TIME</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">VEHICLE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">USER / PHONE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">PROGRAM</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">METHOD</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">CREDIT DAYS</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md); text-align:right">AMOUNT</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">STATUS</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -603,15 +677,15 @@ export const updateCountdowns = () => {
 // ─── GPS LIST ─────────────────────────────────────────────────────────────────
 
 const GPS_STATUS_COLOR = {
-    'Online': '#22C55E',
-    'Offline': '#EF4444',
-    'Low Signal': '#F59E0B',
-    'Tampered': '#A855F7',
+    'Online': 'var(--c-success)',
+    'Offline': 'var(--c-danger)',
+    'Low Signal': 'var(--c-warning)',
+    'Tampered': 'var(--c-purple)',
 };
 const SIM_STATUS_COLOR = {
-    'Active': '#22C55E',
-    'Low Balance': '#F59E0B',
-    'Expired': '#EF4444',
+    'Active': 'var(--c-success)',
+    'Low Balance': 'var(--c-warning)',
+    'Expired': 'var(--c-danger)',
     'Inactive': '#6B7280',
 };
 
@@ -643,16 +717,16 @@ export const renderGpsList = (devices, stats, filter = {}) => {
     <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px">
         ${[
             { label: 'Total', val: stats.total, color: 'var(--t1)' },
-            { label: 'Online', val: stats.online, color: '#22C55E' },
-            { label: 'Offline', val: stats.offline, color: '#EF4444' },
-            { label: 'Low Signal', val: stats.lowSignal, color: '#F59E0B' },
-            { label: 'Tampered', val: stats.tampered, color: '#A855F7' },
+            { label: 'Online', val: stats.online, color: 'var(--c-success)' },
+            { label: 'Offline', val: stats.offline, color: 'var(--c-danger)' },
+            { label: 'Low Signal', val: stats.lowSignal, color: 'var(--c-warning)' },
+            { label: 'Tampered', val: stats.tampered, color: 'var(--c-purple)' },
             { label: 'FW Alert', val: stats.firmwareAlert, color: '#F97316' },
-            { label: 'SIM Expiry <30d', val: stats.simExpiring, color: '#F59E0B' },
+            { label: 'SIM Expiry <30d', val: stats.simExpiring, color: 'var(--c-warning)' },
         ].map(s => `
             <div class="card stat-card" style="text-align:center">
-                <h3 style="font-size:11px">${s.label}</h3>
-                <div class="value" style="color:${s.color}; font-size:22px">${s.val}</div>
+                <h3 style="font-size: var(--text-md)">${s.label}</h3>
+                <div class="value" style="color:${s.color}; font-size: var(--text-5xl)">${s.val}</div>
             </div>
         `).join('')}
     </div>`;
@@ -685,7 +759,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
         const statusColor = GPS_STATUS_COLOR[d.status] || '#6B7280';
         const simColor = SIM_STATUS_COLOR[d.sim.status] || '#6B7280';
         const fwAlert = d.firmwareUpdateRequired
-            ? `<span style="margin-left:4px; font-size:10px; background:#F97316; color:#fff; padding:1px 5px; border-radius:3px">UPDATE</span>`
+            ? `<span style="margin-left:4px; font-size: var(--text-sm); background:#F97316; color:#fff; padding:1px 5px; border-radius:3px">UPDATE</span>`
             : '';
         const usagePct = Math.round((d.sim.dataUsedMB / d.sim.dataLimitMB) * 100);
 
@@ -700,7 +774,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
         }
 
         const addressHtml = d.status === 'Online' && d.address ?
-            `<div style="font-size:11px; color:var(--t1); margin-bottom:2px">${d.address}</div>` :
+            `<div style="font-size: var(--text-md); color:var(--t1); margin-bottom:2px">${d.address}</div>` :
             '';
 
         const locationHtml = d.lat ?
@@ -708,8 +782,8 @@ export const renderGpsList = (devices, stats, filter = {}) => {
                 ${addressHtml}
                 <div style="display:flex; align-items:center; gap:8px">
                     <a href="#" onclick="window.dispatchEvent(new CustomEvent('focus-vehicle', {detail:'${d.vehicleId}'})); return false;" 
-                       style="color:var(--ac); text-decoration:none; font-family:'IBM Plex Mono'; font-size:10px">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</a>
-                    <span style="font-size:10px; color:var(--t3); background:var(--s3); padding:1px 4px; border-radius:3px">${d.lastPingTime || '—'}</span>
+                       style="color:var(--ac); text-decoration:none; font-family:'IBM Plex Mono'; font-size: var(--text-sm)">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</a>
+                    <span style="font-size: var(--text-sm); color:var(--t3); background:var(--s3); padding:1px 4px; border-radius:3px">${d.lastPingTime || '—'}</span>
                 </div>
             </div>` :
             '—';
@@ -717,36 +791,36 @@ export const renderGpsList = (devices, stats, filter = {}) => {
         return `
         <tr style="border-bottom:1px solid var(--s3); transition:background .15s"
             onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
-            <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--t2)">${d.id}</td>
-            <td style="padding:10px 12px; font-size:12px">
+            <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size: var(--text-base); color:var(--t2)">${d.id}</td>
+            <td style="padding:10px 12px; font-size: var(--text-base)">
                 <div style="font-weight:600">${d.brand} ${d.model}</div>
-                <div style="font-size:10px; color:var(--t3)">${d.imei}</div>
+                <div style="font-size: var(--text-sm); color:var(--t3)">${d.imei}</div>
             </td>
             <td style="padding:10px 12px">
-                <span style="color:${statusColor}; font-weight:600; font-size:12px">● ${d.status}</span>
-                <div style="font-size:10px; color:var(--t3)">${timeAgoFunc(d.lastPing)}</div>
+                <span style="color:${statusColor}; font-weight:600; font-size: var(--text-base)">● ${d.status}</span>
+                <div style="font-size: var(--text-sm); color:var(--t3)">${timeAgoFunc(d.lastPing)}</div>
             </td>
-            <td style="padding:10px 12px; font-size:12px">
+            <td style="padding:10px 12px; font-size: var(--text-base)">
                 <div style="color:var(--t1)">${d.vehiclePlate}</div>
-                <div style="font-size:11px; color:var(--ac); font-weight:600">${d.vehicleBrand || '—'} ${d.vehicleModel || ''}</div>
-                <div style="font-size:10px; color:var(--t3)">${programName}</div>
+                <div style="font-size: var(--text-md); color:var(--ac); font-weight:600">${d.vehicleBrand || '—'} ${d.vehicleModel || ''}</div>
+                <div style="font-size: var(--text-sm); color:var(--t3)">${programName}</div>
             </td>
-            <td style="padding:10px 12px; font-size:12px">
+            <td style="padding:10px 12px; font-size: var(--text-base)">
                 ${locationHtml}
             </td>
-            <td style="padding:10px 12px; font-size:12px">
+            <td style="padding:10px 12px; font-size: var(--text-base)">
                 <div>${d.sim.carrier}</div>
-                <div style="font-size:10px; color:var(--t3)">${usagePct}% used</div>
-                <div style="font-size:10px; color:var(--t3); font-family:'IBM Plex Mono'">IMEI: ${d.imei}</div>
-                <span style="font-size:10px; color:${simColor}">${d.sim.status}</span>
+                <div style="font-size: var(--text-sm); color:var(--t3)">${usagePct}% used</div>
+                <div style="font-size: var(--text-sm); color:var(--t3); font-family:'IBM Plex Mono'">IMEI: ${d.imei}</div>
+                <span style="font-size: var(--text-sm); color:${simColor}">${d.sim.status}</span>
             </td>
             <td style="padding:10px 12px">
                 <div style="display:flex; gap:6px">
                     <button class="btn btn-secondary"
-                        style="font-size:11px; padding:4px 10px"
+                        style="font-size: var(--text-md); padding:4px 10px"
                         onclick="window.dispatchEvent(new CustomEvent('gps-edit', {detail:'${d.id}'}))">Edit</button>
                     <button class="btn btn-secondary"
-                        style="font-size:11px; padding:4px 10px; color:var(--d); border-color:var(--d)"
+                        style="font-size: var(--text-md); padding:4px 10px; color:var(--d); border-color:var(--d)"
                         onclick="window.dispatchEvent(new CustomEvent('gps-delete', {detail:'${d.id}'}))">Del</button>
                 </div>
             </td>
@@ -759,16 +833,16 @@ export const renderGpsList = (devices, stats, filter = {}) => {
 
     const paginationHtml = `
     <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--s2); border-top:1px solid var(--b1)">
-        <div style="color:var(--t3); font-size:12px">
+        <div style="color:var(--t3); font-size: var(--text-base)">
             Showing ${startIndex + 1} - ${Math.min(startIndex + pageSize, devices.length)} of ${devices.length} devices
         </div>
         <div style="display:flex; gap:8px">
-            <button class="btn btn-secondary" style="font-size:11px; padding:4px 12px"
+            <button class="btn btn-secondary" style="font-size: var(--text-md); padding:4px 12px"
                 onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>◀ Prev</button>
-            <div style="display:flex; align-items:center; font-size:12px; color:var(--t2); padding:0 10px">
+            <div style="display:flex; align-items:center; font-size: var(--text-base); color:var(--t2); padding:0 10px">
                 Page ${window.gpsPage} of ${totalPages}
             </div>
-            <button class="btn btn-secondary" style="font-size:11px; padding:4px 12px"
+            <button class="btn btn-secondary" style="font-size: var(--text-md); padding:4px 12px"
                 onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next ▶</button>
         </div>
     </div>`;
@@ -777,7 +851,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <div>
             <h2 style="margin:0 0 4px">GPS Devices</h2>
-            <div style="color:var(--t3); font-size:13px">${stats.total} devices — ${stats.online} online</div>
+            <div style="color:var(--t3); font-size: var(--text-lg)">${stats.total} devices — ${stats.online} online</div>
         </div>
     </div>
 
@@ -786,9 +860,9 @@ export const renderGpsList = (devices, stats, filter = {}) => {
 
     <div class="card" style="overflow:hidden">
         <div style="overflow-x:auto">
-            <table style="width:100%; border-collapse:collapse; font-size:13px">
+            <table style="width:100%; border-collapse:collapse; font-size: var(--text-lg)">
                 <thead style="background:var(--s3); position:sticky; top:0; z-index:2">
-                    <tr style="text-align:left; color:var(--t3); font-size:11px; text-transform:uppercase; letter-spacing:.05em">
+                    <tr style="text-align:left; color:var(--t3); font-size: var(--text-md); text-transform:uppercase; letter-spacing:.05em">
                         <th style="padding:10px 12px">Device ID</th>
                         <th style="padding:10px 12px">Brand / IMEI</th>
                         <th style="padding:10px 12px">Status</th>
@@ -843,32 +917,32 @@ export const openGpsModal = (device = null, vehicles = []) => {
     <div style="display:flex; flex-direction:column; gap:14px; padding-top:8px">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Brand</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Brand</label>
                 <select id="gf_brand" class="form-control">
                     ${['Weloop', 'Teltonika', 'Concox'].map(b =>
         `<option ${isEdit && device.brand === b ? 'selected' : ''}>${b}</option>`).join('')}
                 </select>
             </div>
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Model</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Model</label>
                 <input id="gf_model" class="form-control" value="${isEdit ? device.model : ''}" placeholder="e.g. WL-210 Pro">
             </div>
         </div>
         <div>
-            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">IMEI</label>
+            <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">IMEI</label>
             <input id="gf_imei" class="form-control" value="${isEdit ? device.imei : ''}" placeholder="15-digit IMEI">
         </div>
         <div>
-            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Serial Number</label>
+            <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Serial Number</label>
             <input id="gf_serial" class="form-control" value="${isEdit ? device.serial : ''}" placeholder="Manufacturer serial">
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Firmware</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Firmware</label>
                 <input id="gf_firmware" class="form-control" value="${isEdit ? device.firmware : ''}" placeholder="FW-3.4.2">
             </div>
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Mount Position</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Mount Position</label>
                 <select id="gf_mount" class="form-control">
                     ${['Under Seat', 'Behind Panel', 'Frame', 'Battery Compartment'].map(m =>
             `<option ${isEdit && device.mountPosition === m ? 'selected' : ''}>${m}</option>`).join('')}
@@ -876,14 +950,14 @@ export const openGpsModal = (device = null, vehicles = []) => {
             </div>
         </div>
         <hr style="border-color:var(--s3); margin:4px 0">
-        <div style="font-size:12px; font-weight:600; color:var(--t2)">SIM Card</div>
+        <div style="font-size: var(--text-base); font-weight:600; color:var(--t2)">SIM Card</div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">SIM Number</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">SIM Number</label>
                 <input id="gf_sim" class="form-control" value="${isEdit ? device.sim.number : ''}" placeholder="08xxxxxxxxxx">
             </div>
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Carrier</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Carrier</label>
                 <select id="gf_carrier" class="form-control">
                     ${['Telkomsel', 'XL', 'Indosat', 'Tri', 'Smartfren'].map(c =>
                 `<option ${isEdit && device.sim.carrier === c ? 'selected' : ''}>${c}</option>`).join('')}
@@ -892,17 +966,17 @@ export const openGpsModal = (device = null, vehicles = []) => {
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">SIM Expiry</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">SIM Expiry</label>
                 <input id="gf_simexpiry" type="date" class="form-control" value="${isEdit ? device.sim.expiry : ''}">
             </div>
             <div>
-                <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Warranty Expiry</label>
+                <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Warranty Expiry</label>
                 <input id="gf_warranty" type="date" class="form-control" value="${isEdit ? device.warrantyExpiry : ''}">
             </div>
         </div>
         <hr style="border-color:var(--s3); margin:4px 0">
         <div>
-            <label style="font-size:11px; color:var(--t3); display:block; margin-bottom:4px">Assigned Vehicle</label>
+            <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Assigned Vehicle</label>
             <select id="gf_vehicle" class="form-control">${vehicleOptions}</select>
         </div>
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px">
@@ -937,10 +1011,10 @@ export const renderVehicleListView = () => {
         const progressHtml = prog ? `
             <div class="vl-rto-bar">
                 <div class="vl-rto-track"><div class="vl-rto-fill" style="width:${prog.paidPct}%"></div></div>
-                <div style="font-size:10px; color:var(--t2)">${prog.monthsLeft}m left</div>
+                <div style="font-size: var(--text-sm); color:var(--t2)">${prog.monthsLeft}m left</div>
             </div>` : '—';
 
-        const creditColor = v.credits < 3 ? '#EF4444' : (v.credits < 7 ? '#F59E0B' : '#22C55E');
+        const creditColor = v.credits < 3 ? 'var(--c-danger)' : (v.credits < 7 ? 'var(--c-warning)' : 'var(--c-success)');
         const creditHtml = `
             <div class="vl-credit-bar">
                 <div class="vl-credit-track"><div class="vl-credit-fill" style="width:${Math.min(100, (v.credits / 30) * 100)}%; background:${creditColor}"></div></div>
@@ -948,17 +1022,17 @@ export const renderVehicleListView = () => {
             </div>`;
 
         const STNK = getSTNKAlert(v);
-        const stnkHtml = STNK ? `<span class="vl-status" style="background:${STNK.type === 'expired' ? '#EF4444' : '#F59E0B'}22; color:${STNK.type === 'expired' ? '#EF4444' : '#F59E0B'}">${STNK.label}</span>` : '<span style="color:var(--t3)">—</span>';
+        const stnkHtml = STNK ? `<span class="vl-status" style="background:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}22; color:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}">${STNK.label}</span>` : '<span style="color:var(--t3)">—</span>';
 
         return `
             <tr data-status="${v.status}" onclick="window.openVehicleDrawer('${v.id}')">
-                <td style="font-weight:700">${v.id}<div style="font-size:10px; font-weight:400; color:var(--t3)">${v.plate}</div></td>
+                <td style="font-weight:700">${v.id}<div style="font-size: var(--text-sm); font-weight:400; color:var(--t3)">${v.plate}</div></td>
                 <td>
                     <div style="font-weight:600">${v.customer || '—'}</div>
-                    <div style="font-size:10px; color:var(--t3)">${v.phone || ''}</div>
+                    <div style="font-size: var(--text-sm); color:var(--t3)">${v.phone || ''}</div>
                 </td>
-                <td><span class="vl-status" style="background:${(v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : (v.status === 'immobilized' ? '#EF4444' : '#6B7280')))}22; color:${(v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : (v.status === 'immobilized' ? '#EF4444' : '#6B7280')))}">${v.status.toUpperCase()}</span></td>
-                <td>${v.brand}<div style="font-size:10px; color:var(--t3)">${v.programType}</div></td>
+                <td><span class="vl-status" style="background:${(v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : (v.status === 'immobilized' ? 'var(--c-danger)' : '#6B7280')))}22; color:${(v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : (v.status === 'immobilized' ? 'var(--c-danger)' : '#6B7280')))}">${v.status.toUpperCase()}</span></td>
+                <td>${v.brand}<div style="font-size: var(--text-sm); color:var(--t3)">${v.programType}</div></td>
                 <td>${creditHtml}</td>
                 <td>${progressHtml}</td>
                 <td>${stnkHtml}</td>
@@ -1054,7 +1128,7 @@ export const renderUserListView = () => {
         const rtoProgress = rtoVehicle ? getRTOProgress(rtoVehicle) : null;
         const progressHtml = rtoProgress ? `
             <div style="width:100px">
-                <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:2px; font-weight:700">
+                <div style="display:flex; justify-content:space-between; font-size: var(--text-xs); margin-bottom:2px; font-weight:700">
                     <span>${rtoProgress.paidPct}%</span>
                     <span>${rtoProgress.daysLeft}d left</span>
                 </div>
@@ -1062,7 +1136,7 @@ export const renderUserListView = () => {
                     <div class="vl-rto-fill" style="width:${rtoProgress.paidPct}%; height:100%; background:var(--g)"></div>
                 </div>
             </div>
-        ` : '<span style="color:var(--t3); font-size:10px">—</span>';
+        ` : '<span style="color:var(--t3); font-size: var(--text-sm)">—</span>';
 
         return `
             <tr onclick="window.openUserDrawer('${u.userId}')">
@@ -1071,7 +1145,7 @@ export const renderUserListView = () => {
                         <div class="vl-avatar" style="background:${genderColor}">${initials}</div>
                         <div>
                             <div style="font-weight:700">${u.name}</div>
-                            <div style="font-size:10px; color:var(--t3)">${u.userId}</div>
+                            <div style="font-size: var(--text-sm); color:var(--t3)">${u.userId}</div>
                         </div>
                     </div>
                 </td>
@@ -1084,7 +1158,7 @@ export const renderUserListView = () => {
             if (!prog) return null;
             return `
                                 <span class="vl-pill" 
-                                      style="font-size:10px; background:var(--s2); border:1px solid var(--bd); padding:1px 6px; border-radius:4px; color:var(--t2); font-weight:700; cursor:pointer"
+                                      style="font-size: var(--text-sm); background:var(--s2); border:1px solid var(--bd); padding:1px 6px; border-radius:4px; color:var(--t2); font-weight:700; cursor:pointer"
                                       onclick="event.stopPropagation(); window.setUserProgramFilter('${prog.id}')">
                                     ${prog.shortName} ${prog.type}
                                 </span>`;
@@ -1099,12 +1173,12 @@ export const renderUserListView = () => {
                 if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
                 return `
                                 ${v.immobilizeLog?.length > 0 ? `
-                                    <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                                    <div class="vl-pill" style="background:rgba(239, 68, 68, 0.15); color:var(--c-danger); border-color:rgba(239, 68, 68, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.immobilizeLog.length} Immobilizations">
                                         🔒 ${v.immobilizeLog.length}
                                     </div>
                                 ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
                                 ${v.graceEncounters > 0 ? `
-                                    <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                                    <div class="vl-pill" style="background:rgba(245, 158, 11, 0.15); color:var(--c-warning); border-color:rgba(245, 158, 11, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.graceEncounters} Grace Period Entries">
                                         ⚠️ ${v.graceEncounters}
                                     </div>
                                 ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
@@ -1119,11 +1193,11 @@ export const renderUserListView = () => {
                     </div>
                 </td>
                 <td>
-                    ${u.vehicleIds.length > 0 ? `<span style="font-size:10px; background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size:10px">—</span>'}
+                    ${u.vehicleIds.length > 0 ? `<span style="font-size: var(--text-sm); background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size: var(--text-sm)">—</span>'}
                 </td>
                 <td>
-                    <div style="font-size:12px">${u.phone}</div>
-                    <div style="font-size:10px; color:var(--t3)">${u.address.substring(0, 20)}...</div>
+                    <div style="font-size: var(--text-base)">${u.phone}</div>
+                    <div style="font-size: var(--text-sm); color:var(--t3)">${u.address.substring(0, 20)}...</div>
                 </td>
                 <td>${new Date(u.joinDate).toLocaleDateString()}</td>
                 <td><button class="vl-pill" onclick="window.openUserDrawer('${u.userId}')">👤 Profile</button></td>
@@ -1161,7 +1235,7 @@ export const renderUserListView = () => {
             <div class="vl-header">
                 <div>
                     <h2 class="vl-title">Rider KYC & Profiles</h2>
-                    <div style="font-size:11px; color:var(--t3); margin-top:2px">Operational Behavioral Auditing</div>
+                    <div style="font-size: var(--text-md); color:var(--t3); margin-top:2px">Operational Behavioral Auditing</div>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center">
                     <button class="vl-pill" onclick="window.exportUsersCSV()">📥 Export CSV</button>
@@ -1172,24 +1246,24 @@ export const renderUserListView = () => {
             ${activeProgramStats ? `
             <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin-bottom:20px; background:var(--s2); padding:16px; border-radius:12px; border:1px solid var(--bd)">
                 <div style="border-right:1px solid var(--bd)">
-                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Program Health</div>
-                    <div style="font-size:22px; font-weight:800; color:var(--g)">${activeProgramStats.health}%</div>
+                    <div style="font-size: var(--text-sm); color:var(--t3); font-weight:800; text-transform:uppercase">Program Health</div>
+                    <div style="font-size: var(--text-5xl); font-weight:800; color:var(--g)">${activeProgramStats.health}%</div>
                 </div>
                 <div style="border-right:1px solid var(--bd); padding-left:12px">
-                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Active Assets</div>
-                    <div style="font-size:22px; font-weight:800; color:var(--t1)">${activeProgramStats.active}</div>
+                    <div style="font-size: var(--text-sm); color:var(--t3); font-weight:800; text-transform:uppercase">Active Assets</div>
+                    <div style="font-size: var(--text-5xl); font-weight:800; color:var(--t1)">${activeProgramStats.active}</div>
                 </div>
                 <div style="border-right:1px solid var(--bd); padding-left:12px">
-                    <div style="font-size:10px; color:#F59E0B; font-weight:800; text-transform:uppercase">In Grace</div>
-                    <div style="font-size:22px; font-weight:800; color:#F59E0B">${activeProgramStats.grace}</div>
+                    <div style="font-size: var(--text-sm); color:var(--c-warning); font-weight:800; text-transform:uppercase">In Grace</div>
+                    <div style="font-size: var(--text-5xl); font-weight:800; color:var(--c-warning)">${activeProgramStats.grace}</div>
                 </div>
                 <div style="border-right:1px solid var(--bd); padding-left:12px">
-                    <div style="font-size:10px; color:#EF4444; font-weight:800; text-transform:uppercase">Immobilized</div>
-                    <div style="font-size:22px; font-weight:800; color:#EF4444">${activeProgramStats.immob}</div>
+                    <div style="font-size: var(--text-sm); color:var(--c-danger); font-weight:800; text-transform:uppercase">Immobilized</div>
+                    <div style="font-size: var(--text-5xl); font-weight:800; color:var(--c-danger)">${activeProgramStats.immob}</div>
                 </div>
                 <div style="padding-left:12px">
-                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Total Riders</div>
-                    <div style="font-size:22px; font-weight:800; color:var(--p)">${activeProgramStats.total}</div>
+                    <div style="font-size: var(--text-sm); color:var(--t3); font-weight:800; text-transform:uppercase">Total Riders</div>
+                    <div style="font-size: var(--text-5xl); font-weight:800; color:var(--p)">${activeProgramStats.total}</div>
                 </div>
             </div>
             ` : ''}
@@ -1199,9 +1273,9 @@ export const renderUserListView = () => {
                 <div class="pc ${userListFilter.program === 'all' ? 'active' : ''}" 
                      style="cursor:pointer; border-left:4px solid var(--t3)"
                      onclick="window.setUserProgramFilter('all')">
-                    <h4 style="margin:0 0 8px">All Programs <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">GLOBAL</span></h4>
-                    <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--p)">${allUsers.length}</div>
-                    <div style="font-size:11px; color:var(--t3); margin-top:4px">Consolidated Rider KYC</div>
+                    <h4 style="margin:0 0 8px">All Programs <span style="font-size: var(--text-sm);opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">GLOBAL</span></h4>
+                    <div style="font-size: var(--text-5xl); font-weight:700; font-family:'IBM Plex Mono'; color:var(--p)">${allUsers.length}</div>
+                    <div style="font-size: var(--text-md); color:var(--t3); margin-top:4px">Consolidated Rider KYC</div>
                 </div>
 
                 ${state.programs.map(p => {
@@ -1216,9 +1290,9 @@ export const renderUserListView = () => {
                         <div class="pc ${userListFilter.program === p.id ? 'active' : ''}" 
                              style="cursor:pointer; border-left:4px solid ${borderColor}"
                              onclick="window.setUserProgramFilter('${p.id}')">
-                            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
-                            <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${stats?.count || 0}</div>
-                            <div style="font-size:11px; color:var(--t3); margin-top:4px">${activeCount}/${progVehicles.length} active units</div>
+                            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size: var(--text-sm);opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
+                            <div style="font-size: var(--text-5xl); font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${stats?.count || 0}</div>
+                            <div style="font-size: var(--text-md); color:var(--t3); margin-top:4px">${activeCount}/${progVehicles.length} active units</div>
                         </div>
                     `;
     }).join('')}
@@ -1319,22 +1393,22 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
             <div style="flex:1">
                 <div class="drawer-name">${v.customer || 'No Active Rider'}</div>
                 <div class="drawer-sub">${v.plate} • ${v.id}</div>
-                <div style="font-size:10px; color:var(--g); font-weight:800; font-family:'IBM Plex Mono'; margin-top:2px">${v.rtoId}</div>
+                <div style="font-size: var(--text-sm); color:var(--g); font-weight:800; font-family:'IBM Plex Mono'; margin-top:2px">${v.rtoId}</div>
             </div>
-            <span class="vl-status" style="background:${(v.status === 'active' ? '#22C55E' : '#EF4444')}22; color:${(v.status === 'active' ? '#22C55E' : '#EF4444')}">${v.status.toUpperCase()}</span>
+            <span class="vl-status" style="background:${(v.status === 'active' ? 'var(--c-success)' : 'var(--c-danger)')}22; color:${(v.status === 'active' ? 'var(--c-success)' : 'var(--c-danger)')}">${v.status.toUpperCase()}</span>
         </div>
         <div class="drawer-body">
             ${STNK ? `
             <div class="drawer-alert ${STNK.type}">
                 <div style="font-weight:700">STNK EXPIRY ALERT</div>
-                <div style="font-size:12px">Document is ${STNK.type}. ${STNK.label}.</div>
+                <div style="font-size: var(--text-base)">Document is ${STNK.type}. ${STNK.label}.</div>
             </div>
             ` : ''}
             ${rto ? `
             <div class="drawer-section">
                 <div class="drawer-section-title">RTO Progress</div>
                 <div style="margin-bottom:12px">
-                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; font-weight:700">
+                    <div style="display:flex; justify-content:space-between; font-size: var(--text-md); margin-bottom:4px; font-weight:700">
                         <span>${formatRupiah(rto.paidRp)} Paid</span>
                         <span>${rto.paidPct}%</span>
                     </div>
@@ -1349,8 +1423,8 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
                 <div class="drawer-section-title">Credit Status</div>
                 <div style="background:var(--s2); border:1px solid var(--bd); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
                     <div>
-                        <div style="font-size:24px; font-weight:800; color:var(--g); font-family:'IBM Plex Mono'">${v.credits}</div>
-                        <div style="font-size:10px; color:var(--t2); font-weight:700">DAYS REMAINING</div>
+                        <div style="font-size: var(--text-5xl); font-weight:800; color:var(--g); font-family:'IBM Plex Mono'">${v.credits}</div>
+                        <div style="font-size: var(--text-sm); color:var(--t2); font-weight:700">DAYS REMAINING</div>
                     </div>
                     <button class="vl-pill active" onclick="window.dispatchAction('pay', '${v.id}')">Extend +7d</button>
                 </div>
@@ -1360,22 +1434,22 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
                 <div class="drawer-section-title">Collection Audit</div>
                 <div style="display:flex; gap:8px">
                     ${v.immobilizeLog?.length > 0 ? `
-                        <div style="flex:1; background:#EF444411; border:1px solid #EF444422; padding:10px; border-radius:8px; text-align:center">
-                            <div style="font-size:20px">🔒</div>
-                            <div style="font-size:14px; font-weight:800; color:#EF4444">${v.immobilizeLog.length}</div>
-                            <div style="font-size:9px; color:var(--t3); font-weight:700">LOCKS</div>
+                        <div style="flex:1; background:var(--c-danger)11; border:1px solid rgba(239, 68, 68, 0.15); padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size: var(--text-4xl)">🔒</div>
+                            <div style="font-size: var(--text-xl); font-weight:800; color:var(--c-danger)">${v.immobilizeLog.length}</div>
+                            <div style="font-size: var(--text-xs); color:var(--t3); font-weight:700">LOCKS</div>
                         </div>
                     ` : ''}
                     ${v.graceEncounters > 0 ? `
-                        <div style="flex:1; background:#F59E0B11; border:1px solid #F59E0B22; padding:10px; border-radius:8px; text-align:center">
-                            <div style="font-size:20px">⚠️</div>
-                            <div style="font-size:14px; font-weight:800; color:#F59E0B">${v.graceEncounters}</div>
-                            <div style="font-size:9px; color:var(--t3); font-weight:700">GRACE</div>
+                        <div style="flex:1; background:var(--c-warning)11; border:1px solid rgba(245, 158, 11, 0.15); padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size: var(--text-4xl)">⚠️</div>
+                            <div style="font-size: var(--text-xl); font-weight:800; color:var(--c-warning)">${v.graceEncounters}</div>
+                            <div style="font-size: var(--text-xs); color:var(--t3); font-weight:700">GRACE</div>
                         </div>
                     ` : ''}
                     ${!v.immobilizeLog?.length && !v.graceEncounters ? `
                         <div style="flex:1; background:var(--g)11; border:1px solid var(--g)22; padding:12px; border-radius:8px; text-align:center">
-                            <div style="color:var(--g); font-weight:800; font-size:13px">CLEAN COLLECTION HISTORY</div>
+                            <div style="color:var(--g); font-weight:800; font-size: var(--text-lg)">CLEAN COLLECTION HISTORY</div>
                         </div>
                     ` : ''}
                 </div>
@@ -1460,7 +1534,7 @@ window.openUserDrawer = (userId, pushToStack = true) => {
             <div style="flex:1">
                 <div class="drawer-name" style="display:flex; align-items:center; gap:8px">
                     ${u.name} 
-                    <span style="font-size:18px; color:${genderColor}">${genderIcon}</span>
+                    <span style="font-size: var(--text-3xl); color:${genderColor}">${genderIcon}</span>
                 </div>
                 <div class="drawer-sub">${u.userId} • Joined ${new Date(u.joinDate).toLocaleDateString()}</div>
             </div>
@@ -1471,19 +1545,19 @@ window.openUserDrawer = (userId, pushToStack = true) => {
                 <div class="drawer-section-title">Risk Scoring Detail</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px">
                     <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--bd)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">RISK SCORE</div>
-                        <div style="font-size:20px; font-weight:800; color:${riskColor}">${u.riskScore}</div>
+                        <div style="font-size: var(--text-sm); color:var(--t3); font-weight:700">RISK SCORE</div>
+                        <div style="font-size: var(--text-4xl); font-weight:800; color:${riskColor}">${u.riskScore}</div>
                     </div>
                     <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--bd)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700; margin-bottom:4px">COLLECTION AUDIT</div>
+                        <div style="font-size: var(--text-sm); color:var(--t3); font-weight:700; margin-bottom:4px">COLLECTION AUDIT</div>
                         <div style="display:flex; gap:6px">
                             ${(() => {
             const v = vehicles[0];
             if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
             return `
-                                    ${v.immobilizeLog?.length > 0 ? `<div style="background:#EF444422; color:#EF4444; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">🔒 ${v.immobilizeLog.length}</div>` : ''}
-                                    ${v.graceEncounters > 0 ? `<div style="background:#F59E0B22; color:#F59E0B; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">⚠️ ${v.graceEncounters}</div>` : ''}
-                                    ${!v.immobilizeLog?.length && !v.graceEncounters ? '<span style="color:var(--g); font-weight:700; font-size:12px">Clean History</span>' : ''}
+                                    ${v.immobilizeLog?.length > 0 ? `<div style="background:rgba(239, 68, 68, 0.15); color:var(--c-danger); padding:2px 8px; border-radius:12px; font-weight:800; font-size: var(--text-base)">🔒 ${v.immobilizeLog.length}</div>` : ''}
+                                    ${v.graceEncounters > 0 ? `<div style="background:rgba(245, 158, 11, 0.15); color:var(--c-warning); padding:2px 8px; border-radius:12px; font-weight:800; font-size: var(--text-base)">⚠️ ${v.graceEncounters}</div>` : ''}
+                                    ${!v.immobilizeLog?.length && !v.graceEncounters ? '<span style="color:var(--g); font-weight:700; font-size: var(--text-base)">Clean History</span>' : ''}
                                 `;
         })()}
                         </div>
@@ -1498,7 +1572,7 @@ window.openUserDrawer = (userId, pushToStack = true) => {
             <div class="drawer-section">
                 <div class="drawer-section-title">RTO Contract Maturity</div>
                 <div style="margin-bottom:12px">
-                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; font-weight:700">
+                    <div style="display:flex; justify-content:space-between; font-size: var(--text-md); margin-bottom:4px; font-weight:700">
                         <span>${formatRupiah(rtoProgress.paidRp)} Paid</span>
                         <span>${rtoProgress.paidPct}%</span>
                     </div>
@@ -1517,19 +1591,19 @@ window.openUserDrawer = (userId, pushToStack = true) => {
             const v = vehicles[0];
             return `
                     <div class="drawer-vehicle-card" onclick="window.openVehicleDrawer('${v.id}')">
-                        <div style="width:36px; height:36px; background:var(--s3); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:18px">🏍️</div>
+                        <div style="width:36px; height:36px; background:var(--s3); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size: var(--text-3xl)">🏍️</div>
                         <div style="flex:1">
-                            <div style="font-weight:700; font-size:13px">${v.plate}</div>
-                            <div style="font-size:10px; color:var(--t3); font-family:'IBM Plex Mono'">${v.rtoId}</div>
-                            <div style="font-size:11px; color:var(--t3)">${v.id} • ${v.status}</div>
+                            <div style="font-weight:700; font-size: var(--text-lg)">${v.plate}</div>
+                            <div style="font-size: var(--text-sm); color:var(--t3); font-family:'IBM Plex Mono'">${v.rtoId}</div>
+                            <div style="font-size: var(--text-md); color:var(--t3)">${v.id} • ${v.status}</div>
                         </div>
                         <div style="text-align:right">
-                            <div style="font-weight:800; font-size:14px; color:${v.credits < 3 ? '#EF4444' : 'var(--g)'}">${v.credits}d</div>
-                            <div style="font-size:9px; color:var(--t3); font-weight:600">CREDIT</div>
+                            <div style="font-weight:800; font-size: var(--text-xl); color:${v.credits < 3 ? 'var(--c-danger)' : 'var(--g)'}">${v.credits}d</div>
+                            <div style="font-size: var(--text-xs); color:var(--t3); font-weight:600">CREDIT</div>
                         </div>
                     </div>
                 `;
-        })() : '<div style="opacity:0.5; font-size:12px; padding:10px">No assigned vehicle</div>'}
+        })() : '<div style="opacity:0.5; font-size: var(--text-base); padding:10px">No assigned vehicle</div>'}
             </div>
 
             <div class="drawer-section">
@@ -1543,7 +1617,7 @@ window.openUserDrawer = (userId, pushToStack = true) => {
 
             <div class="drawer-section">
                 <div class="drawer-section-title">Payment History (Last 10)</div>
-                <table class="drawer-mini-table" style="width:100%; border-collapse:collapse; font-size:11px">
+                <table class="drawer-mini-table" style="width:100%; border-collapse:collapse; font-size: var(--text-md)">
                     <thead>
                         <tr style="text-align:left; color:var(--t3)">
                             <th style="padding:6px 0; border-bottom:1px solid var(--bd)">DATE</th>
@@ -1558,7 +1632,7 @@ window.openUserDrawer = (userId, pushToStack = true) => {
                                 <td style="padding:6px 0; border-bottom:1px solid var(--bd)">${new Date(t.date).toLocaleDateString()}</td>
                                 <td style="padding:6px 0; border-bottom:1px solid var(--bd); font-weight:700">${t.type}</td>
                                 <td style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:center">
-                                    <span style="background:var(--g)11; color:var(--g); padding:2px 6px; border-radius:4px; font-weight:800; font-size:10px">+${t.creditDays || 0}d</span>
+                                    <span style="background:var(--g)11; color:var(--g); padding:2px 6px; border-radius:4px; font-weight:800; font-size: var(--text-sm)">+${t.creditDays || 0}d</span>
                                 </td>
                                 <td style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:right; font-family:'IBM Plex Mono'; font-weight:600">${formatRupiah(t.amount)}</td>
                             </tr>
@@ -1596,7 +1670,7 @@ window.exportUsersCSV = () => {
 };
 
 export const renderProgramListView = () => {
-    if (!elProgramListContent) return;
+    if (!elRtoFleetContent) return;
 
     // Filter programs by global partner filter
     let filteredPrograms = [...state.programs];
@@ -1604,8 +1678,8 @@ export const renderProgramListView = () => {
         filteredPrograms = filteredPrograms.filter(p => p.partnerId === state.filter.partner);
     }
 
-    // Prepare Sidebar Navigation content
-    const sidebarItems = filteredPrograms.map(p => {
+    // Prepare Top Navigation content
+    const topNavItems = filteredPrograms.map(p => {
         const programVehicles = state.vehicles.filter(v => v.programId === p.id);
         const activeCount = programVehicles.filter(v => v.status === 'active').length;
         const graceCount = programVehicles.filter(v => v.status === 'grace').length;
@@ -1615,24 +1689,26 @@ export const renderProgramListView = () => {
         // Pulse health bar for shorthand
         const total = programVehicles.length || 1;
         const healthPct = Math.round((activeCount / total) * 100);
-        const healthColor = healthPct > 90 ? '#22C55E' : (healthPct > 70 ? '#F59E0B' : '#EF4444');
+        const healthColor = healthPct > 90 ? 'var(--c-success)' : (healthPct > 70 ? 'var(--c-warning)' : 'var(--c-danger)');
 
         return `
-            <div class="program-sidebar-item ${isActive ? 'active' : ''}" onclick="window.selectProgram('${p.id}')">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
-                    <span style="font-size:12px; font-weight:700">${p.name}</span>
-                    <span style="font-size:10px; opacity:0.6">${p.shortName}</span>
+            <div class="adm-ni ${isActive ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:210px; height:100%; gap:4px; box-sizing:border-box;" onclick="window.selectProgramSetting('${p.id}')">
+                <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                    <span style="font-size: var(--text-base); font-weight:700">${p.name}</span>
+                    <span style="font-size: var(--text-sm); opacity:0.6">${p.shortName}</span>
                 </div>
-                <div style="font-size:10px; color:var(--t3); margin-bottom:8px">
-                    Rp ${formatShortCurrency(p.price)}/day • ${p.grace}d Grace
+                <div style="display:flex; justify-content:space-between; width:100%; align-items:flex-end">
+                    <div style="font-size: var(--text-sm); color:var(--t3); font-weight:600">
+                        ${formatShortCurrency(p.price)}/day • ${p.grace}d Grace
+                    </div>
                 </div>
-                <div style="height:3px; background:rgba(255,255,255,0.1); border-radius:1px; margin-bottom:8px">
+                <div style="height:3px; width:100%; background:rgba(255,255,255,0.1); border-radius:1px; margin-bottom:2px">
                     <div style="height:100%; width:${healthPct}%; background:${healthColor}; border-radius:1px"></div>
                 </div>
-                <div style="display:flex; gap:6px; font-size:10px; font-weight:700">
-                    <div style="color:#22C55E; background:#22C55E11; padding:2px 4px; border-radius:4px" title="Active">A:${activeCount}</div>
-                    <div style="color:#F59E0B; background:#F59E0B11; padding:2px 4px; border-radius:4px" title="Grace">G:${graceCount}</div>
-                    <div style="color:#EF4444; background:#EF444411; padding:2px 4px; border-radius:4px" title="Locked">L:${lockedCount}</div>
+                <div style="display:flex; gap:6px; font-size: var(--text-xs); font-weight:700; width:100%;">
+                    <div style="color:var(--c-success); background:var(--c-success)11; padding:2px 4px; border-radius:4px" title="Active">A:${activeCount}</div>
+                    <div style="color:var(--c-warning); background:var(--c-warning)11; padding:2px 4px; border-radius:4px" title="Grace">G:${graceCount}</div>
+                    <div style="color:var(--c-danger); background:var(--c-danger)11; padding:2px 4px; border-radius:4px" title="Locked">L:${lockedCount}</div>
                 </div>
             </div>
         `;
@@ -1654,6 +1730,25 @@ export const renderProgramListView = () => {
         }
     }
 
+    // Apply Deep Filters (Operator, Brand, Program, Model)
+    if (window.rtoListFilter) {
+        if (window.rtoListFilter.operator !== 'all') {
+            displayVehicles = displayVehicles.filter(v => v.operator === window.rtoListFilter.operator);
+        }
+        if (window.rtoListFilter.brand !== 'all') {
+            displayVehicles = displayVehicles.filter(v => v.brand === window.rtoListFilter.brand);
+        }
+        if (window.rtoListFilter.programName !== 'all') {
+            displayVehicles = displayVehicles.filter(v => {
+                const p = state.programs.find(prog => prog.id === v.programId);
+                return p && p.name === window.rtoListFilter.programName;
+            });
+        }
+        if (window.rtoListFilter.model !== 'all') {
+            displayVehicles = displayVehicles.filter(v => v.model === window.rtoListFilter.model);
+        }
+    }
+
     // Calculate display-level stats for the top bar
     const totalUnits = displayVehicles.length || 1;
     const activeUnits = displayVehicles.filter(v => v.status === 'active').length;
@@ -1669,7 +1764,7 @@ export const renderProgramListView = () => {
     const tableRows = paginated.map(v => {
         const prog = getRTOProgress(v);
         const lastPayment = v.lastPaymentDate ? new Date(v.lastPaymentDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—';
-        const statusColor = v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : '#EF4444');
+        const statusColor = v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : 'var(--c-danger)');
         const programName = state.programs.find(p => p.id === v.programId)?.shortName || '—';
 
         // Find user for phone/risk
@@ -1677,87 +1772,91 @@ export const renderProgramListView = () => {
         const riskColor = getRiskColor(rider?.riskLabel || 'Medium');
         const riderPhone = rider?.phone || v.phone || '—';
 
+        const progressHtml = prog ? `
+            <div style="width:120px">
+                <div style="display:flex; justify-content:space-between; font-size: var(--text-xs); margin-bottom:4px; font-weight:700">
+                    <span style="color:var(--t1)">${prog.paidPct}%</span>
+                    <span style="color:var(--t3)">${prog.daysLeft}d left</span>
+                </div>
+                <div class="vl-rto-track" style="width:100%; height:6px; background:var(--s3); border-radius:3px; overflow:hidden">
+                    <div class="vl-rto-fill" style="width:${prog.paidPct}%; height:100%; background:var(--g)"></div>
+                </div>
+            </div>
+        ` : '<span style="color:var(--t3); font-size: var(--text-sm)">—</span>';
+
         return `
             <tr>
                 <td>
-                    <div style="font-size:10px; color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
-                    <div style="font-size:11px; font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
+                    <div style="font-size: var(--text-sm); color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
+                    <div style="font-size: var(--text-md); font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
                 </td>
                 <td>
-                    <div style="font-weight:700; font-size:13px; color:var(--t1)">${v.customer || 'Available'}</div>
-                    <div style="font-size:11px; color:var(--t3)">📞 ${riderPhone}</div>
+                    <div style="font-weight:700; font-size: var(--text-lg); color:var(--t1)">${v.customer || 'Available'}</div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+                        <div style="width:8px; height:8px; border-radius:50%; background:${riskColor}"></div>
+                        <div style="font-size: var(--text-sm); color:var(--t3); font-weight:600">${rider?.riskLabel || 'Medium'} Risk</div>
+                    </div>
                 </td>
                 <td style="text-align:center">
-                    <div style="font-weight:800; font-size:13px; color:${v.credits > 2 ? 'var(--t1)' : '#EF4444'}">${v.credits}d</div>
+                    <div style="font-weight:800; font-size: var(--text-lg); color:${v.credits > 2 ? 'var(--t1)' : 'var(--c-danger)'}">${v.credits}d</div>
                 </td>
                 <td style="text-align:center">
                     <div style="display:flex; justify-content:center; gap:4px">
                         ${v.immobilizeLog?.length > 0 ? `
-                            <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                            <div class="vl-pill" style="background:rgba(239, 68, 68, 0.15); color:var(--c-danger); border-color:rgba(239, 68, 68, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.immobilizeLog.length} Immobilizations">
                                 🔒 ${v.immobilizeLog.length}
                             </div>
                         ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
                         ${v.graceEncounters > 0 ? `
-                            <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                            <div class="vl-pill" style="background:rgba(245, 158, 11, 0.15); color:var(--c-warning); border-color:rgba(245, 158, 11, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.graceEncounters} Grace Period Entries">
                                 ⚠️ ${v.graceEncounters}
                             </div>
                         ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
                     </div>
                 </td>
                 <td>
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px">
-                        <div style="width:8px; height:8px; border-radius:50%; background:${riskColor}; box-shadow:0 0 8px ${riskColor}66"></div>
-                        <div style="font-weight:700; font-size:11px; color:var(--t1)">${rider?.riskLabel || 'Medium'} Risk</div>
+                    <div style="font-weight:800; font-family:'IBM Plex Mono', monospace; font-size: var(--text-md); color:var(--t1); letter-spacing:0.02em">${v.plate}</div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:2px">
+                        <div class="vl-status" style="padding:2px 6px; font-size:var(--text-2xs); background:${statusColor}22; color:${statusColor}; border-radius:4px; font-weight:800">${v.status.toUpperCase()}</div>
+                        <div style="font-size: var(--text-xs); color:var(--t3); font-weight:600">${v.model}</div>
                     </div>
-                    <div style="font-size:9px; color:var(--t3)">${rider?.riskLabel === 'High' ? 'Unstable payment profile' : (rider?.riskLabel === 'Low' ? 'Reliable daily payer' : 'Standard RTO profile')}</div>
+                </td>
+                <td style="text-align:right">
+                    <div style="font-size: var(--text-md); font-weight:600; color:var(--t1)">${v.lastPaymentAmount ? formatShortCurrency(v.lastPaymentAmount) : '—'}</div>
+                    <div style="font-size: var(--text-xs); color:var(--t3)">${lastPayment}</div>
                 </td>
                 <td>
-                    <div style="font-weight:800; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ac); letter-spacing:0.02em">${v.plate}</div>
-                    <div style="font-size:10px; color:var(--t3)">${v.brand} ${v.model}</div>
-                </td>
-                <td style="text-align:center">
-                    <div class="vl-status" style="background:${statusColor}22; color:${statusColor}">${v.status.toUpperCase()}</div>
+                     ${progressHtml}
                 </td>
                 <td style="text-align:right">
-                    <div style="font-size:11px; font-weight:600">${v.lastPaymentAmount ? formatShortCurrency(v.lastPaymentAmount) : '—'}</div>
-                    <div style="font-size:10px; color:var(--t3)">${lastPayment}</div>
-                </td>
-                <td style="width:80px">
-                     <div class="vl-rto-bar" style="width:100%">
-                        <div class="vl-rto-track" style="width:100%"><div class="vl-rto-fill" style="width:${prog?.paidPct || 0}%"></div></div>
-                    </div>
-                    <div style="font-size:9px; color:var(--t3); font-weight:700; margin-top:4px; text-align:right">${prog?.paidPct || 0}%</div>
-                </td>
-                <td style="text-align:right">
-                    <button class="vl-pill" style="padding:4px 10px" onclick="window.openVehicleDrawer('${v.id}')">Audit</button>
+                    <button class="vl-pill" style="padding:6px 12px; font-weight:700" onclick="window.openVehicleDrawer('${v.id}')">Audit</button>
                 </td>
             </tr>
-    `;
+        `;
     }).join('');
 
-    elProgramListContent.innerHTML = `
-        <div class="program-layout">
-            <!-- Sidebar -->
-            <div class="program-sidebar">
-                <div class="program-sidebar-header">
-                    <div style="font-size:11px; font-weight:700; color:var(--t3); letter-spacing:0.05em; text-transform:uppercase">Schemes & Programs</div>
-                    <button class="vl-pill" style="margin-top:10px; width:100%" onclick="window.openProgramModal()">+ New Program</button>
-                </div>
-                <div class="program-sidebar-scroll">
-                    <div class="program-sidebar-item ${selectedProgramId === 'all' ? 'active' : ''}" onclick="window.selectProgram('all')">
-                        <div style="font-weight:700; font-size:12px">All Programs</div>
-                        <div style="font-size:10px; opacity:0.6; margin-top:2px">Consolidated View</div>
+    elRtoFleetContent.innerHTML = `
+        <div class="program-layout" style="flex-direction:column; height: 100%;">
+            <!-- Top Nav -->
+            <div class="adm-top-nav" style="border-bottom: 1px solid var(--b1); overflow-x: auto; background: var(--s0);">
+                <div class="adm-nav horizontal-adm" style="padding: 0 20px;">
+                    <div class="adm-ni ${selectedProgramId === 'all' ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:160px; height:100%; justify-content:center; box-sizing:border-box" onclick="window.selectProgram('all')">
+                        <div style="font-weight:800; font-size: var(--text-base)">All Programs</div>
+                        <div style="font-size: var(--text-sm); opacity:0.6; margin-top:4px">Consolidated View</div>
                     </div>
-                    ${sidebarItems}
+                    ${topNavItems}
+                    <div style="padding: 10px; display:flex; align-items:center;">
+                         <button class="vl-pill" onclick="window.document.querySelector('.nav-tab[data-tab=\\'programs\\']').click()">+ New Program</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Main Content -->
-            <div class="program-main">
+            <div class="program-main" style="padding: 24px;">
                 <div class="vl-header" style="margin-bottom:24px">
                     <div>
                         <h2 class="vl-title">${viewTitle}</h2>
-                        <p style="font-size:12px; color:var(--t3); margin-top:4px">${viewSubtitle}</p>
+                        <p style="font-size: var(--text-base); color:var(--t3); margin-top:4px">${viewSubtitle}</p>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center">
                         ${selectedProgramId !== 'all' ? `
@@ -1771,15 +1870,15 @@ export const renderProgramListView = () => {
                 <div class="program-stats-grid">
                     <div class="program-card-stat">
                         <div class="label">Active Units</div>
-                        <div class="value" style="color:#22C55E">${displayVehicles.filter(v => v.status === 'active').length}</div>
+                        <div class="value" style="color:var(--c-success)">${displayVehicles.filter(v => v.status === 'active').length}</div>
                     </div>
                     <div class="program-card-stat">
                         <div class="label">Grace Units</div>
-                        <div class="value" style="color:#F59E0B">${displayVehicles.filter(v => v.status === 'grace').length}</div>
+                        <div class="value" style="color:var(--c-warning)">${displayVehicles.filter(v => v.status === 'grace').length}</div>
                     </div>
                     <div class="program-card-stat">
                         <div class="label">Locked Units</div>
-                        <div class="value" style="color:#EF4444">${displayVehicles.filter(v => v.status === 'immobilized').length}</div>
+                        <div class="value" style="color:var(--c-danger)">${displayVehicles.filter(v => v.status === 'immobilized').length}</div>
                     </div>
                     
                     <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('health', '${selectedProgramId}')">
@@ -1803,17 +1902,52 @@ export const renderProgramListView = () => {
                 </div>
 
                 <div class="card" style="padding:0; overflow:hidden; flex:1; display:flex; flex-direction:column">
+                    <!-- Advanced Filters Row -->
+                    <div style="padding:16px 20px; border-bottom:1px solid var(--b1); background:var(--s2); display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+                        <div style="font-weight:700; color:var(--dw); font-size:var(--text-md); margin-right:8px;">Deep Filters:</div>
+                        
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Operator / Dealer</label>
+                            <select id="rtoFilterOperator" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('operator', this.value)">
+                                <option value="all">All Operators</option>
+                                ${Array.from(new Set(state.vehicles.map(v => v.operator).filter(Boolean))).map(op => `<option value="${op}" ${window.rtoListFilter?.operator === op ? 'selected' : ''}>${op}</option>`).join('')}
+                            </select>
+                        </div>
+                        
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Brand / Maker</label>
+                            <select id="rtoFilterBrand" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('brand', this.value)">
+                                <option value="all">All Brands</option>
+                                ${Array.from(new Set(state.vehicles.map(v => v.brand).filter(Boolean))).map(b => `<option value="${b}" ${window.rtoListFilter?.brand === b ? 'selected' : ''}>${b}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Program Name</label>
+                            <select id="rtoFilterProgram" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('programName', this.value)">
+                                <option value="all">All Programs</option>
+                                ${Array.from(new Set(state.programs.map(p => p.name).filter(Boolean))).map(pn => `<option value="${pn}" ${window.rtoListFilter?.programName === pn ? 'selected' : ''}>${pn}</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Motor Type / Model</label>
+                            <select id="rtoFilterModel" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('model', this.value)">
+                                <option value="all">All Models</option>
+                                ${Array.from(new Set(state.vehicles.map(v => v.model).filter(Boolean))).map(m => `<option value="${m}" ${window.rtoListFilter?.model === m ? 'selected' : ''}>${m}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
                     <div style="overflow-y:auto; flex:1">
                         <table class="vl-table">
                             <thead>
                                 <tr>
-                                    <th>Program / RTO ID</th>
-                                    <th>Rider / Contact</th>
+                                    <th>Program / ID</th>
+                                    <th>Rider / Risk Audit</th>
                                     <th style="text-align:center">Credit</th>
                                     <th style="text-align:center">Collections Audit</th>
-                                    <th>Risk Audit</th>
-                                    <th>Nopol / Model</th>
-                                    <th style="text-align:center">Status</th>
+                                    <th>Vehicle / Status</th>
                                     <th style="text-align:right">Last Payment</th>
                                     <th>Progress</th>
                                     <th></th>
@@ -1826,7 +1960,7 @@ export const renderProgramListView = () => {
                     </div>
                 </div>
 
-                <div style="padding:12px 20px; border-top:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center; background:var(--s2); font-size:11px; font-weight:600">
+                <div style="padding:12px 20px; border-top:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center; background:var(--s2); font-size: var(--text-md); font-weight:600">
                     <div style="color:var(--t3)">
                         Displaying ${(programListPage - 1) * PAGE_SIZE + 1}–${Math.min(programListPage * PAGE_SIZE, displayVehicles.length)} of ${displayVehicles.length} integrated monitoring records.
                     </div>
@@ -1913,7 +2047,7 @@ export const renderProgramListView = () => {
                 transform: translateY(-2px);
             }
             .program-card-stat .label {
-                font-size: 10px;
+                font-size: var(--text-sm);
                 font-weight: 700;
                 color: var(--t3);
                 text-transform: uppercase;
@@ -1921,7 +2055,7 @@ export const renderProgramListView = () => {
                 margin-bottom: 6px;
             }
             .program-card-stat .value {
-                font-size: 20px;
+                font-size: var(--text-4xl);
                 font-weight: 800;
                 font-family: var(--font-mono);
             }
@@ -1945,7 +2079,7 @@ export const renderProgramListView = () => {
                 transition: opacity 0.3s;
                 border: 1px solid var(--b2);
                 box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                font-size: 11px;
+                font-size: var(--text-md);
                 line-height: 1.5;
                 pointer-events: none;
             }
@@ -1983,7 +2117,7 @@ window.popoutProgramStats = (type, programId) => {
     const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
 
     if (type === 'health') {
-        const healthColor = healthPct > 95 ? '#22C55E' : (healthPct > 90 ? '#F59E0B' : '#EF4444');
+        const healthColor = healthPct > 95 ? 'var(--c-success)' : (healthPct > 90 ? 'var(--c-warning)' : 'var(--c-danger)');
         const variance = (healthPct - 100).toFixed(1);
 
         title = `Collection Health Audit: ${p.shortName}`;
@@ -1991,45 +2125,45 @@ window.popoutProgramStats = (type, programId) => {
             <div style="padding:20px">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px">
                     <div class="card" style="padding:15px; background:var(--s3)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">COLLECTION HEALTH</div>
-                        <div style="font-size:24px; font-weight:800; color:${healthColor}">${healthPct}%</div>
+                        <div style="font-size: var(--text-sm); color:var(--t3); font-weight:700">COLLECTION HEALTH</div>
+                        <div style="font-size: var(--text-5xl); font-weight:800; color:${healthColor}">${healthPct}%</div>
                     </div>
                     <div class="card" style="padding:15px; background:var(--s3)">
-                        <div style="font-size:10px; color:var(--t3); font-weight:700">PAYMENT VARIANCE</div>
-                        <div style="font-size:24px; font-weight:800; color:${variance < 0 ? '#EF4444' : '#22C55E'}">${variance}% <span style="font-size:12px; font-weight:400; color:var(--t3)">vs Target</span></div>
+                        <div style="font-size: var(--text-sm); color:var(--t3); font-weight:700">PAYMENT VARIANCE</div>
+                        <div style="font-size: var(--text-5xl); font-weight:800; color:${variance < 0 ? 'var(--c-danger)' : 'var(--c-success)'}">${variance}% <span style="font-size: var(--text-base); font-weight:400; color:var(--t3)">vs Target</span></div>
                     </div>
                 </div>
 
                 <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1); margin-bottom:20px">
-                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📋 Data Audit Breakdown</h4>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px">
+                    <h4 style="margin-bottom:12px; font-size: var(--text-xl); display:flex; align-items:center; gap:8px">📋 Data Audit Breakdown</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size: var(--text-base)">
                         <div style="color:var(--t3)">Total Assets:</div>
                         <div style="text-align:right; font-weight:700; color:var(--t1)">${total} Units</div>
                         <div style="color:var(--t3)">Healthy (Active):</div>
-                        <div style="text-align:right; font-weight:700; color:#22C55E">${activeCount} Units</div>
+                        <div style="text-align:right; font-weight:700; color:var(--c-success)">${activeCount} Units</div>
                         <div style="color:var(--t3)">Non-Performing:</div>
-                        <div style="text-align:right; font-weight:700; color:#EF4444">${total - activeCount} Units</div>
+                        <div style="text-align:right; font-weight:700; color:var(--c-danger)">${total - activeCount} Units</div>
                     </div>
-                    <div style="margin-top:12px; font-size:10px; color:var(--t3); border-top:1px solid var(--b1); padding-top:8px">
+                    <div style="margin-top:12px; font-size: var(--text-sm); color:var(--t3); border-top:1px solid var(--b1); padding-top:8px">
                         Calculation: (Active / Total) × 100 = <strong>${healthPct}%</strong>
                     </div>
                 </div>
 
                 <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
-                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">🧠 Executive Intelligence</h4>
-                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Health is calculated by the ratio of <strong>Active</strong> (Paid) units vs total assigned units. Higher percentages indicate strong payment discipline.</p>
+                    <h4 style="margin-bottom:12px; font-size: var(--text-xl); display:flex; align-items:center; gap:8px">🧠 Executive Intelligence</h4>
+                    <p style="font-size: var(--text-base); color:var(--t2); margin-bottom:15px">Health is calculated by the ratio of <strong>Active</strong> (Paid) units vs total assigned units. Higher percentages indicate strong payment discipline.</p>
                     
                     <div style="display:flex; flex-direction:column; gap:10px">
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
-                            <span style="color:#22C55E; font-weight:700">● GOOD (>95%)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
+                            <span style="color:var(--c-success); font-weight:700">● GOOD (>95%)</span>
                             <span style="color:var(--t3)">Operational Excellence</span>
                         </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
-                            <span style="color:#F59E0B; font-weight:700">● WARNING (90-95%)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
+                            <span style="color:var(--c-warning); font-weight:700">● WARNING (90-95%)</span>
                             <span style="color:var(--t3)">Increase collection rigor</span>
                         </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
-                            <span style="color:#EF4444; font-weight:700">● CRITICAL (<90%)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
+                            <span style="color:var(--c-danger); font-weight:700">● CRITICAL (<90%)</span>
                             <span style="color:var(--t3)">Review rider risk profiles</span>
                         </div>
                     </div>
@@ -2041,7 +2175,7 @@ window.popoutProgramStats = (type, programId) => {
             </div>
         `;
     } else {
-        const maturityColor = maturityPct > 75 ? '#22C55E' : (maturityPct > 25 ? 'var(--ac)' : '#F59E0B');
+        const maturityColor = maturityPct > 75 ? 'var(--c-success)' : (maturityPct > 25 ? 'var(--ac)' : 'var(--c-warning)');
 
         title = `Fleet Maturity Snapshot: ${p.shortName}`;
         html = `
@@ -2050,26 +2184,26 @@ window.popoutProgramStats = (type, programId) => {
                     <div style="width:${maturityPct}%; height:100%; background:${maturityColor}; border-radius:50px; box-shadow: 0 0 10px ${maturityColor}55"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; margin-bottom:25px">
-                    <span style="font-size:11px; color:var(--t3); font-weight:600">NEW 0%</span>
-                    <span style="font-size:14px; font-weight:800; color:${maturityColor}">${maturityPct}% AVG RECOVERY</span>
-                    <span style="font-size:11px; color:var(--t3); font-weight:600">OWNED 100%</span>
+                    <span style="font-size: var(--text-md); color:var(--t3); font-weight:600">NEW 0%</span>
+                    <span style="font-size: var(--text-xl); font-weight:800; color:${maturityColor}">${maturityPct}% AVG RECOVERY</span>
+                    <span style="font-size: var(--text-md); color:var(--t3); font-weight:600">OWNED 100%</span>
                 </div>
 
                 <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
-                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📈 Lifecycle Benchmarks</h4>
-                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the fleet. This determines when assets transition from RTO to full ownership.</p>
+                    <h4 style="margin-bottom:12px; font-size: var(--text-xl); display:flex; align-items:center; gap:8px">📈 Lifecycle Benchmarks</h4>
+                    <p style="font-size: var(--text-base); color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the fleet. This determines when assets transition from RTO to full ownership.</p>
                     
                     <div style="display:flex; flex-direction:column; gap:10px">
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
-                            <span style="color:#22C55E; font-weight:700">● HIGH (>75%)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
+                            <span style="color:var(--c-success); font-weight:700">● HIGH (>75%)</span>
                             <span style="color:var(--t3)">Impending Equity Transfer</span>
                         </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
                             <span style="color:var(--ac); font-weight:700">● MID (25-75%)</span>
                             <span style="color:var(--t3)">Operational Stable Phase</span>
                         </div>
-                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
-                            <span style="color:#F59E0B; font-weight:700">● EARLY (<25%)</span>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
+                            <span style="color:var(--c-warning); font-weight:700">● EARLY (<25%)</span>
                             <span style="color:var(--t3)">Growth & Deployment</span>
                         </div>
                     </div>
@@ -2299,47 +2433,62 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates — v1.4.0";
+    elTitle.innerText = "Platform Updates — v1.4.1";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size:16px; color:var(--p)">🚀 Latest Release: v1.4.0</h3>
-                    <span style="font-size:11px; color:var(--t3); font-family:var(--font-mono)">2026-02-23</span>
+                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--p)">🚀 Latest Release: v1.4.1</h3>
+                    <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-24</span>
                 </div>
-                <p style="font-size:12px; color:var(--t2); line-height:1.6">This major update introduces the unified <strong>RTO Application Management</strong> suite, centralizing risk assessment, pickup scheduling, and automated driver communication.</p>
+                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">This update focuses on <strong>Dynamic Fleet Observation</strong>, introducing real-time movement simulation and a vertical panoramic layout for better geographic visibility.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
                 <div>
-                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:#22C55E; border-radius:50%"></span> NEW FEATURES
+                    <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:var(--c-success); border-radius:50%"></span> OBSERVABILITY & SIMULATION
                     </h4>
-                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Unified RTO Sidebar:</strong> New integrated navigation for Applications, Pickup, Score Config, and WA Scenarios.</li>
-                        <li><strong>Interactive WA Preview:</strong> Verified WhatsApp communication with editable previews and dynamic variable parsing.</li>
-                        <li><strong>Pickup Scheduling:</strong> Intelligent calendar system for managing motorcycle handovers at partner dealers.</li>
-                        <li><strong>Config Persistence:</strong> LocalStorage engine for custom WhatsApp templates and risk score parameters.</li>
+                    <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>Movement Engine:</strong> Real-time simulation of vehicle position, speed, and bearing every 3 seconds.</li>
+                        <li><strong>Geographical Bounds:</strong> Hardened boundaries to keep markers on land within the Jabodetabek region.</li>
+                        <li><strong>Panoramic Layout:</strong> New 60/40 vertical split optimizes map surface area for fleet monitoring.</li>
+                        <li><strong>Active Labels:</strong> Transitioned to "Running" and "Stopped" marker states for better operational context.</li>
                     </ul>
                 </div>
 
                 <div>
-                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--p); border-radius:50%"></span> UX REFINEMENTS
+                    <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:var(--p); border-radius:50%"></span> UI & UX REFINEMENTS
                     </h4>
-                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Top-Aligned Viewports:</strong> Standardized multi-view layout to maximize vertical screen efficiency.</li>
-                        <li><strong>Admin Command Sync:</strong> Improved global window integration for seamless cross-module interaction.</li>
+                    <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>Refined Top Bar Stats:</strong> New operational KPIs for Running, Stopped, No Signal, and Idle Assets.</li>
+                        <li><strong>Prominent Status Guide:</strong> Bold primary header and expanded default state for high discoverability.</li>
+                        <li><strong>Improved Pagination:</strong> Fleet list now shows 10 items per page for better scrolling efficiency.</li>
+                        <li><strong>Consolidated Nav:</strong> Renamed modules to "RTO Fleet" and "Programs" for clearer workflow distinction.</li>
+                        <li><strong>Filter Sync:</strong> Added "Available" filter; unified progress bar styling across all views.</li>
                     </ul>
                 </div>
 
                 <div>
-                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:#FACC15; border-radius:50%"></span> SYSTEM STABILITY
+                    <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:#FACC15; border-radius:50%"></span> SYSTEM INTEGRITY
                     </h4>
-                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li>Resolved critical layout flexbox gaps in sidebar-nested views.</li>
-                        <li>Fixed JS string interpolation issues on score configuration sliders.</li>
+                    <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li>Fixed race condition preventing mock data from loading on initial app startup.</li>
+                        <li>Resolved sub-navigation overlap issues on smaller viewports.</li>
+                    </ul>
+                </div>
+
+                <div style="border-top: 1px dashed var(--b1); padding-top: 20px; margin-top: 10px;">
+                    <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t3); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        🔄 PREVIOUS: v1.4.0 (RTO Management)
+                    </h4>
+                    <ul style="font-size: var(--text-sm); color:var(--t3); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px; opacity: 0.8">
+                        <li><strong>Unified RTO Suite:</strong> Integrated sidebar for Applications, Pickup, Scoring, and WA.</li>
+                        <li><strong>WA Communications:</strong> Interactive previews with dynamic variable injection.</li>
+                        <li><strong>Score Config:</strong> Persistent risk scoring parameters via LocalStorage.</li>
+                        <li><strong>Pickup Intelligence:</strong> Calendar-based dealer appointment system.</li>
                     </ul>
                 </div>
             </div>

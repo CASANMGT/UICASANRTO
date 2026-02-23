@@ -25,9 +25,25 @@ export const DEALER_LOCATIONS = {
 };
 
 export const DOCS = {
-    id: [{ id: 'ktp', n: 'KTP Asli', d: 'KTP aktif', tag: 'wajib', ic: '🪪' }, { id: 'kk', n: 'Kartu Keluarga', d: 'KK terbaru', tag: 'wajib', ic: '👨‍👩‍👧' }, { id: 'sim', n: 'SIM C Aktif', d: 'SIM C motor', tag: 'wajib', ic: '🪪' }, { id: 'selfie', n: 'Selfie + KTP', d: 'Foto memegang KTP', tag: 'wajib', ic: '🤳' }],
-    work: [{ id: 'slip', n: 'Slip Gaji / Screenshot Income', d: '3 bulan terakhir', tag: 'wajib', ic: '💰' }, { id: 'rekening', n: 'Rekening Koran', d: 'Mutasi 3 bulan', tag: 'wajib', ic: '🏦' }, { id: 'sktm', n: 'Surat Keterangan Kerja', d: 'Dari platform/perusahaan', tag: 'opt', ic: '📄' }, { id: 'npwp', n: 'NPWP', d: 'Jika ada', tag: 'opt', ic: '📋' }],
-    boost: [{ id: 'tabungan', n: 'Bukti Tabungan >Rp 1 Jt', d: '+4 pts', tag: 'boost', ic: '💳' }, { id: 'bpjs_tk', n: 'BPJS Ketenagakerjaan', d: '+3 pts', tag: 'boost', ic: '🛡️' }, { id: 'ref_ojol', n: 'Screenshot Rating OJOL ≥4.5', d: '+2 pts', tag: 'boost', ic: '⭐' }, { id: 'gu_ktp', n: 'KTP Penjamin', d: '+5 pts', tag: 'boost', ic: '👤' }, { id: 'sertif', n: 'Sertifikat / BPKB Kendaraan', d: '+3 pts', tag: 'boost', ic: '📜' }]
+    id: [
+        { id: 'ktp', n: 'KTP Asli', d: 'KTP aktif', tag: 'wajib', ic: '🪪', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP' },
+        { id: 'kk', n: 'Kartu Keluarga', d: 'KK terbaru', tag: 'wajib', ic: '👨‍👩‍👧', img: 'https://placehold.co/600x800/eeeeee/999999?text=Kartu+Keluarga' },
+        { id: 'sim', n: 'SIM C Aktif', d: 'SIM C motor', tag: 'wajib', ic: '🪪', img: 'https://placehold.co/600x400/eeeeee/999999?text=SIM+C' },
+        { id: 'selfie', n: 'Selfie + KTP', d: 'Foto memegang KTP', tag: 'wajib', ic: '🤳', img: 'https://placehold.co/400x600/eeeeee/999999?text=Selfie' }
+    ],
+    work: [
+        { id: 'slip', n: 'Slip Gaji / Screenshot Income', d: '3 bulan terakhir', tag: 'wajib', ic: '💰', img: 'https://placehold.co/600x800/eeeeee/999999?text=Slip+Gaji' },
+        { id: 'rekening', n: 'Rekening Koran', d: 'Mutasi 3 bulan', tag: 'wajib', ic: '🏦', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rekening+Koran' },
+        { id: 'sktm', n: 'Surat Keterangan Kerja', d: 'Dari platform/perusahaan', tag: 'opt', ic: '📄', img: 'https://placehold.co/600x800/eeeeee/999999?text=Surat+Keterangan' },
+        { id: 'npwp', n: 'NPWP', d: 'Jika ada', tag: 'opt', ic: '📋', img: 'https://placehold.co/600x400/eeeeee/999999?text=NPWP' }
+    ],
+    boost: [
+        { id: 'tabungan', n: 'Bukti Tabungan >Rp 1 Jt', d: '+4 pts', tag: 'boost', ic: '💳', img: 'https://placehold.co/600x800/eeeeee/999999?text=Tabungan' },
+        { id: 'bpjs_tk', n: 'BPJS Ketenagakerjaan', d: '+3 pts', tag: 'boost', ic: '🛡️', img: 'https://placehold.co/600x400/eeeeee/999999?text=BPJS' },
+        { id: 'ref_ojol', n: 'Screenshot Rating OJOL ≥4.5', d: '+2 pts', tag: 'boost', ic: '⭐', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rating+Ojol' },
+        { id: 'gu_ktp', n: 'KTP Penjamin', d: '+5 pts', tag: 'boost', ic: '👤', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP+Penjamin' },
+        { id: 'sertif', n: 'Sertifikat / BPKB Kendaraan', d: '+3 pts', tag: 'boost', ic: '📜', img: 'https://placehold.co/600x800/eeeeee/999999?text=BPKB' }
+    ]
 };
 
 export const ADMIN_APPS = [
@@ -103,13 +119,42 @@ export let state = {
     calMonth: new Date().getMonth(),
     selDate: null,
     selTime: null,
+    calMonth: new Date().getMonth(),
+    selDate: null,
+    selTime: null,
     dimCfg: JSON.parse(JSON.stringify(DIM_DEFAULTS)),
     threshCfg: JSON.parse(JSON.stringify(THRESH_DEFAULTS)),
+    dsrCfg: [
+        { l: 'Batas Sehat', v: 50, c: 'var(--dg)' },
+        { l: 'Batas Waspada', v: 70, c: 'var(--dw)' },
+        { l: 'Penalty Waspada', v: 85, c: '#FB923C' },
+        { l: 'Penalty Berat', v: 100, c: 'var(--dd)' }
+    ]
 };
+
+// Auto-load config
+try {
+    const saved = localStorage.getItem('casan_rto_cfg');
+    if (saved) {
+        const p = JSON.parse(saved);
+        if (p.dimCfg) state.dimCfg = p.dimCfg;
+        if (p.threshCfg) state.threshCfg = p.threshCfg;
+        if (p.dsrCfg) state.dsrCfg = p.dsrCfg;
+    }
+} catch (e) {
+    console.error('Failed to load storage', e);
+}
 
 // Utils
 export function getDecStyle(dec) {
-    const m = { approved: { bg: 'var(--dg1)', c: 'var(--dg)', l: 'APPROVED' }, auto: { bg: 'var(--dac1)', c: 'var(--dac)', l: 'AUTO-APP' }, review: { bg: 'var(--dw1)', c: 'var(--dw)', l: 'REVIEW' }, pending: { bg: 'var(--dbl1)', c: 'var(--dbl)', l: 'PENDING' }, declined: { bg: 'var(--dd1)', c: 'var(--dd)', l: 'DECLINED' } };
+    const m = {
+        approved: { bg: 'var(--dg1)', c: 'var(--dg)', l: 'ACCEPTED' },
+        auto: { bg: 'var(--dac1)', c: 'var(--dac)', l: 'AUTO-APP' },
+        review: { bg: 'var(--dw1)', c: 'var(--dw)', l: 'REVIEW' },
+        pending: { bg: 'var(--dbl1)', c: 'var(--dbl)', l: 'PENDING' },
+        pending_docs: { bg: 'rgba(251,191,36,.1)', c: 'var(--dw)', l: 'REQ DOCS' },
+        declined: { bg: 'var(--dd1)', c: 'var(--dd)', l: 'REJECTED' }
+    };
     return m[dec] || { bg: 'var(--ds3)', c: 'var(--dt2)', l: dec.toUpperCase() };
 }
 
@@ -150,10 +195,10 @@ export function admV(view, elId) {
     }
 }
 
-export function setAdmFlt(f, elId) {
+export function setAdmFlt(f, el) {
     state.admFlt = f;
     document.querySelectorAll('.afb').forEach(b => b.classList.remove('on'));
-    if (elId) document.getElementById(elId).classList.add('on');
+    if (el) el.classList.add('on');
     admRTbl();
 }
 
@@ -170,9 +215,10 @@ export function admRTbl() {
     });
 
     const tot = state.admApps.length;
-    const pnd = state.admApps.filter(a => a.dec === 'pending').length;
+    const pnd = state.admApps.filter(a => a.dec === 'pending' || a.dec === 'pending_docs').length;
     const apr = state.admApps.filter(a => a.dec === 'approved').length;
     const dec = state.admApps.filter(a => a.dec === 'declined').length;
+    const rev = state.admApps.filter(a => a.dec === 'review').length;
     const avg = Math.round(state.admApps.reduce((s, a) => s + a.score, 0) / state.admApps.length) || 0;
 
     const elTot = document.getElementById('kpi-tot');
@@ -186,34 +232,56 @@ export function admRTbl() {
     const elAvg = document.getElementById('kpi-avg');
     if (elAvg) elAvg.textContent = avg;
 
+    // Filter badges
+    const bAll = document.getElementById('cnt-all'); if (bAll) bAll.textContent = tot;
+    const bPnd = document.getElementById('cnt-pnd'); if (bPnd) bPnd.textContent = pnd;
+    const bRev = document.getElementById('cnt-rev'); if (bRev) bRev.textContent = rev;
+    const bApr = document.getElementById('cnt-apr'); if (bApr) bApr.textContent = apr;
+    const bDec = document.getElementById('cnt-dec'); if (bDec) bDec.textContent = dec;
+
     const pendBadge = document.getElementById('pend-badge');
     if (pendBadge) pendBadge.textContent = pnd;
+
+    // Sidebar Notification Dots
+    const sideApps = document.getElementById('side-cnt-apps');
+    if (sideApps) {
+        sideApps.textContent = pnd;
+        sideApps.style.display = pnd > 0 ? 'flex' : 'none';
+    }
+
+    const puCount = state.puApps ? state.puApps.filter(a => a.s === 'waiting').length : 0;
+    const sidePU = document.getElementById('side-cnt-pickup');
+    if (sidePU) {
+        sidePU.textContent = puCount;
+        sidePU.style.display = puCount > 0 ? 'flex' : 'none';
+    }
 
     const tbody = document.getElementById('adm-tbody');
     if (!tbody) return;
 
     tbody.innerHTML = apps.map((a) => {
-        const ptn = PARTNERS[a.ptn] || { name: a.ptn, c: '#999' };
+        const ptn = PARTNERS[a.ptn] || { name: a.ptn, ic: '🏢', c: '#999' };
         const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, ty: '—' };
         const ds = getDecStyle(a.dec);
         const sc = getScoreColor(a.score + (a.adj || 0));
         return `<tr class="${state.selApp === a.id ? 'sel-r' : ''}" onclick="window.rto.admSel('${a.id}')">
-          <td><span style="font-size:9px;font-weight:800;color:var(--dt1);font-family:'IBM Plex Mono',monospace">${a.id}</span></td>
-          <td><div style="font-size:10px;font-weight:700;color:var(--dt1)">${a.nm}</div><div style="font-size:8px;color:var(--dt3)">${a.ph}</div></td>
-          <td><span style="color:${ptn.c};font-weight:600;font-size:9px">${ptn.name}</span></td>
-          <td><span style="font-size:8px">${pr.nm}</span></td>
-          <td style="font-size:9px">${a.prof}</td>
-          <td class="mono" style="font-size:9px">${fRp(a.inc)}</td>
-          <td><span class="sc-chip" style="background:${sc}20;color:${sc}">${a.score + (a.adj || 0)}</span></td>
-          <td><span class="dec-chip" style="background:${ds.bg};color:${ds.c}">${ds.l}</span></td>
-          <td style="font-size:9px;color:${a.miss && a.miss.length ? 'var(--dw)' : 'var(--dt3)'}">${a.miss && a.miss.length ? a.miss.length + ' missing' : '—'}</td>
-          <td style="font-size:8px;color:var(--dt3)">${a.submitted}</td>
+          <td><span style="font-size: var(--text-base);font-weight:800;color:var(--dt1);font-family:'IBM Plex Mono',monospace">${a.id}</span></td>
+          <td><div style="font-size: var(--text-lg);font-weight:700;color:var(--dt1)">${a.nm}</div><div style="font-size: var(--text-sm);color:var(--dt3)">${a.ph}</div></td>
+          <td><span style="color:${ptn.c};font-weight:600;font-size: var(--text-base)">${ptn.name}</span></td>
+          <td><span style="font-size: var(--text-sm)">${pr.nm}</span></td>
+          <td style="font-size: var(--text-base)">${a.prof}</td>
+          <td class="mono" style="font-size: var(--text-base)">${fRp(a.inc)}</td>
+          <td><span class="sc-chip" style="background:${sc}20;color:${sc};font-size: var(--text-lg);font-weight:700">${a.score + (a.adj || 0)}</span></td>
+          <td><span class="dec-chip" style="background:${ds.bg};color:${ds.c};font-size: var(--text-sm);font-weight:800">${ds.l}</span></td>
+          <td style="font-size: var(--text-base);color:${a.miss && a.miss.length ? 'var(--dw)' : 'var(--dt3)'}">${a.miss && a.miss.length ? a.miss.length + ' docs' : '—'}</td>
+          <td style="font-size: var(--text-sm);color:var(--dt3)">${a.submitted}</td>
           <td>
+            <button class="act-btn" style="border-color:var(--db1);color:var(--dt2)" onclick="event.stopPropagation();window.rto.quickWA('${a.id}')">📱</button>
             <button class="act-btn" style="border-color:rgba(52,211,153,.25);color:var(--dg)" onclick="event.stopPropagation();window.rto.quickDec('${a.id}','approved')">✅</button>
             <button class="act-btn" style="border-color:rgba(248,113,113,.25);color:var(--dd)" onclick="event.stopPropagation();window.rto.quickDec('${a.id}','declined')">❌</button>
           </td>
         </tr>`;
-    }).join('') || '<tr><td colspan="11" style="padding:20px;text-align:center;color:var(--dt3);font-size:10px">No applications found</td></tr>';
+    }).join('') || '<tr><td colspan="11" style="padding:24px;text-align:center;color:var(--dt3);font-size: var(--text-base)">No applications found</td></tr>';
 }
 
 export function admSel(id) {
@@ -226,11 +294,78 @@ export function admSel(id) {
     const ds = getDecStyle(a.dec);
     const sc = a.score + (a.adj || 0);
 
-    document.getElementById('dp-t').textContent = a.id + ' — ' + a.nm;
+    // Ensure document state object exists
+    if (!a.docStatus) a.docStatus = {};
+
+    const docsList = [...DOCS.id, ...DOCS.work, ...DOCS.boost].map(d => {
+        const isMissing = (a.miss || []).includes(d.id);
+        let st = 'verified'; // Default to verified
+        if (isMissing) st = 'missing';
+        if (a.docStatus && a.docStatus[d.id]) {
+            st = a.docStatus[d.id];
+            if (st === 'pending') st = 'verified'; // treat explicitly pending as verified since default is verified
+        }
+
+        let thumbHtml = '';
+        if (st !== 'missing' && d.img) {
+            thumbHtml = `<img src="${d.img}" class="doc-thumb" onclick="window.rto.previewImg('${d.img}')" alt="${d.n}">`;
+        } else {
+            thumbHtml = `<div class="doc-thumb" style="display:flex;align-items:center;justify-content:center;font-size:var(--text-xl);color:var(--dt3)">📄</div>`;
+        }
+
+        let statusHtml = '';
+        let actionsHtml = '';
+
+        if (st === 'missing') {
+            statusHtml = `<span style="color:var(--dd); font-size:var(--text-xs); font-weight:700">✕ Missing</span>`;
+            actionsHtml = `<button class="btn" style="padding:2px 8px; font-size:var(--text-3xs); background:var(--dw1); border:1px solid rgba(251,191,36,.25); color:var(--dw)" onclick="window.rto.uploadDoc('${a.id}', '${d.id}')">📤 Upload</button>`;
+        } else if (st === 'rejected') {
+            const reason = a.docReasons?.[d.id] || 'Dokumen belum sesuai standar';
+            statusHtml = `<span style="color:var(--dd); font-size:var(--text-xs); font-weight:700">❌ Rejected</span><div style="font-size:var(--text-3xs); color:var(--dt3); max-width:140px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap" title="${reason}">${reason}</div>`;
+            actionsHtml = `<button class="btn" style="padding:2px 8px; font-size:var(--text-3xs)" onclick="window.rto.resubmitDoc('${a.id}', '${d.id}')">Mock Resubmit</button>`;
+        } else {
+            statusHtml = `<span style="color:var(--dg); font-size:var(--text-xs); font-weight:700">✅ Verified</span>`;
+            actionsHtml = `
+                <button class="btn btn-danger" style="padding:2px 8px; font-size:var(--text-3xs)" onclick="window.rto.verifyDoc('${a.id}', '${d.id}', 'rejected')">Reject</button>
+            `;
+        }
+
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid var(--db1)">
+            <div style="display:flex; gap:12px; align-items:center">
+                ${thumbHtml}
+                <div style="font-size:var(--text-sm); color:var(--dt1); font-weight:600">${d.n}</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center">
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px">
+                    ${statusHtml}
+                </div>
+                ${actionsHtml}
+            </div>
+        </div>`;
+    }).join('');
+
+    // Highlight Score layout
+    document.getElementById('dp-t').innerHTML = `
+        <div style="display:flex; align-items:center; gap:20px; width:100%">
+            <div style="width: 70px; height: 70px; border-radius: 50%; border: 4px solid ${getScoreColor(sc)}; display:flex; align-items:center; justify-content:center; flex-direction:column; background: ${getScoreColor(sc)}11;">
+                <span style="font-size: var(--text-2xl); font-weight:900; color:${getScoreColor(sc)}">${sc}</span>
+                <span style="font-size: var(--text-3xs); color:var(--dt3); margin-top:-2px">SCORE</span>
+            </div>
+            <div style="flex:1">
+                <div style="font-size: var(--text-2xl); font-weight:800; color:var(--dt1)">${a.nm}</div>
+                <div style="font-size: var(--text-sm); color:var(--dt3)">${a.id} • ${a.prof} • Rp ${a.inc.toLocaleString('id-ID')}</div>
+                <div style="margin-top:4px"><span class="dec-chip" style="background:${ds.bg};color:${ds.c};font-size: var(--text-2xs);font-weight:800">${ds.l}</span></div>
+            </div>
+            <div>
+                <button class="btn btn-secondary" onclick="window.rto.admWA()" style="font-size: var(--text-xs)">📱 WA Driver</button>
+            </div>
+        </div>
+    `;
+
     document.getElementById('dp-grid').innerHTML = `
-      <div class="dp-col"><div class="dp-sl">Applicant</div>${[['Name', a.nm], ['Phone', a.ph], ['Area', a.area], ['Profesi', a.prof], ['Submitted', a.submitted]].map(r => `<div class="dp-row"><div class="dp-k">${r[0]}</div><div class="dp-v">${r[1]}</div></div>`).join('')}</div>
-      <div class="dp-col"><div class="dp-sl">Risk Data</div>${[['Partner', ptn.name], ['Program', pr.nm], ['Program Type', pr.ty], ['Income', 'Rp ' + a.inc.toLocaleString('id-ID')], ['Risk Score', sc + '/100'], ['Decision', ds.l]].map(r => `<div class="dp-row"><div class="dp-k">${r[0]}</div><div class="dp-v" style="${r[0] === 'Decision' ? `color:${ds.c}` : r[0] === 'Risk Score' ? `color:${getScoreColor(sc)}` : ''}">${r[1]}</div></div>`).join('')}</div>
-      <div class="dp-col"><div class="dp-sl">Documents</div>${[...DOCS.id, ...DOCS.work, ...DOCS.boost].map(d => `<div class="dp-row"><div class="dp-k">${d.n}</div><div class="dp-v" style="color:${(a.miss || []).includes(d.id) ? 'var(--dd)' : 'var(--dg)'}">${(a.miss || []).includes(d.id) ? '✕ Missing' : '✓ Ready'}</div></div>`).join('')}</div>`;
+      <div class="dp-col"><div class="dp-sl">Applicant Details</div>${[['Phone', a.ph], ['Area', a.area], ['Partner', ptn.name], ['Program', pr.nm], ['Submitted', a.submitted]].map(r => `<div class="dp-row" style="font-size:var(--text-base)"><div class="dp-k">${r[0]}</div><div class="dp-v" style="font-size:var(--text-lg)">${r[1]}</div></div>`).join('')}</div>
+      <div class="dp-col" style="grid-column: span 2"><div class="dp-sl">Document Verification</div>${docsList}</div>`;
+
 
     const dimKeys = ['id', 'inc', 'job', 'fam', 'crd', 'doc'];
     const dimLabels = ['Identitas', 'Penghasilan', 'Pekerjaan', 'Keluarga', 'Kredit', 'Dokumen'];
@@ -240,12 +375,12 @@ export function admSel(id) {
 
     document.getElementById('sp-grid').innerHTML = dimKeys.map((k, i) => {
         const v = Math.min(dimMax[i], Math.round(baseScore * dimMax[i] / 100));
-        return `<div class="sp-d"><div class="sp-dl">${dimLabels[i]}</div><div class="sp-bw"><div class="sp-bf" style="width:${v / dimMax[i] * 100}%;background:${dimCols[i]}"></div></div><div class="sp-vs"><div class="sp-v" style="color:${dimCols[i]}">${v}</div><div class="sp-m">/${dimMax[i]}</div></div></div>`;
+        return `<div class="sp-d"><div class="sp-dl" style="font-size:var(--text-xs)">${dimLabels[i]}</div><div class="sp-bw"><div class="sp-bf" style="width:${v / dimMax[i] * 100}%;background:${dimCols[i]}"></div></div><div class="sp-vs"><div class="sp-v" style="color:${dimCols[i]}; font-size:var(--text-lg)">${v}</div><div class="sp-m" style="font-size:var(--text-sm)">/${dimMax[i]}</div></div></div>`;
     }).join('');
 
     if (a.miss && a.miss.length) {
         document.getElementById('dp-miss-sec').style.display = 'block';
-        document.getElementById('dp-miss-items').innerHTML = a.miss.map(m => `<span style="padding:2px 7px;border-radius:4px;background:var(--dw1);border:1px solid rgba(251,191,36,.15);font-size:8px;color:var(--dw);font-family:'IBM Plex Mono',monospace">${m}</span>`).join('');
+        document.getElementById('dp-miss-items').innerHTML = a.miss.map(m => `<span style="padding:4px 10px;border-radius:6px;background:var(--dw1);border:1px solid rgba(251,191,36,.15);font-size: var(--text-sm);color:var(--dw);font-weight:600;font-family:'IBM Plex Mono',monospace">${m}</span>`).join('');
     } else {
         document.getElementById('dp-miss-sec').style.display = 'none';
     }
@@ -293,6 +428,50 @@ export function quickDec(id, dec) {
         const pr = MAIN_PROGS.find(p => p.id === a.prog);
         addToPickupQueue(a.id, a.nm, a.ph, a.ptn, a.prog, pr ? pr.nm : 'Motor Listrik');
     }
+}
+
+export function quickWA(id) {
+    const oldSel = state.selApp;
+    state.selApp = id;
+    admWA();
+    state.selApp = oldSel;
+}
+
+export function verifyDoc(appId, docId, status) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    if (status === 'rejected') {
+        const reason = prompt('Penyebab penolakan dokumen?', 'Buram / tidak terbaca');
+        if (reason === null) return; // cancelled
+        if (!a.docReasons) a.docReasons = {};
+        a.docReasons[docId] = reason;
+    }
+
+    if (!a.docStatus) a.docStatus = {};
+    a.docStatus[docId] = status;
+
+    // Sync with 'miss' array
+    if (status === 'rejected' && !a.miss.includes(docId)) {
+        a.miss.push(docId);
+    } else if (status === 'verified') {
+        a.miss = a.miss.filter(m => m !== docId);
+        if (a.docReasons) delete a.docReasons[docId];
+    }
+
+    admSel(appId);
+    admT(`Doc ${status === 'verified' ? 'Verified ✅' : 'Rejected ❌'}`);
+}
+
+export function resubmitDoc(appId, docId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    if (!a.docStatus) a.docStatus = {};
+    a.docStatus[docId] = 'pending';
+    a.miss = a.miss.filter(m => m !== docId);
+
+    admSel(appId);
+    admT('User resubmitted document 🔄');
 }
 
 export function addToPickupQueue(appId, nm, ph, ptn, prog, model) {
@@ -344,6 +523,46 @@ export function switchRtoTab(tab, el) {
         } else if (!state.selScen && WA_SCENARIOS.length) {
             selWAScen(WA_SCENARIOS[0].k);
         }
+    }
+}
+
+export function previewImg(url) {
+    const modal = document.getElementById('img-modal');
+    const img = document.getElementById('img-preview-src');
+    if (modal && img) {
+        img.src = url;
+        modal.style.display = 'flex';
+    }
+}
+
+export function closePreview() {
+    const modal = document.getElementById('img-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+export function uploadDoc(appId, docId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    a.miss = a.miss.filter(m => m !== docId);
+    if (!a.docStatus) a.docStatus = {};
+    a.docStatus[docId] = 'verified';
+    if (a.docReasons) delete a.docReasons[docId];
+    admSel(appId);
+    admT('Doc Uploaded & Verified 📤✅');
+}
+
+export function waContext(ctx) {
+    if (!state.selApp) {
+        admT('Pilih aplikasi terlebih dahulu!');
+        return;
+    }
+    state.selScen = ctx;
+    switchRtoTab('wa');
+    // Ensure the sidebar reflects the 'wa' tab
+    const el = document.querySelector('.adm-side .adm-ni[onclick="window.rto.switchRtoTab(\'wa\', this)"]');
+    if (el) {
+        document.querySelectorAll('.adm-side .adm-ni').forEach(i => i.classList.remove('on'));
+        el.classList.add('on');
     }
 }
 
@@ -408,8 +627,8 @@ export function showWAPreviewModal(phone, text, name) {
         m.className = 'modal-overlay';
         m.innerHTML = `
             <div class="modal" style="max-width:400px; padding:20px;">
-                <div style="font-size:14px; font-weight:800; color:var(--dt1); margin-bottom:12px;">📱 Kirim WhatsApp ke <span id="wa-mod-nm" style="color:var(--dac)"></span></div>
-                <textarea id="wa-mod-txt" class="ov-in" style="width:100%; height:200px; resize:vertical; font-family:'IBM Plex Mono',monospace; font-size:11px; margin-bottom:12px; padding:10px;"></textarea>
+                <div style="font-size: var(--text-xl); font-weight:800; color:var(--dt1); margin-bottom:12px;">📱 Kirim WhatsApp ke <span id="wa-mod-nm" style="color:var(--dac)"></span></div>
+                <textarea id="wa-mod-txt" class="ov-in" style="width:100%; height:200px; resize:vertical; font-family:'IBM Plex Mono',monospace; font-size: var(--text-md); margin-bottom:12px; padding:10px;"></textarea>
                 <div style="display:flex; gap:8px;">
                     <button class="ov-btn" style="flex:1; background:var(--dg1); color:var(--dg); border-color:var(--dg)" onclick="window.rto.sendWAModal()">🚀 Kirim WA</button>
                     <button class="ov-btn" style="flex:1" onclick="document.getElementById('wa-preview-mod').classList.remove('active')">Batal</button>
@@ -482,7 +701,7 @@ export function renderAnalytics() {
         { l: 'Auto-Approved', v: pd ? pd.auto : d.auto, c: 'var(--dp)', s: 'Score ≥80' },
         { l: 'Avg Income', v: pd ? pd.inc : d.inc, c: 'var(--dt1)', s: '/bulan', sm: 1 },
         { l: 'Doc Complete', v: d.doc + '%', c: 'var(--dw)', s: 'Required' },
-    ].map(k => `<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v" style="color:${k.c};${k.sm ? 'font-size:14px' : ''}">${k.v}</div><div class="kpi-d" style="color:var(--dt3)">${k.s}</div></div>`).join('');
+    ].map(k => `<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v" style="color:${k.c};${k.sm ? 'font-size: var(--text-xl)' : ''}">${k.v}</div><div class="kpi-d" style="color:var(--dt3)">${k.s}</div></div>`).join('');
 
     const bcRow = (items, max) => items.map(([l, n, col]) => {
         const w = Math.round(n / max * 100);
@@ -514,7 +733,7 @@ export function renderScoreCfg() {
           <div class="sc-dim-lbl">${d.l}</div>
           <input class="sc-dim-inp" type="number" min="0" max="30" value="${d.max}" onchange="window.rto.updDimCfg(${i}, this.value)" style="color:${d.c}">
           <div class="sc-dim-bar"><div class="sc-dim-bf" style="width:${d.max / 30 * 100}%;background:${d.c}"></div></div>
-          <span class="mono" style="font-size:9px;color:var(--dt3);min-width:28px">/${d.max}</span>
+          <span class="mono" style="font-size: var(--text-xs);color:var(--dt3);min-width:28px">/${d.max}</span>
         </div>`).join('');
     }
 
@@ -523,11 +742,45 @@ export function renderScoreCfg() {
         scThresh.innerHTML = state.threshCfg.map((t, i) => `
         <div class="sc-thresh-row">
           <span class="sc-thresh-chip" style="background:${t.bg};color:${t.c}">${t.l}</span>
-          <span style="font-size:9px;color:var(--dt3);min-width:28px">≥</span>
+          <span style="font-size: var(--text-xs);color:var(--dt3);min-width:28px">≥</span>
           <input class="sc-thresh-inp" type="number" min="0" max="100" value="${t.min}" onchange="window.rto.updThreshCfg(${i}, this.value)">
-          <span style="font-size:9px;color:var(--dt3)">poin</span>
+          <span style="font-size: var(--text-xs);color:var(--dt3)">poin</span>
         </div>`).join('');
     }
+
+    renderProgCfg();
+    renderDSR();
+}
+
+export function renderProgCfg() {
+    const scProg = document.getElementById('sc-prog-cfg');
+    if (!scProg) return;
+
+    scProg.innerHTML = MAIN_PROGS.map(p => `
+    <div class="sc-dim-row">
+      <div class="sc-dim-lbl" style="width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.nm}</div>
+      <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: var(--text-xs); color: var(--dt3)">Rp</span>
+        <input class="sc-thresh-inp" type="text" value="${Number(p.mi).toLocaleString('id-ID')}" style="width: 100px; text-align: left;" disabled>
+      </div>
+    </div>`).join('');
+}
+
+export function renderDSR() {
+    const el = document.getElementById('sc-dsr-cfg');
+    if (!el) return;
+    el.innerHTML = state.dsrCfg.map((d, i) => `
+    <div class="sc-dsr-row">
+        <span class="sc-dsr-lbl">${d.l}</span>
+        <span style="font-size:var(--text-xs);color:var(--dt3)">≤</span>
+        <input class="sc-thresh-inp" type="number" value="${d.v}" onchange="window.rto.updDSR(${i}, this.value)">
+        <span style="font-size:var(--text-xs);color:var(--dt3)">%</span>
+        <div style="width:10px;height:10px;border-radius:50%;background:${d.c};margin-left:auto"></div>
+    </div>`).join('');
+}
+
+export function updDSR(i, v) {
+    state.dsrCfg[i].v = parseInt(v) || 0;
 }
 
 export function updDimCfg(idx, val) {
@@ -541,22 +794,32 @@ export function updThreshCfg(idx, val) {
 
 export function saveCfg() {
     const total = state.dimCfg.reduce((s, d) => s + d.max, 0);
-    const t = document.getElementById('cfg-toast');
-    if (!t) return;
     if (total !== 100) {
-        t.style.display = 'block'; t.style.background = 'var(--dd1)'; t.style.color = 'var(--dd)';
-        t.textContent = '⚠ Total harus 100 poin (sekarang ' + total + ')'; return;
+        alert('⚠ Total bobot harus 100 poin (sekarang ' + total + ')');
+        return;
     }
-    t.style.display = 'block'; t.style.background = 'var(--dg1)'; t.style.color = 'var(--dg)';
-    t.textContent = '✅ Config tersimpan!';
-    setTimeout(() => t.style.display = 'none', 2500);
+    localStorage.setItem('casan_rto_cfg', JSON.stringify({
+        dimCfg: state.dimCfg,
+        threshCfg: state.threshCfg,
+        dsrCfg: state.dsrCfg
+    }));
+    alert('✅ Konfigurasi skor & DSR berhasil disimpan!');
 }
 
 export function resetCfg() {
-    state.dimCfg = JSON.parse(JSON.stringify(DIM_DEFAULTS));
-    state.threshCfg = JSON.parse(JSON.stringify(THRESH_DEFAULTS));
-    renderScoreCfg();
-    admT('↺ Config direset ke default');
+    if (confirm('Yakin ingin reset semua konfigurasi ke default?')) {
+        state.dimCfg = JSON.parse(JSON.stringify(DIM_DEFAULTS));
+        state.threshCfg = JSON.parse(JSON.stringify(THRESH_DEFAULTS));
+        state.dsrCfg = [
+            { l: 'Batas Sehat', v: 50, c: 'var(--dg)' },
+            { l: 'Batas Waspada', v: 70, c: 'var(--dw)' },
+            { l: 'Penalty Waspada', v: 85, c: '#FB923C' },
+            { l: 'Penalty Berat', v: 100, c: 'var(--dd)' }
+        ];
+        renderScoreCfg();
+        localStorage.removeItem('casan_rto_cfg');
+        alert('↺ Konfigurasi direset ke default');
+    }
 }
 
 // ═══ WA TEMPLATES ═══
@@ -680,7 +943,7 @@ export function renderPUList() {
           ${dl < 0 ? '⚠ Melewati deadline' : dl === 0 ? '⚠ Deadline HARI INI' : p.status === 'done' ? '✅ Selesai' : '📅 Deadline: ' + p.deadline + ' (' + dl + 'h lagi)'}
         </div>
       </div>`;
-    }).join('') || '<div style="padding:20px;text-align:center;color:var(--dt3);font-size:10px">Tidak ada pickup</div>';
+    }).join('') || '<div style="padding:20px;text-align:center;color:var(--dt3);font-size: var(--text-sm)">Tidak ada pickup</div>';
 
     // Update Badge
     const puBadge = document.getElementById('pickup-badge');
@@ -712,7 +975,7 @@ export function renderPUDetail() {
 
     el.innerHTML = `
       <div class="pu-dh">
-        <div class="pu-dt">${p.nm} <span style="font-size:10px;color:var(--dt3)">· ${p.model}</span></div>
+        <div class="pu-dt">${p.nm} <span style="font-size: var(--text-sm);color:var(--dt3)">· ${p.model}</span></div>
         <div class="pu-ds">${p.appId} · Deadline: <b style="color:${dl < 0 ? 'var(--dd)' : dl <= 3 ? 'var(--dw)' : 'var(--dac)'}">${p.deadline}</b></div>
       </div>
   
@@ -723,17 +986,17 @@ export function renderPUDetail() {
         <div class="pu-loc-sub">${loc ? loc.addr : ''}</div>
         <div class="pu-loc-map">🗺️ ${loc ? loc.addr : 'Peta lokasi'}</div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button onclick="window.rto.admT('📍 Alamat disalin!')" class="ov-btn" style="flex:1;font-size:9px">📋 Salin Alamat</button>
-          <button onclick="window.rto.admT('🔗 Membuka Google Maps...')" class="ov-btn" style="flex:1;font-size:9px">🗺️ Google Maps</button>
+          <button onclick="window.rto.admT('📍 Alamat disalin!')" class="ov-btn" style="flex:1;font-size: var(--text-xs)">📋 Salin Alamat</button>
+          <button onclick="window.rto.admT('🔗 Membuka Google Maps...')" class="ov-btn" style="flex:1;font-size: var(--text-xs)">🗺️ Google Maps</button>
         </div>
       </div>
   
       <!--WA Notification to driver-->
     ${p.status === 'waiting' || p.status === 'overdue' ? `
       <div style="margin:0 16px 12px;padding:10px 12px;background:rgba(34,197,94,.06);border-radius:8px;border:1px solid rgba(34,197,94,.15)">
-        <div style="font-size:9px;font-weight:800;color:var(--dg);margin-bottom:6px">📱 Kirim Notifikasi ke Driver</div>
-        <div style="font-size:9px;color:var(--dt2);line-height:1.5;margin-bottom:8px">Minta driver untuk menjadwalkan pickup dalam <b>${dl > 0 ? dl + ' hari' : 'waktu segera'}</b></div>
-        <button onclick="window.rto.sendPickupWA('${p.id}')" style="width:100%;padding:7px;background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer">
+        <div style="font-size: var(--text-xs);font-weight:800;color:var(--dg);margin-bottom:6px">📱 Kirim Notifikasi ke Driver</div>
+        <div style="font-size: var(--text-xs);color:var(--dt2);line-height:1.5;margin-bottom:8px">Minta driver untuk menjadwalkan pickup dalam <b>${dl > 0 ? dl + ' hari' : 'waktu segera'}</b></div>
+        <button onclick="window.rto.sendPickupWA('${p.id}')" style="width:100%;padding:7px;background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none;border-radius:6px;font-size: var(--text-sm);font-weight:700;cursor:pointer">
           📱 Kirim WA ke ${p.nm}
         </button>
       </div>` : ''
@@ -743,7 +1006,7 @@ export function renderPUDetail() {
       <div class="cal-wrap">
         <div class="cal-t">📅 Jadwal Pickup — Pilih Tanggal & Waktu</div>
         <div id="pu-cal"></div>
-        <div style="font-size:9px;font-weight:700;color:var(--dt2);margin-bottom:6px">⏰ Slot Tersedia</div>
+        <div style="font-size: var(--text-xs);font-weight:700;color:var(--dt2);margin-bottom:6px">⏰ Slot Tersedia</div>
         <div class="time-slots" id="pu-slots"></div>
         <button class="pu-confirm-btn" id="pu-confirm-btn" onclick="window.rto.confirmPickup('${p.id}')" ${state.selDate && state.selTime ? '' : 'disabled'}>
           ${state.selDate && state.selTime ? `✅ Konfirmasi: ${state.selDate} · ${state.selTime}` : '← Pilih tanggal & waktu dulu'}
@@ -751,12 +1014,59 @@ export function renderPUDetail() {
       </div>
   
       <!--Handover Timeline-->
-      <div style="margin:0 16px;font-size:10px;font-weight:800;color:var(--dt1);margin-bottom:8px">📋 Status Handover</div>
+      <div style="margin:0 16px;font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:8px">📋 Status Handover</div>
       <div class="handover-timeline">
         ${renderHOTimeline(p)}
       </div>
-      ${p.hoStatus === 'dealer_confirmed' ? `<button class="ho-complete-btn green" onclick="window.rto.markHandoverDone('${p.id}')">✅ Konfirmasi Serah Terima Selesai</button>` : ''}
-      ${p.status === 'done' ? `<div style="margin:10px 16px;padding:10px;background:var(--dg1);border-radius:8px;border:1px solid rgba(52,211,153,.15);font-size:10px;color:var(--dg);font-weight:700;text-align:center">✅ Handover selesai · GPS diaktifkan · Rider aktif</div>` : ''}
+      
+      ${p.hoStatus === 'dealer_confirmed' ? `
+        <div style="margin: 16px; padding: 16px; background: var(--ds2); border: 1px solid var(--db1); border-radius: 8px;">
+            <div style="font-size: var(--text-base); font-weight: 800; color: var(--dw); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                ⚠️ Verifikasi & Bukti Serah Terima Kendaraan
+            </div>
+            
+            <!-- SECTION 1: Checkboxes -->
+            <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">1. Verifikasi Fisik & Kelengkapan</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--dt2); margin-bottom: 20px; padding-left: 8pxborder-left: 2px solid var(--db1);" id="ho-checklist-container">
+                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Fisik kendaraan mulus tanpa baret/kerusakan.
+                </label>
+                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Baterai terisi penuh (100%).
+                </label>
+                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Kunci Utama & Kunci Cadangan lengkap.
+                </label>
+                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> STNK Mobil/Motor tersedia.
+                </label>
+                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Charger & Helm diserahkan ke Driver.
+                </label>
+            </div>
+
+            <!-- SECTION 2: Photos -->
+            <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">2. Bukti Serah Terima (Foto)</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;" id="ho-photos-container">
+                
+                <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-1" onclick="window.rto.mockHOUpload('ho-photo-1', 'Foto Serah Terima Kendaraan')">
+                    <div style="font-size: 24px; margin-bottom: 4px;">📸</div>
+                    <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto Serah Terima Kendaraan</div>
+                    <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
+                </div>
+
+                <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-2" onclick="window.rto.mockHOUpload('ho-photo-2', 'Foto KTP & Driver dengan Motor')">
+                    <div style="font-size: 24px; margin-bottom: 4px;">📸</div>
+                    <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto KTP & Driver dengan Motor</div>
+                    <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
+                </div>
+
+            </div>
+        </div>
+        <button class="ho-complete-btn green" id="btn-ho-complete" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.3s;" onclick="window.rto.markHandoverDone('${p.id}')">✅ Konfirmasi Serah Terima Selesai</button>
+      ` : ''}
+      
+      ${p.status === 'done' ? `<div style="margin:10px 16px;padding:12px;background:var(--dg1);border-radius:8px;border:1px solid rgba(52,211,153,.15);font-size: var(--text-base);color:var(--dg);font-weight:700;text-align:center">✅ Handover selesai · GPS diaktifkan · Rider aktif</div>` : ''}
     `;
 
     renderPUCal();
@@ -884,6 +1194,55 @@ export function markHandoverDone(puId) {
     admRTbl();
 }
 
+export function evalHOChecklist() {
+    const container = document.getElementById('ho-checklist-container');
+    const photo1 = document.getElementById('ho-photo-1');
+    const photo2 = document.getElementById('ho-photo-2');
+    const btn = document.getElementById('btn-ho-complete');
+
+    if (!container || !btn || !photo1 || !photo2) return;
+
+    // 1. Check if all checkboxes are checked
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+    // 2. Check if both photos are uploaded (indicated by the 'uploaded' class we will add)
+    const photosDone = photo1.classList.contains('uploaded') && photo2.classList.contains('uploaded');
+
+    // 3. Evaluate final state
+    if (allChecked && photosDone) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+export function mockHOUpload(elId, label) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (el.classList.contains('uploaded')) return; // Prevent double trigger
+
+    // Simulate an upload delay
+    el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px; animation: pulse 1s infinite;">⏳</div>
+                    <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Mengunggah...</div>`;
+
+    setTimeout(() => {
+        el.classList.add('uploaded');
+        el.style.borderColor = 'var(--c-success)';
+        el.style.background = 'var(--dg1)';
+        el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px;">✅</div>
+                        <div style="font-size: var(--text-xs); color: var(--c-success); font-weight: 700;">${label}</div>
+                        <div style="font-size: var(--text-3xs); color: var(--c-success); margin-top: 4px;">Berhasil Diunggah</div>`;
+
+        admT(`✅ ${label} berhasil diunggah!`);
+        evalHOChecklist(); // Re-evaluate the Master button
+    }, 800);
+}
+
 
 
 // Setup globally exposed functions for onclick handlers
@@ -899,6 +1258,11 @@ export function extendGlobalWindow() {
         renderAnalytics,
         switchRtoTab,
         admWA,
-        sendWAModal
+        sendWAModal,
+        updDimCfg,
+        updThreshCfg,
+        updDSR,
+        saveCfg,
+        resetCfg
     };
 }
