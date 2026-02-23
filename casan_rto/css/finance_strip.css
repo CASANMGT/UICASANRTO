@@ -45,6 +45,13 @@
     border-color: var(--b2);
 }
 
+.pc.active {
+    border-color: var(--p);
+    background: rgba(0, 229, 195, 0.05);
+    box-shadow: 0 0 15px rgba(0, 229, 195, 0.1);
+    transform: translateY(-2px);
+}
+
 .pc h4 {
     margin: 0;
     font-size: 14px;

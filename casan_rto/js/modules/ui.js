@@ -1,16 +1,35 @@
-/* UI Rendering & Event Handling */
-import { formatRupiah, timeAgo, getCountdown } from './utils.js';
-import { state, programs } from './store.js';
+import { formatRupiah, timeAgo, getCountdown, downloadCSV } from './utils.js';
+import { state, programs, partners, addProgram, updateProgram, deleteProgram } from './store.js';
+import { getVehicleById, getVehicleTransactions, getRTOProgress, immobilizeVehicle, releaseVehicle, extendGrace, getAllVehicles, getSTNKAlert, getVehicleSTNKStats } from './vehicle.js';
+import { getUserById, getUserVehicles, getUserTransactions, getRiskColor, getOccupationEmoji, getUsers } from './users.js';
 
 // Elements
 const elVehicleList = document.getElementById('vehicleList');
 const elStatsBar = document.getElementById('statsBar');
 const elStatusFilters = document.getElementById('statusFilters');
 
-// State for UI
+// New Elements for Vehicle/User List
+const elVehicleListContent = document.getElementById('vehicleListContent');
+const elUserListContent = document.getElementById('userListContent');
+const elDetailDrawer = document.getElementById('detailDrawer');
+const elDrawerBackdrop = document.getElementById('drawerBackdrop');
+const elDrawerContent = document.getElementById('drawerContent');
+const elProgramListContent = document.getElementById('programListContent');
+
 // State for UI
 let expandedCardId = null;
 let currentPage = 1;
+
+// State for new lists
+let vehicleListFilter = { partner: 'all', status: 'all', search: '', program: 'all', sortBy: 'id', sortDir: 'asc' };
+let userListFilter = { partner: 'all', risk: 'all', search: '', program: 'all', sortBy: 'name', sortDir: 'asc' };
+let selectedProgramId = 'all';
+let vehicleListPage = 1;
+let userListPage = 1;
+let programListPage = 1;
+
+// Drawer navigation history
+let drawerStack = [];
 
 window.changePage = (delta) => {
     currentPage += delta;
@@ -25,18 +44,82 @@ export const resetPagination = () => {
     window.financePage = 1;
 };
 
-export const renderStats = (stats) => {
+export const renderStats = (stats, tab = 'fleet') => {
     if (!elStatsBar) return;
 
-    elStatsBar.innerHTML = `
-        <div class="card stat-card"><h3>Fleet</h3><div class="value">${stats.total}</div></div>
-        <div class="card stat-card"><h3>Active</h3><div class="value text-green">${stats.active}</div></div>
-        <div class="card stat-card"><h3>Expiring</h3><div class="value text-orange">${stats.expiring}</div></div>
-        <div class="card stat-card"><h3>Grace</h3><div class="value" style="color:var(--w)">${stats.grace}</div></div>
-        <div class="card stat-card"><h3>Locked</h3><div class="value text-red">${stats.immobilized}</div></div>
-        <div class="card stat-card"><h3>Online</h3><div class="value" style="color:var(--ac);font-size:16px">${stats.online}/${stats.total}</div></div>
-        <div class="card stat-card"><h3>Revenue</h3><div class="value" style="color:var(--p);font-size:14px">${formatRupiah(stats.revenue)}</div></div>
-    `;
+    let html = '';
+    const format = (v) => typeof v === 'number' ? v.toLocaleString() : v;
+
+    switch (tab) {
+        case 'users':
+            html = `
+                <div class="card stat-card"><h3>Verified</h3><div class="value" style="color:#22C55E">${format(stats.verified)}</div></div>
+                <div class="card stat-card"><h3>Active Riders</h3><div class="value" style="color:var(--ac)">${format(stats.activeRiders)}</div></div>
+                <div class="card stat-card"><h3>High Risk</h3><div class="value" style="color:#EF4444">${format(stats.highRisk)}</div></div>
+                <div class="card stat-card"><h3>Avg Risk</h3><div class="value" style="color:var(--p)">${stats.avgRisk}</div></div>
+                <div class="card stat-card"><h3>KYC Pending</h3><div class="value" style="color:#F59E0B">${format(stats.kycPending)}</div></div>
+                <div class="card stat-card"><h3>New (30d)</h3><div class="value" style="color:var(--g)">${format(stats.newRiders)}</div></div>
+            `;
+            break;
+
+        case 'programs':
+            html = `
+                <div class="card stat-card"><h3>Schemes</h3><div class="value">${format(stats.activeSchemes)}</div></div>
+                <div class="card stat-card"><h3>Portfolio Health</h3><div class="value" style="color:#22C55E">${stats.health}%</div></div>
+                <div class="card stat-card"><h3>RTO Units</h3><div class="value" style="color:var(--ac)">${format(stats.rtoUnits)}</div></div>
+                <div class="card stat-card"><h3>Avg Maturity</h3><div class="value" style="color:var(--p)">${stats.maturity}%</div></div>
+                <div class="card stat-card"><h3>In Grace</h3><div class="value" style="color:#F59E0B">${format(stats.inGrace)}</div></div>
+                <div class="card stat-card"><h3>Expiring (7d)</h3><div class="value" style="color:#EF4444">${format(stats.expiringSoon)}</div></div>
+            `;
+            break;
+
+        case 'finance':
+            html = `
+                <div class="card stat-card"><h3>Total Revenue</h3><div class="value" style="color:var(--p)">${formatShortCurrency(stats.revenue)}</div></div>
+                <div class="card stat-card"><h3>Monthly (Feb)</h3><div class="value" style="color:#22C55E">${formatShortCurrency(stats.monthly)}</div></div>
+                <div class="card stat-card"><h3>Arrears Bal.</h3><div class="value" style="color:#EF4444">${formatShortCurrency(stats.arrears)}</div></div>
+                <div class="card stat-card"><h3>Success Rate</h3><div class="value" style="color:var(--ac)">${stats.successRate}%</div></div>
+                <div class="card stat-card"><h3>Daily Avg</h3><div class="value" style="color:var(--t2)">${formatShortCurrency(stats.dailyAvg)}</div></div>
+                <div class="card stat-card"><h3>Pending Payout</h3><div class="value" style="color:var(--t3)">${formatShortCurrency(stats.pendingPayout)}</div></div>
+            `;
+            break;
+
+        case 'vehicles':
+            html = `
+                <div class="card stat-card"><h3>Total Fleet</h3><div class="value">${format(stats.total)}</div></div>
+                <div class="card stat-card"><h3>Operational</h3><div class="value" style="color:#22C55E">${format(stats.active)}</div></div>
+                <div class="card stat-card"><h3>STNK < 30d</h3><div class="value" style="color:#F59E0B">${format(stats.stnkSoon)}</div></div>
+                <div class="card stat-card"><h3>GPS Online %</h3><div class="value" style="color:var(--ac)">${stats.gpsOnline}%</div></div>
+                <div class="card stat-card"><h3>In Service</h3><div class="value" style="color:var(--p)">${format(stats.inService)}</div></div>
+                <div class="card stat-card"><h3>Idle Assets</h3><div class="value" style="color:var(--t3)">${format(stats.idleAssets)}</div></div>
+            `;
+            break;
+
+        case 'gps':
+            html = `
+                <div class="card stat-card"><h3>Total Stock</h3><div class="value">${format(stats.total)}</div></div>
+                <div class="card stat-card"><h3>Assigned</h3><div class="value" style="color:var(--ac)">${format(stats.assigned)}</div></div>
+                <div class="card stat-card"><h3>Spares</h3><div class="value" style="color:var(--p)">${format(stats.spares)}</div></div>
+                <div class="card stat-card"><h3>Warranty Warn</h3><div class="value" style="color:#EF4444">${format(stats.warrantySoon)}</div></div>
+                <div class="card stat-card"><h3>Offline Gear</h3><div class="value" style="color:var(--t3)">${format(stats.offlineGear)}</div></div>
+                <div class="card stat-card"><h3>Update Req.</h3><div class="value" style="color:#F59E0B">${format(stats.updateReq)}</div></div>
+            `;
+            break;
+
+        case 'fleet':
+        default:
+            html = `
+                <div class="card stat-card"><h3>Moving Now</h3><div class="value" style="color:#22C55E">${format(stats.moving)}</div></div>
+                <div class="card stat-card"><h3>Parked/Idle</h3><div class="value" style="color:var(--ac)">${format(stats.parked)}</div></div>
+                <div class="card stat-card"><h3>No Signal (Crit)</h3><div class="value" style="color:#EF4444">${format(stats.noSignal)}</div></div>
+                <div class="card stat-card"><h3>Low Battery</h3><div class="value" style="color:#F59E0B">${format(stats.lowBat)}</div></div>
+                <div class="card stat-card"><h3>Avg Speed</h3><div class="value" style="color:var(--p)">${stats.avgSpeed} kmh</div></div>
+                <div class="card stat-card"><h3>Active Alerts</h3><div class="value" style="color:var(--d)">${format(stats.alerts)}</div></div>
+            `;
+            break;
+    }
+
+    elStatsBar.innerHTML = html;
 };
 
 export const renderFilters = (activeFilter, stats) => {
@@ -313,8 +396,8 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     const container = document.getElementById('financeContent');
     if (!container) return;
 
-    // --- Pagination (25 per page) ---
-    const PAGE_SIZE = 25;
+    // --- Pagination (20 per page) ---
+    const PAGE_SIZE = 20;
     if (!window.financePage) window.financePage = 1;
     const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
     if (window.financePage > totalPages) window.financePage = 1;
@@ -330,12 +413,28 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
             onmouseover="this.style.background='var(--s2)'" 
             onmouseout="this.style.background=''">
             <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--t2)">${t.id}</td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
+                <div>${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                <div style="font-size:10px; opacity:0.7">${new Date(t.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+            </td>
             <td style="padding:10px 12px; font-size:13px">${t.vehicleId}</td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div style="font-weight:600">${t.customer}</div>
+                <div style="font-size:10px; color:var(--t3)">${t.customerPhone || '-'}</div>
+            </td>
             <td style="padding:10px 12px">
-                <span style="font-size:11px; padding:2px 8px; background:var(--s3); border-radius:20px; color:var(--t2)">${t.program || t.type || 'RTO'}</span>
+                <div style="font-size:11px; font-weight:700; color:var(--t1); margin-bottom:2px">
+                    ${(t.partnerId || '').charAt(0).toUpperCase() + (t.partnerId || '').slice(1)} • ${t.brand || '—'}
+                </div>
+                <span style="font-size:10px; padding:1px 6px; background:var(--s3); border-radius:4px; color:var(--t2); border:1px solid var(--b1)">
+                    ${t.program || t.type || 'RTO'}
+                </span>
             </td>
             <td style="padding:10px 12px; font-size:12px; color:var(--t3)">${t.method || '-'}</td>
+            <td style="padding:10px 12px; font-size:12px">
+                <div style="font-weight:700; font-family:'IBM Plex Mono'; color:var(--ac)">${t.creditDays || 7}d</div>
+                <div style="font-size:10px; color:var(--t3)">Credit Days</div>
+            </td>
             <td style="padding:10px 12px; text-align:right; font-family:'IBM Plex Mono'; font-size:13px; font-weight:600">${formatRupiah(t.amount)}</td>
             <td style="padding:10px 12px">
                 <span style="font-size:11px; font-weight:600; color:${statusColor}">${statusLabel}</span>
@@ -349,7 +448,7 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
         <span style="font-size:12px; color:var(--t3)">${start + 1}–${Math.min(start + PAGE_SIZE, transactions.length)} of ${transactions.length}</span>
         <div style="display:flex; gap:6px; align-items:center">
             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px"
-                onclick="window.changeFinancePage(-1)" ${window.financePage === 1 ? 'disabled' : ''}>◀ Prev</button>
+                onclick="window.changeFinancePage(-1)" ${window.financePage === 1 ? 'disabled' : ''}>◀</button>
             <span style="font-size:12px; color:var(--t2); min-width:80px; text-align:center">Page ${window.financePage} / ${totalPages}</span>
             <button class="btn btn-secondary" style="padding:4px 10px; font-size:12px"
                 onclick="window.changeFinancePage(1)" ${window.financePage === totalPages ? 'disabled' : ''}>Next ▶</button>
@@ -377,7 +476,7 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
     </div>` : '';
 
     container.innerHTML = `
-        <div style="height:100%; overflow:hidden; display:flex; flex-direction:column; padding:20px; gap:0; box-sizing:border-box">
+        <div style="display:flex; flex-direction:column; padding:20px; gap:0; box-sizing:border-box; min-height:100%;">
 
             <!-- Header row with title + program filter -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-shrink:0">
@@ -421,42 +520,34 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
                 </div>
             </div>
 
-            <!-- Table + Payment Methods grid -->
-            <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; flex:1; min-height:0">
-
-                <!-- Transaction Table -->
+            <!-- Transaction Table -->
+            <div>
                 <div class="card" style="display:flex; flex-direction:column; overflow:hidden">
-                    <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center; flex-shrink:0">
+                    <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="margin:0">Recent Transactions</h3>
                         <span style="font-size:12px; color:var(--t3)">${transactions.length} records</span>
                     </div>
-                    <div style="flex:1; overflow-y:auto; min-height:0">
-                        <table style="width:100%; border-collapse:collapse; font-size:13px">
+                    <div style="overflow-x:auto">
+                        <table style="width:100%; border-collapse:collapse; font-size:13px; min-width:600px">
                             <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
                                 <tr style="text-align:left; color:var(--t3)">
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">TX ID</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">DATE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">DATE & TIME</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">VEHICLE</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">USER / PHONE</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">PROGRAM</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">METHOD</th>
+                                    <th style="padding:10px 12px; font-weight:500; font-size:11px">CREDIT DAYS</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px; text-align:right">AMOUNT</th>
                                     <th style="padding:10px 12px; font-weight:500; font-size:11px">STATUS</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${rows || '<tr><td colspan="7" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
+                                ${rows || '<tr><td colspan="9" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
                             </tbody>
                         </table>
                     </div>
                     ${txPagination}
-                </div>
-
-                <!-- Payment Methods -->
-                <div class="card" style="padding:20px; overflow-y:auto">
-                    <h3 style="margin:0 0 16px">Payment Methods</h3>
-                    <div style="display:flex; flex-direction:column; gap:14px">
-                        ${renderPaymentMethodBars(transactions)}
-                    </div>
                 </div>
             </div>
         </div>
@@ -473,33 +564,19 @@ export const renderFinanceDashboard = (stats, transactions, programStats) => {
 };
 
 
-
-// Helper to render simple bars for payment methods
-function renderPaymentMethodBars(txs) {
-    const counts = {};
-    txs.forEach(t => counts[t.method] = (counts[t.method] || 0) + 1);
-    const total = txs.length;
-
-    return Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([method, count]) => {
-            const pct = (count / total) * 100;
-            return `
-                <div>
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px">
-                        <span>${method}</span>
-                        <span>${Math.round(pct)}%</span>
-                    </div>
-                    <div style="height:6px; background:var(--s3); border-radius:3px; overflow:hidden">
-                        <div style="height:100%; width:${pct}%; background:var(--w)"></div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-}
-
 function formatDate(iso) {
     return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// Helper for short currency format (e.g., 100K, 1.2M)
+function formatShortCurrency(amount) {
+    if (amount >= 1000000) {
+        return `Rp${(amount / 1000000).toFixed(1)}M`;
+    }
+    if (amount >= 1000) {
+        return `Rp${(amount / 1000).toFixed(0)}K`;
+    }
+    return `Rp${amount}`;
 }
 
 export const updateCountdowns = () => {
@@ -651,6 +728,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
             </td>
             <td style="padding:10px 12px; font-size:12px">
                 <div style="color:var(--t1)">${d.vehiclePlate}</div>
+                <div style="font-size:11px; color:var(--ac); font-weight:600">${d.vehicleBrand || '—'} ${d.vehicleModel || ''}</div>
                 <div style="font-size:10px; color:var(--t3)">${programName}</div>
             </td>
             <td style="padding:10px 12px; font-size:12px">
@@ -659,10 +737,8 @@ export const renderGpsList = (devices, stats, filter = {}) => {
             <td style="padding:10px 12px; font-size:12px">
                 <div>${d.sim.carrier}</div>
                 <div style="font-size:10px; color:var(--t3)">${usagePct}% used</div>
+                <div style="font-size:10px; color:var(--t3); font-family:'IBM Plex Mono'">IMEI: ${d.imei}</div>
                 <span style="font-size:10px; color:${simColor}">${d.sim.status}</span>
-            </td>
-            <td style="padding:10px 12px; font-size:12px; color:var(--t2)">
-                ${d.firmware}${fwAlert}
             </td>
             <td style="padding:10px 12px">
                 <div style="display:flex; gap:6px">
@@ -678,7 +754,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
     }).join('');
 
     const noResults = pageDevices.length === 0
-        ? `<tr><td colspan="8" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
+        ? `<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
         : '';
 
     const paginationHtml = `
@@ -719,7 +795,6 @@ export const renderGpsList = (devices, stats, filter = {}) => {
                         <th style="padding:10px 12px">Vehicle / Program</th>
                         <th style="padding:10px 12px">Last Location</th>
                         <th style="padding:10px 12px">SIM</th>
-                        <th style="padding:10px 12px">Firmware</th>
                         <th style="padding:10px 12px">Actions</th>
                     </tr>
                 </thead>
@@ -845,4 +920,1472 @@ export const closeGpsModal = () => {
     const overlay = document.getElementById('gpsModalOverlay');
     if (overlay) overlay.classList.remove('active');
 };
+
+// ─── VEHICLE LIST TAB ─────────────────────────────────────────────────────────
+
+export const renderVehicleListView = () => {
+    if (!elVehicleListContent) return;
+
+    const vehicles = getAllVehicles(vehicleListFilter);
+    const PAGE_SIZE = 20;
+    const totalPages = Math.ceil(vehicles.length / PAGE_SIZE) || 1;
+    if (vehicleListPage > totalPages) vehicleListPage = totalPages;
+    const paginated = vehicles.slice((vehicleListPage - 1) * PAGE_SIZE, vehicleListPage * PAGE_SIZE);
+
+    const tableRows = paginated.map(v => {
+        const prog = getRTOProgress(v);
+        const progressHtml = prog ? `
+            <div class="vl-rto-bar">
+                <div class="vl-rto-track"><div class="vl-rto-fill" style="width:${prog.paidPct}%"></div></div>
+                <div style="font-size:10px; color:var(--t2)">${prog.monthsLeft}m left</div>
+            </div>` : '—';
+
+        const creditColor = v.credits < 3 ? '#EF4444' : (v.credits < 7 ? '#F59E0B' : '#22C55E');
+        const creditHtml = `
+            <div class="vl-credit-bar">
+                <div class="vl-credit-track"><div class="vl-credit-fill" style="width:${Math.min(100, (v.credits / 30) * 100)}%; background:${creditColor}"></div></div>
+                <div class="vl-credit-label" style="color:${creditColor}">${v.credits}d</div>
+            </div>`;
+
+        const STNK = getSTNKAlert(v);
+        const stnkHtml = STNK ? `<span class="vl-status" style="background:${STNK.type === 'expired' ? '#EF4444' : '#F59E0B'}22; color:${STNK.type === 'expired' ? '#EF4444' : '#F59E0B'}">${STNK.label}</span>` : '<span style="color:var(--t3)">—</span>';
+
+        return `
+            <tr data-status="${v.status}" onclick="window.openVehicleDrawer('${v.id}')">
+                <td style="font-weight:700">${v.id}<div style="font-size:10px; font-weight:400; color:var(--t3)">${v.plate}</div></td>
+                <td>
+                    <div style="font-weight:600">${v.customer || '—'}</div>
+                    <div style="font-size:10px; color:var(--t3)">${v.phone || ''}</div>
+                </td>
+                <td><span class="vl-status" style="background:${(v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : (v.status === 'immobilized' ? '#EF4444' : '#6B7280')))}22; color:${(v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : (v.status === 'immobilized' ? '#EF4444' : '#6B7280')))}">${v.status.toUpperCase()}</span></td>
+                <td>${v.brand}<div style="font-size:10px; color:var(--t3)">${v.programType}</div></td>
+                <td>${creditHtml}</td>
+                <td>${progressHtml}</td>
+                <td>${stnkHtml}</td>
+                <td><div class="dot ${v.isOnline ? 'green' : 'red'}" style="display:inline-block; margin-right:4px"></div>${v.isOnline ? 'On' : 'Off'}</td>
+                <td><button class="vl-pill">👁 Detail</button></td>
+            </tr>`;
+    }).join('');
+
+    elVehicleListContent.innerHTML = `
+        <div class="vl-container">
+            <div class="vl-header">
+                <h2 class="vl-title">Vehicle Management</h2>
+                <div style="display:flex; gap:10px; align-items:center">
+                    <button class="vl-pill" onclick="window.exportVehiclesCSV()">📥 Export CSV</button>
+                    <div class="vl-count">${vehicles.length} Units</div>
+                </div>
+            </div>
+            <div class="vl-controls">
+                <input type="text" class="vl-search" placeholder="Search plate, name, ID..." value="${vehicleListFilter.search}" id="vSearch">
+                <select class="vl-search" id="vProgram" style="max-width:200px">
+                    <option value="all">All Programs</option>
+                    ${state.programs.map(p => `<option value="${p.id}" ${vehicleListFilter.program === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                </select>
+                <div class="vl-filter-pills">
+                    ${['all', 'active', 'grace', 'immobilized', 'available', 'stnk_soon'].map(s => `
+                        <div class="vl-pill ${vehicleListFilter.status === s ? 'active' : ''}" onclick="window.setVehicleFilter('${s}')">${s === 'stnk_soon' ? '⚠️ STNK' : s.toUpperCase()}</div>
+                    `).join('')}
+                </div>
+            </div>
+            <table class="vl-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.setVehicleSort('id')">VEHICLE ${vehicleListFilter.sortBy === 'id' ? (vehicleListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                        <th onclick="window.setVehicleSort('customer')">RIDER ${vehicleListFilter.sortBy === 'customer' ? (vehicleListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                        <th onclick="window.setVehicleSort('status')">STATUS</th>
+                        <th>PROGRAM</th>
+                        <th onclick="window.setVehicleSort('credits')">CREDIT</th>
+                        <th>PROGRESS</th>
+                        <th>STNK</th>
+                        <th>GPS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+            <div class="vl-pagination">
+                <button class="vl-page-btn" onclick="window.changeVehiclePage(-1)" ${vehicleListPage === 1 ? 'disabled' : ''}>Prev</button>
+                <div class="vl-page-info">Page ${vehicleListPage} of ${totalPages}</div>
+                <button class="vl-page-btn" onclick="window.changeVehiclePage(1)" ${vehicleListPage === totalPages ? 'disabled' : ''}>Next</button>
+            </div>
+        </div>`;
+
+    document.getElementById('vSearch').addEventListener('input', (e) => {
+        vehicleListFilter.search = e.target.value;
+        vehicleListPage = 1;
+        renderVehicleListView();
+    });
+
+    document.getElementById('vProgram').addEventListener('change', (e) => {
+        vehicleListFilter.program = e.target.value;
+        vehicleListPage = 1;
+        renderVehicleListView();
+    });
+};
+
+window.setVehicleFilter = (s) => { vehicleListFilter.status = s; vehicleListPage = 1; renderVehicleListView(); };
+window.setVehicleSort = (field) => {
+    if (vehicleListFilter.sortBy === field) vehicleListFilter.sortDir = vehicleListFilter.sortDir === 'asc' ? 'desc' : 'asc';
+    else { vehicleListFilter.sortBy = field; vehicleListFilter.sortDir = 'asc'; }
+    renderVehicleListView();
+};
+window.changeVehiclePage = (delta) => { vehicleListPage += delta; renderVehicleListView(); };
+
+// ─── USER LIST TAB ────────────────────────────────────────────────────────────
+
+export const renderUserListView = () => {
+    if (!elUserListContent) return;
+
+    const users = getUsers(userListFilter);
+    const PAGE_SIZE = 20;
+    const totalPages = Math.ceil(users.length / PAGE_SIZE) || 1;
+    if (userListPage > totalPages) userListPage = totalPages;
+    const paginated = users.slice((userListPage - 1) * PAGE_SIZE, userListPage * PAGE_SIZE);
+
+    const tableRows = paginated.map(u => {
+        const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+        const riskColor = getRiskColor(u.riskLabel);
+        const genderIcon = u.gender === 'Male' ? '♂' : '♀';
+        const genderColor = u.gender === 'Male' ? '#60A5FA' : '#F472B6';
+
+        // Progress Bar for RTO users
+        const rtoVehicle = u.vehicleIds.map(id => state.vehicles.find(v => v.id === id)).find(v => v && v.programType === 'RTO');
+        const rtoProgress = rtoVehicle ? getRTOProgress(rtoVehicle) : null;
+        const progressHtml = rtoProgress ? `
+            <div style="width:100px">
+                <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:2px; font-weight:700">
+                    <span>${rtoProgress.paidPct}%</span>
+                    <span>${rtoProgress.daysLeft}d left</span>
+                </div>
+                <div class="vl-rto-track" style="width:100%; height:4px; background:var(--s3); border-radius:2px; overflow:hidden">
+                    <div class="vl-rto-fill" style="width:${rtoProgress.paidPct}%; height:100%; background:var(--g)"></div>
+                </div>
+            </div>
+        ` : '<span style="color:var(--t3); font-size:10px">—</span>';
+
+        return `
+            <tr onclick="window.openUserDrawer('${u.userId}')">
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <div class="vl-avatar" style="background:${genderColor}">${initials}</div>
+                        <div>
+                            <div style="font-weight:700">${u.name}</div>
+                            <div style="font-size:10px; color:var(--t3)">${u.userId}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display:flex; gap:4px; flex-wrap:wrap">
+                        ${u.vehicleIds.map(id => {
+            const v = state.vehicles.find(veh => veh.id === id);
+            if (!v) return null;
+            const prog = state.programs.find(p => p.id === v.programId);
+            if (!prog) return null;
+            return `
+                                <span class="vl-pill" 
+                                      style="font-size:10px; background:var(--s2); border:1px solid var(--bd); padding:1px 6px; border-radius:4px; color:var(--t2); font-weight:700; cursor:pointer"
+                                      onclick="event.stopPropagation(); window.setUserProgramFilter('${prog.id}')">
+                                    ${prog.shortName} ${prog.type}
+                                </span>`;
+        }).filter(Boolean).join('')}
+                    </div>
+                </td>
+                <td>${progressHtml}</td>
+                <td>
+                    <div style="display:flex; justify-content:center; gap:4px">
+                        ${(() => {
+                const v = state.vehicles.find(veh => veh.userId === u.userId);
+                if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
+                return `
+                                ${v.immobilizeLog?.length > 0 ? `
+                                    <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                                        🔒 ${v.immobilizeLog.length}
+                                    </div>
+                                ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                                ${v.graceEncounters > 0 ? `
+                                    <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                                        ⚠️ ${v.graceEncounters}
+                                    </div>
+                                ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                            `;
+            })()}
+                    </div>
+                </td>
+                <td>
+                    <div class="vl-risk-bar" style="background:${riskColor}22; color:${riskColor}">
+                        <div style="width:12px; height:12px; border-radius:50%; background:${riskColor}"></div>
+                        ${u.riskLabel} (${u.riskScore})
+                    </div>
+                </td>
+                <td>
+                    ${u.vehicleIds.length > 0 ? `<span style="font-size:10px; background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size:10px">—</span>'}
+                </td>
+                <td>
+                    <div style="font-size:12px">${u.phone}</div>
+                    <div style="font-size:10px; color:var(--t3)">${u.address.substring(0, 20)}...</div>
+                </td>
+                <td>${new Date(u.joinDate).toLocaleDateString()}</td>
+                <td><button class="vl-pill" onclick="window.openUserDrawer('${u.userId}')">👤 Profile</button></td>
+            </tr>`;
+    }).join('');
+
+    const allUsers = getUsers({}); // Get all users for pill counts
+    const programStats = state.programs.map(p => {
+        return {
+            id: p.id,
+            count: allUsers.filter(u => {
+                const uv = state.vehicles.find(v => v.userId === u.userId);
+                return uv && uv.programId === p.id;
+            }).length
+        };
+    });
+
+    // Detailed Stats for active filter
+    let activeProgramStats = null;
+    if (userListFilter.program !== 'all') {
+        const progUsers = users; // already filtered by getUsers(userListFilter)
+        const progVehicles = progUsers.map(u => state.vehicles.find(v => v.userId === u.userId)).filter(Boolean);
+        activeProgramStats = {
+            total: progUsers.length,
+            active: progVehicles.filter(v => v.status === 'active').length,
+            grace: progVehicles.filter(v => v.status === 'grace').length,
+            immob: progVehicles.filter(v => v.status === 'immobilized').length,
+            paused: progVehicles.filter(v => v.status === 'paused').length,
+            health: Math.round((progVehicles.filter(v => v.status === 'active').length / progVehicles.length) * 100) || 0
+        };
+    }
+
+    elUserListContent.innerHTML = `
+        <div class="vl-container">
+            <div class="vl-header">
+                <div>
+                    <h2 class="vl-title">Rider KYC & Profiles</h2>
+                    <div style="font-size:11px; color:var(--t3); margin-top:2px">Operational Behavioral Auditing</div>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center">
+                    <button class="vl-pill" onclick="window.exportUsersCSV()">📥 Export CSV</button>
+                    <div class="vl-count">${users.length} Riders Displayed</div>
+                </div>
+            </div>
+
+            ${activeProgramStats ? `
+            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:12px; margin-bottom:20px; background:var(--s2); padding:16px; border-radius:12px; border:1px solid var(--bd)">
+                <div style="border-right:1px solid var(--bd)">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Program Health</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--g)">${activeProgramStats.health}%</div>
+                </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Active Assets</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--t1)">${activeProgramStats.active}</div>
+                </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:#F59E0B; font-weight:800; text-transform:uppercase">In Grace</div>
+                    <div style="font-size:22px; font-weight:800; color:#F59E0B">${activeProgramStats.grace}</div>
+                </div>
+                <div style="border-right:1px solid var(--bd); padding-left:12px">
+                    <div style="font-size:10px; color:#EF4444; font-weight:800; text-transform:uppercase">Immobilized</div>
+                    <div style="font-size:22px; font-weight:800; color:#EF4444">${activeProgramStats.immob}</div>
+                </div>
+                <div style="padding-left:12px">
+                    <div style="font-size:10px; color:var(--t3); font-weight:800; text-transform:uppercase">Total Riders</div>
+                    <div style="font-size:22px; font-weight:800; color:var(--p)">${activeProgramStats.total}</div>
+                </div>
+            </div>
+            ` : ''}
+
+            <!-- Finance-consistent Program Strip -->
+            <div class="fns" style="margin-bottom:20px; padding-bottom:10px">
+                <div class="pc ${userListFilter.program === 'all' ? 'active' : ''}" 
+                     style="cursor:pointer; border-left:4px solid var(--t3)"
+                     onclick="window.setUserProgramFilter('all')">
+                    <h4 style="margin:0 0 8px">All Programs <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">GLOBAL</span></h4>
+                    <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--p)">${allUsers.length}</div>
+                    <div style="font-size:11px; color:var(--t3); margin-top:4px">Consolidated Rider KYC</div>
+                </div>
+
+                ${state.programs.map(p => {
+        const stats = programStats.find(s => s.id === p.id);
+        const borderColor = p.partnerId === 'tangkas' ? '#A78BFA' : (p.partnerId === 'maka' ? '#60A5FA' : '#FB923C');
+
+        // Specific stats for this program card
+        const progVehicles = state.vehicles.filter(v => v.programId === p.id);
+        const activeCount = progVehicles.filter(v => v.status === 'active').length;
+
+        return `
+                        <div class="pc ${userListFilter.program === p.id ? 'active' : ''}" 
+                             style="cursor:pointer; border-left:4px solid ${borderColor}"
+                             onclick="window.setUserProgramFilter('${p.id}')">
+                            <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size:10px;opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
+                            <div style="font-size:22px; font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${stats?.count || 0}</div>
+                            <div style="font-size:11px; color:var(--t3); margin-top:4px">${activeCount}/${progVehicles.length} active units</div>
+                        </div>
+                    `;
+    }).join('')}
+            </div>
+
+            <div class="vl-controls" style="margin-bottom:20px">
+                <input type="text" class="vl-search" placeholder="Search name, phone, NIK..." value="${userListFilter.search}" id="uSearch">
+            </div>
+            <table class="vl-table">
+                <thead>
+                    <tr>
+                        <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                        <th>PROGRAM</th>
+                        <th>PROGRESS</th>
+                        <th style="text-align:center">COLLECTION AUDIT</th>
+                        <th onclick="window.setUserSort('riskScore')">RISK SCORE</th>
+                        <th>VEHICLE</th>
+                        <th>CONTACT</th>
+                        <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '↑' : '↓') : ''}</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+            <div class="vl-pagination">
+                <button class="vl-page-btn" onclick="window.changeUserPage(-1)" ${userListPage === 1 ? 'disabled' : ''}>Prev</button>
+                <div class="vl-page-info">Page ${userListPage} of ${totalPages}</div>
+                <button class="vl-page-btn" onclick="window.changeUserPage(1)" ${userListPage === totalPages ? 'disabled' : ''}>Next</button>
+            </div>
+        </div>`;
+
+    document.getElementById('uSearch').addEventListener('input', (e) => {
+        userListFilter.search = e.target.value;
+        userListPage = 1;
+        renderUserListView();
+    });
+};
+
+window.setUserProgramFilter = (p) => {
+    userListFilter.program = p;
+    userListPage = 1;
+    renderUserListView();
+};
+
+window.setUserRiskFilter = (r) => { userListFilter.risk = r; userListPage = 1; renderUserListView(); };
+window.setUserSort = (field) => {
+    if (userListFilter.sortBy === field) userListFilter.sortDir = userListFilter.sortDir === 'asc' ? 'desc' : 'asc';
+    else { userListFilter.sortBy = field; userListFilter.sortDir = 'asc'; }
+    renderUserListView();
+};
+window.changeUserPage = (delta) => { userListPage += delta; renderUserListView(); };
+window.changeProgramPage = (delta) => { programListPage += delta; renderProgramListView(); };
+
+// ─── DETAIL DRAWER LOGIC ──────────────────────────────────────────────────────
+
+const openDrawer = (html) => {
+    elDrawerContent.innerHTML = html;
+    elDetailDrawer.classList.add('open');
+    elDrawerBackdrop.classList.add('open');
+};
+
+window.popDrawerStack = () => {
+    const prev = drawerStack.pop();
+    if (prev) {
+        if (prev.type === 'vehicle') window.openVehicleDrawer(prev.id, false);
+        else if (prev.type === 'user') window.openUserDrawer(prev.id, false);
+    }
+};
+
+window.closeDrawer = () => {
+    elDetailDrawer.classList.remove('open');
+    elDrawerBackdrop.classList.remove('open');
+    drawerStack = []; // Reset history
+};
+export const closeDrawer = window.closeDrawer;
+
+window.openVehicleDrawer = (id, pushToStack = true) => {
+    const v = getVehicleById(id);
+    if (!v) return;
+
+    if (pushToStack && elDetailDrawer.classList.contains('open')) {
+        if (window._currentDrawer && window._currentDrawer.id !== id) drawerStack.push(window._currentDrawer);
+    }
+    window._currentDrawer = { type: 'vehicle', id };
+
+    const txs = getVehicleTransactions(id);
+    const rto = getRTOProgress(v);
+    const STNK = getSTNKAlert(v);
+    const initials = (v.customer || '??').split(' ').map(n => n[0]).join('').substring(0, 2);
+
+    const backBtn = drawerStack.length > 0 ? `<button class="drawer-back" onclick="window.popDrawerStack()">← Back</button>` : '';
+
+    const html = `
+        <div class="drawer-header">
+            ${backBtn}
+            <button class="drawer-close" onclick="window.closeDrawer()">✕</button>
+            <div class="drawer-avatar" style="background:var(--g)">${initials}</div>
+            <div style="flex:1">
+                <div class="drawer-name">${v.customer || 'No Active Rider'}</div>
+                <div class="drawer-sub">${v.plate} • ${v.id}</div>
+                <div style="font-size:10px; color:var(--g); font-weight:800; font-family:'IBM Plex Mono'; margin-top:2px">${v.rtoId}</div>
+            </div>
+            <span class="vl-status" style="background:${(v.status === 'active' ? '#22C55E' : '#EF4444')}22; color:${(v.status === 'active' ? '#22C55E' : '#EF4444')}">${v.status.toUpperCase()}</span>
+        </div>
+        <div class="drawer-body">
+            ${STNK ? `
+            <div class="drawer-alert ${STNK.type}">
+                <div style="font-weight:700">STNK EXPIRY ALERT</div>
+                <div style="font-size:12px">Document is ${STNK.type}. ${STNK.label}.</div>
+            </div>
+            ` : ''}
+            ${rto ? `
+            <div class="drawer-section">
+                <div class="drawer-section-title">RTO Progress</div>
+                <div style="margin-bottom:12px">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; font-weight:700">
+                        <span>${formatRupiah(rto.paidRp)} Paid</span>
+                        <span>${rto.paidPct}%</span>
+                    </div>
+                    <div class="vl-rto-track" style="width:100%; height:8px"><div class="vl-rto-fill" style="width:${rto.paidPct}%"></div></div>
+                </div>
+                <div class="drawer-field"><span class="drawer-field-label">Remaining</span><span class="drawer-field-value">${formatRupiah(rto.remainingRp)}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Months Left</span><span class="drawer-field-value">${rto.monthsLeft} of ${v.contractMonths}</span></div>
+            </div>
+            ` : ''}
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Credit Status</div>
+                <div style="background:var(--s2); border:1px solid var(--bd); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px">
+                    <div>
+                        <div style="font-size:24px; font-weight:800; color:var(--g); font-family:'IBM Plex Mono'">${v.credits}</div>
+                        <div style="font-size:10px; color:var(--t2); font-weight:700">DAYS REMAINING</div>
+                    </div>
+                    <button class="vl-pill active" onclick="window.dispatchAction('pay', '${v.id}')">Extend +7d</button>
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Collection Audit</div>
+                <div style="display:flex; gap:8px">
+                    ${v.immobilizeLog?.length > 0 ? `
+                        <div style="flex:1; background:#EF444411; border:1px solid #EF444422; padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size:20px">🔒</div>
+                            <div style="font-size:14px; font-weight:800; color:#EF4444">${v.immobilizeLog.length}</div>
+                            <div style="font-size:9px; color:var(--t3); font-weight:700">LOCKS</div>
+                        </div>
+                    ` : ''}
+                    ${v.graceEncounters > 0 ? `
+                        <div style="flex:1; background:#F59E0B11; border:1px solid #F59E0B22; padding:10px; border-radius:8px; text-align:center">
+                            <div style="font-size:20px">⚠️</div>
+                            <div style="font-size:14px; font-weight:800; color:#F59E0B">${v.graceEncounters}</div>
+                            <div style="font-size:9px; color:var(--t3); font-weight:700">GRACE</div>
+                        </div>
+                    ` : ''}
+                    ${!v.immobilizeLog?.length && !v.graceEncounters ? `
+                        <div style="flex:1; background:var(--g)11; border:1px solid var(--g)22; padding:12px; border-radius:8px; text-align:center">
+                            <div style="color:var(--g); font-weight:800; font-size:13px">CLEAN COLLECTION HISTORY</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Rider Info</div>
+                <div class="drawer-field"><span class="drawer-field-label">NIK</span><span class="drawer-field-value">${v.nik}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Phone</span><span class="drawer-field-value">${v.phone}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Address</span><span class="drawer-field-value">${v.address}</span></div>
+                <button class="drawer-action-btn" style="width:100%; margin-top:8px" onclick="window.openUserDrawer('${v.userId}')">View Full KYC Profile</button>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Vehicle & Docs</div>
+                <div class="drawer-field"><span class="drawer-field-label">Model</span><span class="drawer-field-value">${v.model}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">STNK Expiry</span><span class="drawer-field-value">${new Date(v.stnkExpiry).toLocaleDateString()}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Last Ping</span><span class="drawer-field-value">${timeAgo(v.lastPing)}</span></div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Operational Actions</div>
+                <div class="drawer-actions">
+                    <button class="drawer-action-btn" onclick="window.dispatchAction('pay', '${v.id}')">💰 Record Payment</button>
+                    ${v.status === 'immobilized' ?
+            `<button class="drawer-action-btn" onclick="window.dispatchAction('unlock', '${v.id}')">🔓 Release Vehicle</button>` :
+            `<button class="drawer-action-btn danger" onclick="window.dispatchAction('lock', '${v.id}')">🔒 Immobilize</button>`
+        }
+                    <button class="drawer-action-btn" onclick="window.dispatchAction('holiday', '${v.id}')">🏖️ Pause</button>
+                </div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Recent History</div>
+                <table class="drawer-mini-table">
+                    <thead><tr><th style="text-align:left">Date</th><th style="text-align:left">Type</th><th style="text-align:center">Days</th><th style="text-align:right">Amount</th></tr></thead>
+                    <tbody>
+                        ${txs.map(t => `
+                            <tr>
+                                <td>${new Date(t.date).toLocaleDateString()}</td>
+                                <td>${t.type}</td>
+                                <td style="text-align:center; font-weight:700; color:var(--g)">+${t.creditDays || 0}d</td>
+                                <td style="text-align:right; font-weight:600">${formatRupiah(t.amount)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    openDrawer(html);
+};
+
+window.openUserDrawer = (userId, pushToStack = true) => {
+    const u = getUserById(userId);
+    if (!u) return;
+
+    if (pushToStack && elDetailDrawer.classList.contains('open')) {
+        if (window._currentDrawer && window._currentDrawer.id !== userId) drawerStack.push(window._currentDrawer);
+    }
+    window._currentDrawer = { type: 'user', id: userId };
+
+    const vehicles = getUserVehicles(userId);
+    const txs = getUserTransactions(userId).slice(0, 10);
+    const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+    const riskColor = getRiskColor(u.riskLabel);
+
+    // Find RTO progress if applicable
+    const rtoVehicle = vehicles.find(v => v.programType === 'RTO');
+    const rtoProgress = rtoVehicle ? getRTOProgress(rtoVehicle) : null;
+
+    const genderIcon = u.gender === 'Male' ? '♂' : '♀';
+    const genderColor = u.gender === 'Male' ? '#60A5FA' : '#F472B6';
+
+    const backBtn = drawerStack.length > 0 ? `<button class="drawer-back" onclick="window.popDrawerStack()">← Back</button>` : '';
+
+    const html = `
+        <div class="drawer-header">
+            ${backBtn}
+            <button class="drawer-close" onclick="window.closeDrawer()">✕</button>
+            <div class="drawer-avatar" style="background:${genderColor}">${initials}</div>
+            <div style="flex:1">
+                <div class="drawer-name" style="display:flex; align-items:center; gap:8px">
+                    ${u.name} 
+                    <span style="font-size:18px; color:${genderColor}">${genderIcon}</span>
+                </div>
+                <div class="drawer-sub">${u.userId} • Joined ${new Date(u.joinDate).toLocaleDateString()}</div>
+            </div>
+            <div class="vl-risk-bar" style="background:${riskColor}22; color:${riskColor}">${u.riskLabel}</div>
+        </div>
+        <div class="drawer-body">
+            <div class="drawer-section">
+                <div class="drawer-section-title">Risk Scoring Detail</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px">
+                    <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--bd)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700">RISK SCORE</div>
+                        <div style="font-size:20px; font-weight:800; color:${riskColor}">${u.riskScore}</div>
+                    </div>
+                    <div style="background:var(--s2); padding:10px; border-radius:8px; border:1px solid var(--bd)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700; margin-bottom:4px">COLLECTION AUDIT</div>
+                        <div style="display:flex; gap:6px">
+                            ${(() => {
+            const v = vehicles[0];
+            if (!v) return '<span style="color:var(--t3); opacity:0.3">—</span>';
+            return `
+                                    ${v.immobilizeLog?.length > 0 ? `<div style="background:#EF444422; color:#EF4444; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">🔒 ${v.immobilizeLog.length}</div>` : ''}
+                                    ${v.graceEncounters > 0 ? `<div style="background:#F59E0B22; color:#F59E0B; padding:2px 8px; border-radius:12px; font-weight:800; font-size:12px">⚠️ ${v.graceEncounters}</div>` : ''}
+                                    ${!v.immobilizeLog?.length && !v.graceEncounters ? '<span style="color:var(--g); font-weight:700; font-size:12px">Clean History</span>' : ''}
+                                `;
+        })()}
+                        </div>
+                    </div>
+                </div>
+                <div class="drawer-field"><span class="drawer-field-label">Job</span><span class="drawer-field-value">${getOccupationEmoji(u.occupation)} ${u.occupation}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Employer</span><span class="drawer-field-value">${u.employer}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Income</span><span class="drawer-field-value">${u.incomeRange}</span></div>
+            </div>
+
+            ${rtoProgress ? `
+            <div class="drawer-section">
+                <div class="drawer-section-title">RTO Contract Maturity</div>
+                <div style="margin-bottom:12px">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; font-weight:700">
+                        <span>${formatRupiah(rtoProgress.paidRp)} Paid</span>
+                        <span>${rtoProgress.paidPct}%</span>
+                    </div>
+                    <div class="vl-rto-track" style="width:100%; height:8px; background:var(--s3); border-radius:4px; overflow:hidden">
+                        <div class="vl-rto-fill" style="width:${rtoProgress.paidPct}%; height:100%; background:var(--g)"></div>
+                    </div>
+                </div>
+                <div class="drawer-field"><span class="drawer-field-label">Remaining Buyout</span><span class="drawer-field-value">${formatRupiah(rtoProgress.remainingRp)}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Contract Progress</span><span class="drawer-field-value">${rtoProgress.daysElapsed} of ${rtoProgress.totalDays} Days</span></div>
+            </div>
+            ` : ''}
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Linked Vehicle</div>
+                ${vehicles.length > 0 ? (() => {
+            const v = vehicles[0];
+            return `
+                    <div class="drawer-vehicle-card" onclick="window.openVehicleDrawer('${v.id}')">
+                        <div style="width:36px; height:36px; background:var(--s3); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:18px">🏍️</div>
+                        <div style="flex:1">
+                            <div style="font-weight:700; font-size:13px">${v.plate}</div>
+                            <div style="font-size:10px; color:var(--t3); font-family:'IBM Plex Mono'">${v.rtoId}</div>
+                            <div style="font-size:11px; color:var(--t3)">${v.id} • ${v.status}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-weight:800; font-size:14px; color:${v.credits < 3 ? '#EF4444' : 'var(--g)'}">${v.credits}d</div>
+                            <div style="font-size:9px; color:var(--t3); font-weight:600">CREDIT</div>
+                        </div>
+                    </div>
+                `;
+        })() : '<div style="opacity:0.5; font-size:12px; padding:10px">No assigned vehicle</div>'}
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Identity & Contacts</div>
+                <div class="drawer-field"><span class="drawer-field-label">NIK (KTP)</span><span class="drawer-field-value">${u.nik}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Phone</span><span class="drawer-field-value">${u.phone}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Gender</span><span class="drawer-field-value">${u.gender}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Emergency 1 (Spouse)</span><span class="drawer-field-value">${u.emergencyContacts[0].name}</span></div>
+                <div class="drawer-field"><span class="drawer-field-label">Emergency 2</span><span class="drawer-field-value">${u.emergencyContacts[1].name} (${u.emergencyContacts[1].relationship})</span></div>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-title">Payment History (Last 10)</div>
+                <table class="drawer-mini-table" style="width:100%; border-collapse:collapse; font-size:11px">
+                    <thead>
+                        <tr style="text-align:left; color:var(--t3)">
+                            <th style="padding:6px 0; border-bottom:1px solid var(--bd)">DATE</th>
+                            <th style="padding:6px 0; border-bottom:1px solid var(--bd)">TYPE</th>
+                            <th style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:center">DAYS</th>
+                            <th style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:right">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${txs.map(t => `
+                            <tr>
+                                <td style="padding:6px 0; border-bottom:1px solid var(--bd)">${new Date(t.date).toLocaleDateString()}</td>
+                                <td style="padding:6px 0; border-bottom:1px solid var(--bd); font-weight:700">${t.type}</td>
+                                <td style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:center">
+                                    <span style="background:var(--g)11; color:var(--g); padding:2px 6px; border-radius:4px; font-weight:800; font-size:10px">+${t.creditDays || 0}d</span>
+                                </td>
+                                <td style="padding:6px 0; border-bottom:1px solid var(--bd); text-align:right; font-family:'IBM Plex Mono'; font-weight:600">${formatRupiah(t.amount)}</td>
+                            </tr>
+                        `).join('')}
+                        ${txs.length === 0 ? '<tr><td colspan="3" style="text-align:center; padding:20px; opacity:0.5">No transactions found</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    openDrawer(html);
+};
+
+// Wire up backdrop/close
+elDrawerBackdrop.addEventListener('click', closeDrawer);
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+
+// CSV Export handlers
+window.exportVehiclesCSV = () => {
+    const list = getAllVehicles(vehicleListFilter);
+    const rows = [
+        ["ID", "Plate", "Rider", "Status", "Brand", "Program", "Credits", "STNK Expiry"],
+        ...list.map(v => [v.id, v.plate, v.customer || '-', v.status, v.brand, v.programType, v.credits, v.stnkExpiry])
+    ];
+    downloadCSV(`vehicles_export_${new Date().toISOString().split('T')[0]}.csv`, rows);
+};
+
+window.exportUsersCSV = () => {
+    const list = getUsers(userListFilter);
+    const rows = [
+        ["User ID", "Name", "Phone", "Risk Label", "Risk Score", "Total Paid", "Missed Pmts", "Join Date"],
+        ...list.map(u => [u.userId, u.name, u.phone, u.riskLabel, u.riskScore, u.totalPaid, u.missedPayments, u.joinDate])
+    ];
+    downloadCSV(`users_export_${new Date().toISOString().split('T')[0]}.csv`, rows);
+};
+
+export const renderProgramListView = () => {
+    if (!elProgramListContent) return;
+
+    // Filter programs by global partner filter
+    let filteredPrograms = [...state.programs];
+    if (state.filter.partner !== 'all') {
+        filteredPrograms = filteredPrograms.filter(p => p.partnerId === state.filter.partner);
+    }
+
+    // Prepare Sidebar Navigation content
+    const sidebarItems = filteredPrograms.map(p => {
+        const programVehicles = state.vehicles.filter(v => v.programId === p.id);
+        const activeCount = programVehicles.filter(v => v.status === 'active').length;
+        const graceCount = programVehicles.filter(v => v.status === 'grace').length;
+        const lockedCount = programVehicles.filter(v => v.status === 'immobilized').length;
+        const isActive = selectedProgramId === p.id;
+
+        // Pulse health bar for shorthand
+        const total = programVehicles.length || 1;
+        const healthPct = Math.round((activeCount / total) * 100);
+        const healthColor = healthPct > 90 ? '#22C55E' : (healthPct > 70 ? '#F59E0B' : '#EF4444');
+
+        return `
+            <div class="program-sidebar-item ${isActive ? 'active' : ''}" onclick="window.selectProgram('${p.id}')">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px">
+                    <span style="font-size:12px; font-weight:700">${p.name}</span>
+                    <span style="font-size:10px; opacity:0.6">${p.shortName}</span>
+                </div>
+                <div style="font-size:10px; color:var(--t3); margin-bottom:8px">
+                    Rp ${formatShortCurrency(p.price)}/day • ${p.grace}d Grace
+                </div>
+                <div style="height:3px; background:rgba(255,255,255,0.1); border-radius:1px; margin-bottom:8px">
+                    <div style="height:100%; width:${healthPct}%; background:${healthColor}; border-radius:1px"></div>
+                </div>
+                <div style="display:flex; gap:6px; font-size:10px; font-weight:700">
+                    <div style="color:#22C55E; background:#22C55E11; padding:2px 4px; border-radius:4px" title="Active">A:${activeCount}</div>
+                    <div style="color:#F59E0B; background:#F59E0B11; padding:2px 4px; border-radius:4px" title="Grace">G:${graceCount}</div>
+                    <div style="color:#EF4444; background:#EF444411; padding:2px 4px; border-radius:4px" title="Locked">L:${lockedCount}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Prepare Table data
+    let displayVehicles = [];
+    let viewTitle = 'All Programs Fleet';
+    let viewSubtitle = 'Consolidated fleet monitoring across all partner schemes.';
+
+    if (selectedProgramId === 'all') {
+        displayVehicles = state.vehicles.filter(v => filteredPrograms.some(p => p.id === v.programId));
+    } else {
+        const program = filteredPrograms.find(p => p.id === selectedProgramId);
+        if (program) {
+            displayVehicles = state.vehicles.filter(v => v.programId === selectedProgramId);
+            viewTitle = program.name;
+            viewSubtitle = `Detailed lifecycle monitoring for ${program.shortName} scheme.`;
+        }
+    }
+
+    // Calculate display-level stats for the top bar
+    const totalUnits = displayVehicles.length || 1;
+    const activeUnits = displayVehicles.filter(v => v.status === 'active').length;
+    const healthPct = Math.round((activeUnits / totalUnits) * 100);
+    const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
+
+    // --- Pagination (20 per page) ---
+    const PAGE_SIZE = 20;
+    const totalPages = Math.ceil(displayVehicles.length / PAGE_SIZE) || 1;
+    if (programListPage > totalPages) programListPage = totalPages;
+    const paginated = displayVehicles.slice((programListPage - 1) * PAGE_SIZE, programListPage * PAGE_SIZE);
+
+    const tableRows = paginated.map(v => {
+        const prog = getRTOProgress(v);
+        const lastPayment = v.lastPaymentDate ? new Date(v.lastPaymentDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—';
+        const statusColor = v.status === 'active' ? '#22C55E' : (v.status === 'grace' ? '#F59E0B' : '#EF4444');
+        const programName = state.programs.find(p => p.id === v.programId)?.shortName || '—';
+
+        // Find user for phone/risk
+        const rider = state.users.find(u => u.name === v.customer);
+        const riskColor = getRiskColor(rider?.riskLabel || 'Medium');
+        const riderPhone = rider?.phone || v.phone || '—';
+
+        return `
+            <tr>
+                <td>
+                    <div style="font-size:10px; color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
+                    <div style="font-size:11px; font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
+                </td>
+                <td>
+                    <div style="font-weight:700; font-size:13px; color:var(--t1)">${v.customer || 'Available'}</div>
+                    <div style="font-size:11px; color:var(--t3)">📞 ${riderPhone}</div>
+                </td>
+                <td style="text-align:center">
+                    <div style="font-weight:800; font-size:13px; color:${v.credits > 2 ? 'var(--t1)' : '#EF4444'}">${v.credits}d</div>
+                </td>
+                <td style="text-align:center">
+                    <div style="display:flex; justify-content:center; gap:4px">
+                        ${v.immobilizeLog?.length > 0 ? `
+                            <div class="vl-pill" style="background:#EF444422; color:#EF4444; border-color:#EF444444; padding:2px 6px; font-weight:800; font-size:10px" title="${v.immobilizeLog.length} Immobilizations">
+                                🔒 ${v.immobilizeLog.length}
+                            </div>
+                        ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                        ${v.graceEncounters > 0 ? `
+                            <div class="vl-pill" style="background:#F59E0B22; color:#F59E0B; border-color:#F59E0B44; padding:2px 6px; font-weight:800; font-size:10px" title="${v.graceEncounters} Grace Period Entries">
+                                ⚠️ ${v.graceEncounters}
+                            </div>
+                        ` : '<span style="color:var(--t3); opacity:0.3">—</span>'}
+                    </div>
+                </td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:2px">
+                        <div style="width:8px; height:8px; border-radius:50%; background:${riskColor}; box-shadow:0 0 8px ${riskColor}66"></div>
+                        <div style="font-weight:700; font-size:11px; color:var(--t1)">${rider?.riskLabel || 'Medium'} Risk</div>
+                    </div>
+                    <div style="font-size:9px; color:var(--t3)">${rider?.riskLabel === 'High' ? 'Unstable payment profile' : (rider?.riskLabel === 'Low' ? 'Reliable daily payer' : 'Standard RTO profile')}</div>
+                </td>
+                <td>
+                    <div style="font-weight:800; font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ac); letter-spacing:0.02em">${v.plate}</div>
+                    <div style="font-size:10px; color:var(--t3)">${v.brand} ${v.model}</div>
+                </td>
+                <td style="text-align:center">
+                    <div class="vl-status" style="background:${statusColor}22; color:${statusColor}">${v.status.toUpperCase()}</div>
+                </td>
+                <td style="text-align:right">
+                    <div style="font-size:11px; font-weight:600">${v.lastPaymentAmount ? formatShortCurrency(v.lastPaymentAmount) : '—'}</div>
+                    <div style="font-size:10px; color:var(--t3)">${lastPayment}</div>
+                </td>
+                <td style="width:80px">
+                     <div class="vl-rto-bar" style="width:100%">
+                        <div class="vl-rto-track" style="width:100%"><div class="vl-rto-fill" style="width:${prog?.paidPct || 0}%"></div></div>
+                    </div>
+                    <div style="font-size:9px; color:var(--t3); font-weight:700; margin-top:4px; text-align:right">${prog?.paidPct || 0}%</div>
+                </td>
+                <td style="text-align:right">
+                    <button class="vl-pill" style="padding:4px 10px" onclick="window.openVehicleDrawer('${v.id}')">Audit</button>
+                </td>
+            </tr>
+    `;
+    }).join('');
+
+    elProgramListContent.innerHTML = `
+        <div class="program-layout">
+            <!-- Sidebar -->
+            <div class="program-sidebar">
+                <div class="program-sidebar-header">
+                    <div style="font-size:11px; font-weight:700; color:var(--t3); letter-spacing:0.05em; text-transform:uppercase">Schemes & Programs</div>
+                    <button class="vl-pill" style="margin-top:10px; width:100%" onclick="window.openProgramModal()">+ New Program</button>
+                </div>
+                <div class="program-sidebar-scroll">
+                    <div class="program-sidebar-item ${selectedProgramId === 'all' ? 'active' : ''}" onclick="window.selectProgram('all')">
+                        <div style="font-weight:700; font-size:12px">All Programs</div>
+                        <div style="font-size:10px; opacity:0.6; margin-top:2px">Consolidated View</div>
+                    </div>
+                    ${sidebarItems}
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="program-main">
+                <div class="vl-header" style="margin-bottom:24px">
+                    <div>
+                        <h2 class="vl-title">${viewTitle}</h2>
+                        <p style="font-size:12px; color:var(--t3); margin-top:4px">${viewSubtitle}</p>
+                    </div>
+                    <div style="display:flex; gap:12px; align-items:center">
+                        ${selectedProgramId !== 'all' ? `
+                            <button class="vl-pill" onclick="window.openProgramModal('${selectedProgramId}')">⚙️ Scheme Settings</button>
+                            <button class="vl-pill danger" onclick="window.confirmDeleteProgram('${selectedProgramId}')">🗑️ Delete</button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Program Pulse Stats Cards -->
+                <div class="program-stats-grid">
+                    <div class="program-card-stat">
+                        <div class="label">Active Units</div>
+                        <div class="value" style="color:#22C55E">${displayVehicles.filter(v => v.status === 'active').length}</div>
+                    </div>
+                    <div class="program-card-stat">
+                        <div class="label">Grace Units</div>
+                        <div class="value" style="color:#F59E0B">${displayVehicles.filter(v => v.status === 'grace').length}</div>
+                    </div>
+                    <div class="program-card-stat">
+                        <div class="label">Locked Units</div>
+                        <div class="value" style="color:#EF4444">${displayVehicles.filter(v => v.status === 'immobilized').length}</div>
+                    </div>
+                    
+                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('health', '${selectedProgramId}')">
+                        <div class="label">Collection Health ℹ️</div>
+                        <div class="value" style="color:var(--p)">${healthPct}%</div>
+                        <div class="program-tooltip">
+                            <strong>Audit Detail Available</strong><br>
+                            Logic: (Active / Total) × 100.<br>
+                            Click to open full collection health report.
+                        </div>
+                    </div>
+
+                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('maturity', '${selectedProgramId}')">
+                        <div class="label">Fleet Maturity ℹ️</div>
+                        <div class="value" style="color:var(--ac)">${maturityPct}%</div>
+                        <div class="program-tooltip">
+                            <strong>Maturity Forecast Available</strong><br>
+                            Click to view asset recovery progress and ownership transfer forecasts.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:0; overflow:hidden; flex:1; display:flex; flex-direction:column">
+                    <div style="overflow-y:auto; flex:1">
+                        <table class="vl-table">
+                            <thead>
+                                <tr>
+                                    <th>Program / RTO ID</th>
+                                    <th>Rider / Contact</th>
+                                    <th style="text-align:center">Credit</th>
+                                    <th style="text-align:center">Collections Audit</th>
+                                    <th>Risk Audit</th>
+                                    <th>Nopol / Model</th>
+                                    <th style="text-align:center">Status</th>
+                                    <th style="text-align:right">Last Payment</th>
+                                    <th>Progress</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows || '<tr><td colspan="10" style="text-align:center; padding:100px; color:var(--t3)">📭<br>No matching records found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="padding:12px 20px; border-top:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center; background:var(--s2); font-size:11px; font-weight:600">
+                    <div style="color:var(--t3)">
+                        Displaying ${(programListPage - 1) * PAGE_SIZE + 1}–${Math.min(programListPage * PAGE_SIZE, displayVehicles.length)} of ${displayVehicles.length} integrated monitoring records.
+                    </div>
+                    <div class="vl-pagination" style="margin-top:0">
+                        <button class="vl-page-btn" onclick="window.changeProgramPage(-1)" ${programListPage === 1 ? 'disabled' : ''}>Prev</button>
+                        <span style="color:var(--t2)">Page ${programListPage} of ${totalPages}</span>
+                        <button class="vl-page-btn" onclick="window.changeProgramPage(1)" ${programListPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .program-layout {
+                display: flex;
+                height: calc(100vh - 120px);
+                background: var(--s1);
+                overflow: hidden;
+            }
+            .program-sidebar {
+                width: 260px;
+                border-right: 1px solid var(--b1);
+                background: var(--s1);
+                display: flex;
+                flex-direction: column;
+            }
+            .program-sidebar-header {
+                padding: 20px;
+                border-bottom: 1px solid var(--b1);
+            }
+            .program-sidebar-scroll {
+                flex: 1;
+                overflow-y: auto;
+                padding: 10px;
+            }
+            .program-sidebar-item {
+                padding: 12px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+                margin-bottom: 4px;
+                border: 1px solid transparent;
+            }
+            .program-sidebar-item:hover {
+                background: var(--s2);
+                border-color: var(--b1);
+            }
+            .program-sidebar-item.active {
+                background: var(--g);
+                color: #000;
+                border-color: var(--g);
+            }
+            .program-card-stat.clickable:hover {
+                border-color: var(--p);
+                background: rgba(0, 229, 195, 0.05);
+                cursor: pointer;
+            }
+            .program-main {
+                flex: 1;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                background: var(--s1);
+                overflow: hidden;
+            }
+            /* Stats Card Grid */
+            .program-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+            .program-card-stat {
+                background: var(--s2);
+                border: 1px solid var(--b1);
+                border-radius: 12px;
+                padding: 16px;
+                text-align: center;
+                position: relative;
+                transition: transform 0.2s, border-color 0.2s;
+            }
+            .program-card-stat:hover {
+                border-color: var(--b2);
+                transform: translateY(-2px);
+            }
+            .program-card-stat .label {
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--t3);
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 6px;
+            }
+            .program-card-stat .value {
+                font-size: 20px;
+                font-weight: 800;
+                font-family: var(--font-mono);
+            }
+
+            /* Tooltip Stylings */
+            .has-tooltip { cursor: help; }
+            .program-tooltip {
+                visibility: hidden;
+                width: 240px;
+                background: var(--s3);
+                color: var(--t1);
+                text-align: left;
+                border-radius: 8px;
+                padding: 12px;
+                position: absolute;
+                z-index: 1000;
+                bottom: 125%;
+                left: 50%;
+                margin-left: -120px;
+                opacity: 0;
+                transition: opacity 0.3s;
+                border: 1px solid var(--b2);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                font-size: 11px;
+                line-height: 1.5;
+                pointer-events: none;
+            }
+            .program-tooltip::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: var(--b2) transparent transparent transparent;
+            }
+            .has-tooltip:hover .program-tooltip {
+                visibility: visible;
+                opacity: 1;
+            }
+        </style>
+    `;
+};
+
+window.popoutProgramStats = (type, programId) => {
+    const p = programId === 'all' ? { name: 'All Programs', shortName: 'FLEET' } : state.programs.find(x => x.id === programId);
+    let title = '';
+    let html = '';
+
+    // Calculate real-time stats
+    const displayVehicles = programId === 'all'
+        ? state.vehicles
+        : state.vehicles.filter(v => v.programId === programId);
+
+    const total = displayVehicles.length || 1;
+    const activeCount = displayVehicles.filter(v => v.status === 'active').length;
+    const healthPct = Math.round((activeCount / total) * 100);
+    const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
+
+    if (type === 'health') {
+        const healthColor = healthPct > 95 ? '#22C55E' : (healthPct > 90 ? '#F59E0B' : '#EF4444');
+        const variance = (healthPct - 100).toFixed(1);
+
+        title = `Collection Health Audit: ${p.shortName}`;
+        html = `
+            <div style="padding:20px">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px">
+                    <div class="card" style="padding:15px; background:var(--s3)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700">COLLECTION HEALTH</div>
+                        <div style="font-size:24px; font-weight:800; color:${healthColor}">${healthPct}%</div>
+                    </div>
+                    <div class="card" style="padding:15px; background:var(--s3)">
+                        <div style="font-size:10px; color:var(--t3); font-weight:700">PAYMENT VARIANCE</div>
+                        <div style="font-size:24px; font-weight:800; color:${variance < 0 ? '#EF4444' : '#22C55E'}">${variance}% <span style="font-size:12px; font-weight:400; color:var(--t3)">vs Target</span></div>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1); margin-bottom:20px">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📋 Data Audit Breakdown</h4>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px">
+                        <div style="color:var(--t3)">Total Assets:</div>
+                        <div style="text-align:right; font-weight:700; color:var(--t1)">${total} Units</div>
+                        <div style="color:var(--t3)">Healthy (Active):</div>
+                        <div style="text-align:right; font-weight:700; color:#22C55E">${activeCount} Units</div>
+                        <div style="color:var(--t3)">Non-Performing:</div>
+                        <div style="text-align:right; font-weight:700; color:#EF4444">${total - activeCount} Units</div>
+                    </div>
+                    <div style="margin-top:12px; font-size:10px; color:var(--t3); border-top:1px solid var(--b1); padding-top:8px">
+                        Calculation: (Active / Total) × 100 = <strong>${healthPct}%</strong>
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">🧠 Executive Intelligence</h4>
+                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Health is calculated by the ratio of <strong>Active</strong> (Paid) units vs total assigned units. Higher percentages indicate strong payment discipline.</p>
+                    
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#22C55E; font-weight:700">● GOOD (>95%)</span>
+                            <span style="color:var(--t3)">Operational Excellence</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#F59E0B; font-weight:700">● WARNING (90-95%)</span>
+                            <span style="color:var(--t3)">Increase collection rigor</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#EF4444; font-weight:700">● CRITICAL (<90%)</span>
+                            <span style="color:var(--t3)">Review rider risk profiles</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:25px; display:flex; justify-content:flex-end">
+                    <button class="btn primary" onclick="window.closeModals()">Close Audit</button>
+                </div>
+            </div>
+        `;
+    } else {
+        const maturityColor = maturityPct > 75 ? '#22C55E' : (maturityPct > 25 ? 'var(--ac)' : '#F59E0B');
+
+        title = `Fleet Maturity Snapshot: ${p.shortName}`;
+        html = `
+            <div style="padding:20px">
+                <div style="height:12px; background:var(--b1); border-radius:50px; margin-bottom:15px; overflow:hidden; border:1px solid var(--s3)">
+                    <div style="width:${maturityPct}%; height:100%; background:${maturityColor}; border-radius:50px; box-shadow: 0 0 10px ${maturityColor}55"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:25px">
+                    <span style="font-size:11px; color:var(--t3); font-weight:600">NEW 0%</span>
+                    <span style="font-size:14px; font-weight:800; color:${maturityColor}">${maturityPct}% AVG RECOVERY</span>
+                    <span style="font-size:11px; color:var(--t3); font-weight:600">OWNED 100%</span>
+                </div>
+
+                <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
+                    <h4 style="margin-bottom:12px; font-size:14px; display:flex; align-items:center; gap:8px">📈 Lifecycle Benchmarks</h4>
+                    <p style="font-size:12px; color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the fleet. This determines when assets transition from RTO to full ownership.</p>
+                    
+                    <div style="display:flex; flex-direction:column; gap:10px">
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#22C55E; font-weight:700">● HIGH (>75%)</span>
+                            <span style="color:var(--t3)">Impending Equity Transfer</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:var(--ac); font-weight:700">● MID (25-75%)</span>
+                            <span style="color:var(--t3)">Operational Stable Phase</span>
+                        </div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px">
+                            <span style="color:#F59E0B; font-weight:700">● EARLY (<25%)</span>
+                            <span style="color:var(--t3)">Growth & Deployment</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:25px; display:flex; justify-content:flex-end">
+                    <button class="btn primary" onclick="window.closeModals()">Close Audit</button>
+                </div>
+            </div>
+        `;
+    }
+
+    document.getElementById('gpsModalTitle').innerText = title;
+    document.getElementById('gpsModalContent').innerHTML = html;
+    document.getElementById('gpsModalOverlay').classList.add('active');
+};
+
+window.selectProgram = (programId) => {
+    selectedProgramId = programId;
+    renderProgramListView();
+};
+
+window.toggleProgramExpansion = (programId) => {
+    window.selectProgram(programId);
+};
+
+window.openProgramModal = (programId = null) => {
+    const p = programId ? state.programs.find(x => x.id === programId) : {
+        id: `P - ${Math.random().toString(36).substring(2, 6).toUpperCase()} `,
+        name: '',
+        shortName: '',
+        partnerId: partners[0].id,
+        type: 'RTO',
+        price: 30000,
+        grace: 7
+    };
+
+    const isEdit = !!programId;
+    const title = isEdit ? 'Edit Program Terms' : 'Create New Program';
+
+    const html = `
+    < div class="modal-form" >
+            <div class="form-group">
+                <label>Program Name</label>
+                <input type="text" id="pName" value="${p.name}" placeholder="e.g. Maka RTO Standard">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                <div class="form-group">
+                    <label>Short Name</label>
+                    <input type="text" id="pShort" value="${p.shortName}" placeholder="e.g. Maka">
+                </div>
+                <div class="form-group">
+                    <label>Partner</label>
+                    <select id="pPartner">
+                        ${partners.map(part => `<option value="${part.id}" ${p.partnerId === part.id ? 'selected' : ''}>${part.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+                <div class="form-group">
+                    <label>Daily Price (Rp)</label>
+                    <input type="number" id="pPrice" value="${p.price}">
+                </div>
+                <div class="form-group">
+                    <label>Grace Period (Days)</label>
+                    <input type="number" id="pGrace" value="${p.grace}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Program Type</label>
+                <select id="pType">
+                    <option value="RTO" ${p.type === 'RTO' ? 'selected' : ''}>Rent To Own (RTO)</option>
+                    <option value="Rental" ${p.type === 'Rental' ? 'selected' : ''}>Daily Rental</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn secondary" onclick="window.closeModal('gps')">Cancel</button>
+                <button class="btn primary" onclick="window.saveProgram('${p.id}', ${isEdit})">${isEdit ? 'Update Program' : 'Create Program'}</button>
+            </div>
+        </div >
+    `;
+
+    document.getElementById('gpsModalTitle').innerText = `🤝 ${title} `;
+    document.getElementById('gpsModalContent').innerHTML = html;
+    document.getElementById('gpsModalOverlay').classList.add('open');
+};
+
+window.saveProgram = (id, isEdit) => {
+    const data = {
+        id,
+        name: document.getElementById('pName').value,
+        shortName: document.getElementById('pShort').value,
+        partnerId: document.getElementById('pPartner').value,
+        price: parseInt(document.getElementById('pPrice').value),
+        grace: parseInt(document.getElementById('pGrace').value),
+        type: document.getElementById('pType').value
+    };
+
+    if (isEdit) updateProgram(id, data);
+    else addProgram(data);
+
+    document.getElementById('gpsModalOverlay').classList.remove('open');
+    renderProgramListView();
+};
+
+window.confirmDeleteProgram = (id) => {
+    const units = state.vehicles.filter(v => v.programId === id).length;
+    if (units > 0) {
+        alert(`Cannot delete program.There are ${units} vehicles assigned to this scheme.`);
+        return;
+    }
+    if (confirm('Are you sure you want to delete this program?')) {
+        deleteProgram(id);
+        renderProgramListView();
+    }
+};
+
+
+window.setProgramFilter = (programId) => {
+    state.filter.program = programId;
+    // Switch to fleet view
+    const fleetTab = document.querySelector('.nav-tab[data-tab="fleet"]');
+    if (fleetTab) fleetTab.click();
+};
+
+// ── Command Palette Logic ──────────────────────────────────────────
+let cpSelectedIdx = -1;
+let cpMatches = [];
+
+export const openCommandPalette = () => {
+    const overlay = document.getElementById('commandPaletteOverlay');
+    const input = document.getElementById('cpInput');
+    if (!overlay || !input) return;
+
+    overlay.classList.add('open');
+    input.value = '';
+    input.focus();
+    updateCommandPaletteResults('');
+};
+
+export const closeCommandPalette = () => {
+    const overlay = document.getElementById('commandPaletteOverlay');
+    if (overlay) overlay.classList.remove('open');
+};
+
+const updateCommandPaletteResults = (q) => {
+    const resultsContainer = document.getElementById('cpResults');
+    if (!resultsContainer) return;
+
+    if (!q) {
+        resultsContainer.innerHTML = '<div class="cp-hint">Type to search vehicles, riders, or RTO IDs...</div>';
+        cpMatches = [];
+        cpSelectedIdx = -1;
+        return;
+    }
+
+    const query = q.toLowerCase();
+    cpMatches = [];
+
+    // 1. Search Vehicles (Plate, ID, RTO ID)
+    state.vehicles.forEach(v => {
+        if (v.plate.toLowerCase().includes(query) || v.id.toLowerCase().includes(query) || (v.rtoId && v.rtoId.toLowerCase().includes(query))) {
+            cpMatches.push({ type: 'vehicle', id: v.id, title: v.plate, sub: `${v.rtoId || v.id} • ${v.customer || 'Available'} ` });
+        }
+    });
+
+    // 2. Search Users
+    state.users.forEach(u => {
+        if (u.name.toLowerCase().includes(query) || u.userId.toLowerCase().includes(query)) {
+            cpMatches.push({ type: 'user', id: u.userId, title: u.name, sub: `User ID: ${u.userId} • Joined ${new Date(u.joinDate).toLocaleDateString()} ` });
+        }
+    });
+
+    // 3. Search Programs
+    state.programs.forEach(p => {
+        if (p.name.toLowerCase().includes(query) || p.shortName.toLowerCase().includes(query)) {
+            cpMatches.push({ type: 'program', id: p.id, title: p.name, sub: `${p.type} • ${formatRupiah(p.price)}/day` });
+        }
+    });
+
+    // Limit to top 10
+    cpMatches = cpMatches.slice(0, 10);
+
+    if (cpMatches.length === 0) {
+        resultsContainer.innerHTML = '<div class="cp-hint">No results found for "' + q + '"</div>';
+    } else {
+        cpSelectedIdx = 0;
+        renderCPMatches();
+    }
+};
+
+const renderCPMatches = () => {
+    const resultsContainer = document.getElementById('cpResults');
+    resultsContainer.innerHTML = cpMatches.map((m, i) => `
+        <div class="cp-item ${i === cpSelectedIdx ? 'selected' : ''}" onclick="window.selectCPItem(${i})">
+            <div class="cp-icon">${m.type === 'vehicle' ? '🏍️' : m.type === 'user' ? '👤' : '🤝'}</div>
+            <div class="cp-info">
+                <div class="cp-name">${m.title}</div>
+                <div class="cp-sub">${m.sub}</div>
+            </div>
+        </div>
+    `).join('');
+
+    const selectedItem = resultsContainer.children[cpSelectedIdx];
+    if (selectedItem) selectedItem.scrollIntoView({ block: 'nearest' });
+};
+
+window.selectCPItem = (idx) => {
+    const item = cpMatches[idx];
+    if (!item) return;
+
+    closeCommandPalette();
+
+    if (item.type === 'vehicle') window.openVehicleDrawer(item.id);
+    else if (item.type === 'user') window.openUserDrawer(item.id);
+    else if (item.type === 'program') {
+        const programTab = document.querySelector('.nav-tab[data-tab="programs"]');
+        if (programTab) programTab.click();
+        // Maybe scroll to it? renderProgramListView will show all.
+    }
+};
+
+window.openChangelogModal = () => {
+    const elOverlay = document.getElementById('gpsModalOverlay');
+    const elTitle = document.getElementById('gpsModalTitle');
+    const elContent = document.getElementById('gpsModalContent');
+
+    if (!elOverlay || !elTitle || !elContent) return;
+
+    elTitle.innerText = "Platform Updates — v1.4.0";
+    elContent.innerHTML = `
+        <div style="padding:4px">
+            <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+                    <h3 style="margin:0; font-size:16px; color:var(--p)">🚀 Latest Release: v1.4.0</h3>
+                    <span style="font-size:11px; color:var(--t3); font-family:var(--font-mono)">2026-02-23</span>
+                </div>
+                <p style="font-size:12px; color:var(--t2); line-height:1.6">This major update introduces the unified <strong>RTO Application Management</strong> suite, centralizing risk assessment, pickup scheduling, and automated driver communication.</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:20px">
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:#22C55E; border-radius:50%"></span> NEW FEATURES
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>Unified RTO Sidebar:</strong> New integrated navigation for Applications, Pickup, Score Config, and WA Scenarios.</li>
+                        <li><strong>Interactive WA Preview:</strong> Verified WhatsApp communication with editable previews and dynamic variable parsing.</li>
+                        <li><strong>Pickup Scheduling:</strong> Intelligent calendar system for managing motorcycle handovers at partner dealers.</li>
+                        <li><strong>Config Persistence:</strong> LocalStorage engine for custom WhatsApp templates and risk score parameters.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:var(--p); border-radius:50%"></span> UX REFINEMENTS
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li><strong>Top-Aligned Viewports:</strong> Standardized multi-view layout to maximize vertical screen efficiency.</li>
+                        <li><strong>Admin Command Sync:</strong> Improved global window integration for seamless cross-module interaction.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 style="font-size:12px; font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
+                        <span style="width:6px; height:6px; background:#FACC15; border-radius:50%"></span> SYSTEM STABILITY
+                    </h4>
+                    <ul style="font-size:12px; color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
+                        <li>Resolved critical layout flexbox gaps in sidebar-nested views.</li>
+                        <li>Fixed JS string interpolation issues on score configuration sliders.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="margin-top:30px; padding-top:20px; border-top:1px solid var(--b1); text-align:center">
+                <button class="vl-pill" onclick="window.closeGPSModal()" style="width:120px">Got it, thanks!</button>
+            </div>
+        </div>
+    `;
+    elOverlay.classList.add('active');
+};
+
+window.closeGPSModal = () => {
+    const elOverlay = document.getElementById('gpsModalOverlay');
+    if (elOverlay) elOverlay.classList.remove('active');
+};
+
+// Event Listeners for Input
+document.addEventListener('DOMContentLoaded', () => {
+    const cpInput = document.getElementById('cpInput');
+    if (!cpInput) return;
+
+    cpInput.addEventListener('input', (e) => {
+        updateCommandPaletteResults(e.target.value);
+    });
+
+    cpInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            cpSelectedIdx = (cpSelectedIdx + 1) % cpMatches.length;
+            renderCPMatches();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            cpSelectedIdx = (cpSelectedIdx - 1 + cpMatches.length) % cpMatches.length;
+            renderCPMatches();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (cpSelectedIdx !== -1) window.selectCPItem(cpSelectedIdx);
+        } else if (e.key === 'Escape') {
+            closeCommandPalette();
+        }
+    });
+
+    const cpOverlay = document.getElementById('commandPaletteOverlay');
+    cpOverlay.addEventListener('click', (e) => {
+        if (e.target === cpOverlay) closeCommandPalette();
+    });
+});
 

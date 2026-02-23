@@ -1,9 +1,15 @@
-/* Main App Logic */
-import { initData, state, getFilteredVehicles, getStats } from './modules/store.js';
+import { initData, state, getFilteredVehicles, getStats, getContextStats } from './modules/store.js';
 import { initMap, updateMapMarkers, focusVehicleOnMap, resizeMap } from './modules/map.js';
-import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal } from './modules/ui.js';
+import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, openCommandPalette, closeCommandPalette } from './modules/ui.js';
 import { getFinanceStats, getTransactions, getProgramStats } from './modules/finance.js';
 import { getGpsDevices, getGpsStats, getGpsById, createGpsDevice, updateGpsDevice, deleteGpsDevice } from './modules/gps.js';
+import * as rtoLogic from './modules/rto.js';
+
+// Expose globally for inline onclicks in index.html
+window.rto = rtoLogic;
+Object.assign(window, rtoLogic);
+
+let activeTab = 'users'; // default
 
 /* Initial Load */
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Data
         initData();
         console.log(`Data loaded: ${state.vehicles.length} vehicles, ${state.transactions.length} transactions`);
+        window.admRTbl(); // Initialize RTO Apps Queue
+        window.renderPUList(); // Initialize RTO Pickup
 
         // 2. Map
         initMap('map');
@@ -20,8 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. UI
         const initialStats = getStats();
         renderFilters('all', initialStats);
-        updateView(); // Initial render
-        updateStatsBar();
+        updateView();
+        updateUsers(); // LANDING VIEW: Users override
+        updateStatsBar(); // Contextual stats for Users
 
         // 4. Events
         setupEventListeners();
@@ -37,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resizeMap();
             updateFinance();
             updateView();
+            updateUsers();
         }, 200);
 
         // Listen for pagination
@@ -100,6 +110,18 @@ function updateGps() {
     renderGpsList(getGpsDevices(gpsFilter), getGpsStats(), gpsFilter);
 }
 
+function updateVehicles() {
+    renderVehicleListView();
+}
+
+function updateUsers() {
+    renderUserListView();
+}
+
+function updatePrograms() {
+    renderProgramListView();
+}
+
 // Global for inline onclick on pagination buttons in the finance table
 window.changeFinancePage = (delta) => {
     if (!window.financePage) window.financePage = 1;
@@ -114,7 +136,7 @@ window.changeGpsPage = (delta) => {
 };
 
 function updateStatsBar() {
-    renderStats(getStats());
+    renderStats(getContextStats(activeTab), activeTab);
 }
 
 function selectVehicle(id) {
@@ -135,20 +157,56 @@ function setupEventListeners() {
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
 
-                const showFleet = tab.dataset.tab === 'fleet';
-                const showFinance = tab.dataset.tab === 'finance';
-                const showGps = tab.dataset.tab === 'gps';
+                const target = tab.dataset.tab;
+                activeTab = target; // Track context
+                const showFleet = target === 'fleet';
+                const showFinance = target === 'finance';
+                const showGps = target === 'gps';
+                const showVehicles = target === 'vehicles';
+                const showUsers = target === 'users';
+                const showPrograms = target === 'programs';
+                const showRtoApps = target === 'rto-applications';
+                const showRtoPickup = target === 'rto-pickup';
+                const showRtoScore = target === 'rto-score';
+                const showRtoWA = target === 'rto-wa';
+
                 const fleetView = document.getElementById('fleetView');
                 const financeView = document.getElementById('financeView');
                 const gpsView = document.getElementById('gpsView');
+                const vehicleListView = document.getElementById('vehicleListView');
+                const userListView = document.getElementById('userListView');
+                const programListView = document.getElementById('programListView');
+                const rtoAppsView = document.getElementById('rto-applicationsView');
+                const rtoPickupView = document.getElementById('rto-pickupView');
+                const rtoScoreView = document.getElementById('rto-scoreView');
+                const rtoWAView = document.getElementById('rto-waView');
 
                 if (fleetView) fleetView.classList.toggle('hidden', !showFleet);
                 if (financeView) financeView.classList.toggle('hidden', !showFinance);
                 if (gpsView) gpsView.classList.toggle('hidden', !showGps);
+                if (vehicleListView) vehicleListView.classList.toggle('hidden', !showVehicles);
+                if (userListView) userListView.classList.toggle('hidden', !showUsers);
+                if (programListView) programListView.classList.toggle('hidden', !showPrograms);
+                if (rtoAppsView) rtoAppsView.classList.toggle('hidden', !showRtoApps);
+                if (rtoPickupView) rtoPickupView.classList.toggle('hidden', !showRtoPickup);
+                if (rtoScoreView) rtoScoreView.classList.toggle('hidden', !showRtoScore);
+                if (rtoWAView) rtoWAView.classList.toggle('hidden', !showRtoWA);
 
-                if (showFleet) resizeMap();
+                if (showFleet) {
+                    resizeMap();
+                    updateView();
+                }
                 if (showFinance) updateFinance();
                 if (showGps) updateGps();
+                if (showVehicles) updateVehicles();
+                if (showUsers) updateUsers();
+                if (showPrograms) updatePrograms();
+                if (showRtoApps) window.admRTbl();
+                if (showRtoPickup) { rtoLogic.state.calYear = new Date().getFullYear(); rtoLogic.state.calMonth = new Date().getMonth(); window.renderPUList(); }
+                if (showRtoScore) window.renderScoreCfg();
+                if (showRtoWA) { window.renderWAScens(); if (!rtoLogic.state.selScen && rtoLogic.WA_SCENARIOS.length) window.selWAScen(rtoLogic.WA_SCENARIOS[0].k); }
+
+                updateStatsBar(); // Refresh context stats on tab switch
             });
         });
     }
@@ -161,6 +219,14 @@ function setupEventListeners() {
             updateView();
         });
     }
+
+    // Command Palette Shortcut
+    window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            openCommandPalette();
+        }
+    });
 
     // Global Filter Events
     window.addEventListener('filter-change', (e) => {
