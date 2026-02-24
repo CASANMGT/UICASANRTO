@@ -6,11 +6,10 @@ This document defines the core skills and operational capabilities enabled by th
 
 ## 🛠️ Operational Skill Domains
 
-### 🗺️ 1. Fleet Monitoring & Telemetry
-Operators possess the capability to maintain real-time situational awareness of the entire fleet.
-- **Skill:** Live Tracking — Interpreting bearing, speed, and real-time movement states.
-- **Skill:** High-Density Filtering — Navigating complex status combinations (Running/Stopped/Online/Offline).
-- **Skill:** Telemetry Analysis — Auditing signal strength (RSSI), battery health, and GPS accuracy.
+### 🗺️ 1. Asset Monitoring & Telemetry
+Operators maintain real-time situational awareness of the entire fleet.
+- **Skill (Industrial Grade):** Assets Management — Auditing high-density logs and unit health with standardized 10-item precision.
+- **Skill (Telemetry):** Maps & Observability — Interpreting bearing, speed, and movement states via the vertical panoramic interface.
 
 ### ⚖️ 2. KYC & Risk Management
 Operators use data correlation to vet riders and minimize asset exposure.

@@ -48,14 +48,14 @@
                     <div class="logo-box">C</div>
                     <div>
                         <h1 style="font-size: var(--text-2xl); font-weight:800; line-height:1.2">CASAN
-                            Fleet<br>Management</h1>
+                            Assets</h1>
                     </div>
                 </div>
                 <div style="font-size: var(--text-xs); color:var(--t2); display:flex; align-items:center; gap:8px;">
                     <span>RTO & Rental</span>
                     <div class="version-badge" onclick="window.openChangelogModal()">
                         <span class="pulse-dot"></span>
-                        v1.4.1
+                        v1.6.0
                     </div>
                 </div>
             </div>
@@ -63,15 +63,13 @@
             <!-- Navigation -->
             <nav class="nav-tabs vertical-nav">
                 <div class="nav-tab active" data-tab="users">👤 Users</div>
-                <div class="nav-tab" data-tab="rto-fleet">🤝 RTO Fleet</div>
+                <div class="nav-tab" data-tab="programs">⚙️ Programs (Admin)</div>
+                <div class="nav-tab" data-tab="rto-applications">📋 Applications</div>
+                <div class="nav-tab" data-tab="rto-fleet">🤝 Fleet</div>
                 <div class="nav-tab" data-tab="finance">💰 Finance</div>
-                <div class="nav-tab" data-tab="vehicles">🏍️ Vehicles</div>
-                <div class="nav-tab" data-tab="fleet">🗺️ Fleet Tracking</div>
-                <div class="nav-tab" data-tab="gps">📡 GPS List</div>
-                <div class="nav-tab" data-tab="rto-applications">📋 RTO Pipeline</div>
-                <div class="nav-tab" data-tab="programs"
-                    style="margin-top:20px; border-top: 1px solid var(--b1); padding-top: 12px;">⚙️ Programs
-                </div>
+                <div class="nav-tab" data-tab="vehicles">🏍️ Assets</div>
+                <div class="nav-tab" data-tab="fleet">🗺️ Maps</div>
+                <div class="nav-tab" data-tab="gps">📡 GPS</div>
             </nav>
         </aside>
 
@@ -144,7 +142,7 @@
                     </div>
                 </div>
 
-                <!-- Vehicle List Tab (Hidden by default) -->
+                <!-- Assets Tab (Hidden by default) -->
                 <div id="vehicleListView" class="view-container hidden">
                     <div id="vehicleListContent"
                         style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
@@ -158,14 +156,14 @@
                     </div>
                 </div>
 
-                <!-- RTO Fleet Tab (Formerly Programs) -->
+                <!-- Fleet Tab (Formerly Programs) -->
                 <div id="rto-fleetView" class="view-container hidden">
                     <div id="rto-fleetContent"
                         style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
                     </div>
                 </div>
 
-                <!-- RTO Applications Tab -->
+                <!-- Applications Tab -->
                 <div id="rto-applicationsView" class="view-container hidden">
                     <div class="adm" style="flex:1; width:100%; height:100%; border-radius:0; flex-direction: column;">
                         <!-- Admin Top Nav (Formerly Sidebar) -->
@@ -501,7 +499,7 @@
                         style="padding:0; overflow-y: auto; flex:1; display:flex; flex-direction:column;">
                         <div class="vl-header" style="padding: 24px 32px; border-bottom: 1px solid var(--b1);">
                             <div>
-                                <h2 class="vl-title">⚙️ Programs Management</h2>
+                                <h2 class="vl-title">⚙️ Programs (Admin)</h2>
                                 <p style="font-size: var(--text-base); color:var(--t3); margin-top:4px">Configure and
                                     manage RTO specific schemes, partners, and business rules.</p>
                             </div>

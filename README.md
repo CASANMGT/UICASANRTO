@@ -6,7 +6,7 @@ A web-based fleet operations dashboard for managing EV motorcycles on **RTO (Ren
 
 ## 🌐 Live Demo
 
-**[https://gleeful-medovik-5ded90.netlify.app](https://gleeful-medovik-5ded90.netlify.app/)**
+**[https://uicasanrto-tye2h9rwo-clauxz-8397s-projects.vercel.app/](https://https://uicasanrto-tye2h9rwo-clauxz-8397s-projects.vercel.app/)**
 
 ---
 
@@ -29,7 +29,7 @@ casan_rto/
     ├── debug.js                # Dev helper utilities
     └── modules/
         ├── store.js            # Movement Simulation Engine
-        ├── ui.js               # Render functions (v1.5.0)
+        ├── ui.js               # Render functions (v1.6.1)
         ├── map.js              # Leaflet 1:1 directional markers
         ├── finance.js          # Revenue analytics
         ├── gps.js              # GPS hardware auditing
@@ -138,11 +138,14 @@ casan_rto/
 ### 🎨 Navigation & Architecture
 | Feature | Status |
 |---------|--------|
-| **Renamed: RTO Fleet** (Unified Monitoring) | ✅ |
-| **Renamed: Programs** (Scheme Administration) | ✅ |
+| **Renamed: Fleet** (Unified Monitoring) | ✅ |
+| **Renamed: Programs (Admin)** (Scheme Administration) | ✅ |
+| **Renamed: Assets** (Vehicle Management) | ✅ |
+| **Renamed: Maps** (Fleet Tracking) | ✅ |
+| **Renamed: GPS** (GPS List) | ✅ |
 | **Vertical Viewports:** Maximized vertical height | ✅ |
 | **Sub-Nav Layout Fix:** No stats bar occlusion | ✅ |
-| **In-App Changelog Modal:** Versioned updates | ✅ |
+| **In-App Changelog Modal:** Versioned updates (v1.6.1) | ✅ |
 
 ---
 
@@ -185,20 +188,19 @@ All data is generated client-side in `store.js` — no backend required.
 
 ---
 
-## 🚀 Deployment
-
-### Netlify Drop (one-time, no CLI)
-1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag the `casan_rto/` folder onto the page
-3. Live URL generated instantly
-
-### GitHub → Netlify Auto-Deploy *(recommended)*
-1. Ensure `netlify.toml` is at the **root** of the repo
-2. In Netlify: **Site settings → Build & deploy → Link repository**
-3. Set:
-   - Build command: *(blank)*
-   - Publish directory: `casan_rto`
-4. Every `git push` to `main` auto-deploys ✅
+## 🚀 Deployment (Vercel)
+ 
+### GitHub → Vercel Auto-Deploy *(recommended)*
+1. Push your code to a GitHub repository.
+2. In Vercel: **Add New Project → Import Repository**.
+3. Vercel will automatically detect the static project.
+4. Set the **Output Directory** to `root` or leave default if using the folder structure.
+5. Every `git push` to `main` auto-deploys ✅
+ 
+### Manual Deploy (Vercel CLI)
+1. Install Vercel CLI: `npm i -g vercel`
+2. Run `vercel` from the root directory.
+3. Follow the prompts to link and deploy.
 
 ### Local Development
 ```powershell
@@ -214,7 +216,7 @@ All data is generated client-side in `store.js` — no backend required.
 - **Frontend:** Vanilla HTML, CSS, JavaScript (ES Modules — no build step)
 - **Map:** [Leaflet.js](https://leafletjs.com) — individual markers (no clustering)
 - **Map tiles:** CartoDB Dark Matter (free, no API key)
-- **Hosting:** Netlify (static deploy)
+- **Hosting:** Vercel (static deploy via GitHub)
 - **Fonts:** IBM Plex Mono (via CSS import)
 
 ---

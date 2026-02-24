@@ -3,19 +3,8 @@ import { state, programs, partners, addProgram, updateProgram, deleteProgram } f
 import { getVehicleById, getVehicleTransactions, getRTOProgress, immobilizeVehicle, releaseVehicle, extendGrace, getAllVehicles, getSTNKAlert, getVehicleSTNKStats } from './vehicle.js';
 import { getUserById, getUserVehicles, getUserTransactions, getRiskColor, getOccupationEmoji, getUsers } from './users.js';
 
-// Elements
-const elVehicleList = document.getElementById('vehicleList');
-const elStatsBar = document.getElementById('statsBar');
-const elStatusFilters = document.getElementById('statusFilters');
-
-// New Elements for Vehicle/User List
-const elRtoFleetContent = document.getElementById('rto-fleetContent');
-const elUserListContent = document.getElementById('userListContent');
-const elVehicleListContent = document.getElementById('vehicleListContent');
-const elProgramsTableWrapper = document.getElementById('programs-table-wrapper');
-const elDrawerBackdrop = document.getElementById('drawerBackdrop');
-const elDetailDrawer = document.getElementById('detailDrawer');
-const elDrawerContent = document.getElementById('drawerContent');
+// Elements (Dynamic getters to avoid nulls during module load)
+const getEl = (id) => document.getElementById(id);
 
 // State for UI
 let expandedCardId = null;
@@ -25,7 +14,6 @@ let statusGuideExpanded = true;
 // State for new lists
 let vehicleListFilter = { partner: 'all', status: 'all', search: '', program: 'all', sortBy: 'id', sortDir: 'asc' };
 let userListFilter = { partner: 'all', risk: 'all', search: '', program: 'all', sortBy: 'name', sortDir: 'asc' };
-let selectedProgramId = 'all';
 let vehicleListPage = 1;
 let userListPage = 1;
 let programListPage = 1;
@@ -41,9 +29,9 @@ window.rtoListFilter = {
 window.setRtoFilter = (key, val) => {
     window.rtoListFilter[key] = val;
     window.rtoListPage = 1;
-    // We only call renderProgramListView if the UI is open
-    if (document.getElementById('programListContent')) {
-        import('./ui.js').then(ui => ui.renderProgramListView());
+    // Targeting the correct container for RTO Fleet
+    if (document.getElementById('rto-fleetContent')) {
+        renderProgramListView();
     }
 };
 
@@ -64,6 +52,7 @@ export const resetPagination = () => {
 };
 
 export const renderStats = (stats, tab = 'fleet') => {
+    const elStatsBar = getEl('statsBar');
     if (!elStatsBar) return;
 
     // Hide global stats bar for RTO tabs because they have their own KPI row
@@ -142,7 +131,7 @@ export const renderStats = (stats, tab = 'fleet') => {
 };
 
 export const renderProgramsTable = () => {
-    const wrapper = document.getElementById('programs-table-wrapper');
+    const wrapper = getEl('programs-table-wrapper');
     if (!wrapper) return;
 
     // Calculate dynamic stats per program
@@ -218,7 +207,42 @@ export const renderProgramsTable = () => {
         </tr>
     `).join('');
 
+    // Global stats for Program Admin
+    const totalPrograms = state.programs.length;
+    const totalFleet = state.vehicles.length;
+    const totalActiveUsers = state.vehicles.filter(v => v.customer).length;
+    const avgHealth = programStats.length > 0 ? Math.round(programStats.reduce((acc, p) => acc + p.healthPct, 0) / programStats.length) : 0;
+    const totalPartners = new Set(state.programs.map(p => p.partnerId)).size;
+
     wrapper.innerHTML = `
+        <div class="stats-bar" style="grid-template-columns: repeat(5, 1fr); margin-bottom:24px">
+            <div class="stat-card">
+                <div class="stat-label">Total Programs</div>
+                <div class="stat-value">${totalPrograms}</div>
+                <div class="stat-trend" style="color:var(--t3)">Active Schemes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Managed Fleet</div>
+                <div class="stat-value">${totalFleet}</div>
+                <div class="stat-trend">Units across all partners</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Enrollment</div>
+                <div class="stat-value">${totalActiveUsers}</div>
+                <div class="stat-trend" style="color:var(--c-success)">Active Riders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Network Scale</div>
+                <div class="stat-value">${totalPartners}</div>
+                <div class="stat-trend">Partner Dealers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">System Health</div>
+                <div class="stat-value" style="color:${avgHealth > 90 ? 'var(--c-success)' : 'var(--c-warning)'}">${avgHealth}%</div>
+                <div class="stat-trend">Compliance Avg</div>
+            </div>
+        </div>
+
         <div class="card" style="padding:0; overflow:hidden; border:1px solid var(--b1);">
             <table style="width:100%; border-collapse:collapse; text-align:left;">
                 <thead style="background:var(--s1); color:var(--t3); font-size: var(--text-xs); text-transform:uppercase; letter-spacing:0.8px;">
@@ -242,28 +266,27 @@ export const renderProgramsTable = () => {
 };
 
 export const renderFilters = (activeFilter, stats) => {
+    const elStatusFilters = getEl('statusFilters');
     if (!elStatusFilters) return;
 
     // Default stats if missing
     const s = stats || { total: 0, active: 0, expiring: 0, grace: 0, immobilized: 0, paused: 0, online: 0, offline: 0 };
 
     const filters = [
-        { id: 'all', label: `All (${s.total})`, cls: 'btn-secondary' },
-        { id: 'active', label: `Active (${s.active})`, cls: 'btn-success' },
-        { id: 'expiring', label: `Expiring (${s.expiring})`, cls: 'btn-warning' },
-        { id: 'grace', label: `Grace (${s.grace})`, cls: 'btn-danger-light' },
-        { id: 'immobilized', label: `Locked (${s.immobilized})`, cls: 'btn-danger' },
-        { id: 'paused', label: `Paused (${s.paused})`, cls: 'btn-secondary' },
-        { id: 'available', label: `Available (${s.available})`, cls: 'btn-secondary' },
-        { id: 'online', label: `Online (${s.online})`, cls: 'btn-info' },
-        // { id: 'offline', label: `Offline (${s.offline})`, cls: 'btn-secondary' } // Optional, can clutter
+        { id: 'all', label: `All (${s.total || 0})`, cls: 'btn-secondary' },
+        { id: 'active', label: `Active (${s.active || 0})`, cls: 'btn-success' },
+        { id: 'expiring', label: `Expiring (${s.expiring || 0})`, cls: 'btn-warning' },
+        { id: 'grace', label: `Grace (${s.grace || 0})`, cls: 'btn-danger-light' },
+        { id: 'immobilized', label: `Locked (${s.immobilized || 0})`, cls: 'btn-danger' },
+        { id: 'paused', label: `Paused (${s.paused || 0})`, cls: 'btn-secondary' },
+        { id: 'available', label: `Available (${s.available || 0})`, cls: 'btn-secondary' },
+        { id: 'online', label: `Online (${s.online || 0})`, cls: 'btn-info' }
     ];
 
     // Using global event dispatch for simplicity
     elStatusFilters.innerHTML = filters.map(f => {
         const isActive = activeFilter === f.id;
-        // const baseClass = isActive ? 'active' : ''; // Old way
-        const style = isActive ? `border-bottom: 2px solid ${f.color}; color: ${f.color}; opacity: 1` : `opacity: 0.7`;
+        const style = isActive ? `opacity: 1; border-bottom: 2px solid var(--p);` : `opacity: 0.7`;
 
         return `
         <button class="filter-btn" 
@@ -283,6 +306,7 @@ export const renderFilters = (activeFilter, stats) => {
 };
 
 export const renderVehicleList = (vehicles, onCardClick) => {
+    const elVehicleList = getEl('vehicleList');
     if (!elVehicleList) return;
 
     if (vehicles.length === 0) {
@@ -414,12 +438,10 @@ export const renderVehicleList = (vehicles, onCardClick) => {
 
     // Pagination Controls
     const paginationHtml = totalPages > 1 ? `
-        <div style="display:flex; justify-content:center; gap:8px; padding:10px; align-items:center">
-            <button class="btn btn-secondary" style="padding:4px 8px" 
-                onclick="window.changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>◀</button>
-            <span style="font-size: var(--text-base); color:var(--t2)">Page ${currentPage} of ${totalPages}</span>
-            <button class="btn btn-secondary" style="padding:4px 8px" 
-                onclick="window.changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>
+        <div class="vl-pagination">
+            <button class="vl-page-btn" onclick="window.changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+            <div class="vl-page-info">Page ${currentPage} of ${totalPages}</div>
+            <button class="vl-page-btn" onclick="window.changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
         </div>
     ` : '';
 
@@ -753,7 +775,7 @@ export const renderGpsList = (devices, stats, filter = {}) => {
     if (!container) return;
 
     // Pagination constants
-    const pageSize = 25;
+    const pageSize = 10;
     if (!window.gpsPage) window.gpsPage = 1;
     const totalPages = Math.ceil(devices.length / pageSize) || 1;
     if (window.gpsPage > totalPages) window.gpsPage = totalPages;
@@ -891,25 +913,16 @@ export const renderGpsList = (devices, stats, filter = {}) => {
         : '';
 
     const paginationHtml = `
-    <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--s2); border-top:1px solid var(--b1)">
-        <div style="color:var(--t3); font-size: var(--text-base)">
-            Showing ${startIndex + 1} - ${Math.min(startIndex + pageSize, devices.length)} of ${devices.length} devices
-        </div>
-        <div style="display:flex; gap:8px">
-            <button class="btn btn-secondary" style="font-size: var(--text-md); padding:4px 12px"
-                onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>◀ Prev</button>
-            <div style="display:flex; align-items:center; font-size: var(--text-base); color:var(--t2); padding:0 10px">
-                Page ${window.gpsPage} of ${totalPages}
-            </div>
-            <button class="btn btn-secondary" style="font-size: var(--text-md); padding:4px 12px"
-                onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next ▶</button>
-        </div>
+    <div class="vl-pagination">
+        <button class="vl-page-btn" onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>Prev</button>
+        <div class="vl-page-info">Page ${window.gpsPage} of ${totalPages}</div>
+        <button class="vl-page-btn" onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next</button>
     </div>`;
 
     container.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
         <div>
-            <h2 style="margin:0 0 4px">GPS Devices</h2>
+            <h2 style="margin:0 0 4px">GPS Dashboard</h2>
             <div style="color:var(--t3); font-size: var(--text-lg)">${stats.total} devices — ${stats.online} online</div>
         </div>
     </div>
@@ -1057,10 +1070,11 @@ export const closeGpsModal = () => {
 // ─── VEHICLE LIST TAB ─────────────────────────────────────────────────────────
 
 export const renderVehicleListView = () => {
+    const elVehicleListContent = getEl('vehicleListContent');
     if (!elVehicleListContent) return;
 
     const vehicles = getAllVehicles(vehicleListFilter);
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = 10;
     const totalPages = Math.ceil(vehicles.length / PAGE_SIZE) || 1;
     if (vehicleListPage > totalPages) vehicleListPage = totalPages;
     const paginated = vehicles.slice((vehicleListPage - 1) * PAGE_SIZE, vehicleListPage * PAGE_SIZE);
@@ -1103,7 +1117,7 @@ export const renderVehicleListView = () => {
     elVehicleListContent.innerHTML = `
         <div class="vl-container">
             <div class="vl-header">
-                <h2 class="vl-title">Vehicle Management</h2>
+                <h2 class="vl-title">Assets Management</h2>
                 <div style="display:flex; gap:10px; align-items:center">
                     <button class="vl-pill" onclick="window.exportVehiclesCSV()">📥 Export CSV</button>
                     <div class="vl-count">${vehicles.length} Units</div>
@@ -1168,10 +1182,11 @@ window.changeVehiclePage = (delta) => { vehicleListPage += delta; renderVehicleL
 // ─── USER LIST TAB ────────────────────────────────────────────────────────────
 
 export const renderUserListView = () => {
+    const elUserListContent = getEl('userListContent');
     if (!elUserListContent) return;
 
     const users = getUsers(userListFilter);
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = 10;
     const totalPages = Math.ceil(users.length / PAGE_SIZE) || 1;
     if (userListPage > totalPages) userListPage = totalPages;
     const paginated = users.slice((userListPage - 1) * PAGE_SIZE, userListPage * PAGE_SIZE);
@@ -1408,6 +1423,10 @@ window.changeProgramPage = (delta) => { programListPage += delta; renderProgramL
 // ─── DETAIL DRAWER LOGIC ──────────────────────────────────────────────────────
 
 const openDrawer = (html) => {
+    const elDrawerContent = getEl('drawerContent');
+    const elDetailDrawer = getEl('detailDrawer');
+    const elDrawerBackdrop = getEl('drawerBackdrop');
+    if (!elDrawerContent || !elDetailDrawer || !elDrawerBackdrop) return;
     elDrawerContent.innerHTML = html;
     elDetailDrawer.classList.add('open');
     elDrawerBackdrop.classList.add('open');
@@ -1422,8 +1441,10 @@ window.popDrawerStack = () => {
 };
 
 window.closeDrawer = () => {
-    elDetailDrawer.classList.remove('open');
-    elDrawerBackdrop.classList.remove('open');
+    const elDetailDrawer = getEl('detailDrawer');
+    const elDrawerBackdrop = getEl('drawerBackdrop');
+    if (elDetailDrawer) elDetailDrawer.classList.remove('open');
+    if (elDrawerBackdrop) elDrawerBackdrop.classList.remove('open');
     drawerStack = []; // Reset history
 };
 export const closeDrawer = window.closeDrawer;
@@ -1705,9 +1726,21 @@ window.openUserDrawer = (userId, pushToStack = true) => {
     openDrawer(html);
 };
 
-// Wire up backdrop/close
-elDrawerBackdrop.addEventListener('click', closeDrawer);
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+// Setup UI Event Listeners (Call during app init)
+export const initUI = () => {
+    const backdrop = getEl('drawerBackdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', closeDrawer);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDrawer();
+            closeModals();
+            closeCommandPalette();
+        }
+    });
+};
 
 // CSV Export handlers
 window.exportVehiclesCSV = () => {
@@ -1729,6 +1762,7 @@ window.exportUsersCSV = () => {
 };
 
 export const renderProgramListView = () => {
+    const elRtoFleetContent = getEl('rto-fleetContent');
     if (!elRtoFleetContent) return;
 
     // Filter programs by global partner filter
@@ -1743,7 +1777,7 @@ export const renderProgramListView = () => {
         const activeCount = programVehicles.filter(v => v.status === 'active').length;
         const graceCount = programVehicles.filter(v => v.status === 'grace').length;
         const lockedCount = programVehicles.filter(v => v.status === 'immobilized').length;
-        const isActive = selectedProgramId === p.id;
+        const isActive = state.filter.program === p.id;
 
         // Pulse health bar for shorthand
         const total = programVehicles.length || 1;
@@ -1751,7 +1785,7 @@ export const renderProgramListView = () => {
         const healthColor = healthPct > 90 ? 'var(--c-success)' : (healthPct > 70 ? 'var(--c-warning)' : 'var(--c-danger)');
 
         return `
-            <div class="adm-ni ${isActive ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:210px; height:100%; gap:4px; box-sizing:border-box;" onclick="window.selectProgramSetting('${p.id}')">
+            <div class="adm-ni ${isActive ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:210px; height:100%; gap:4px; box-sizing:border-box;" onclick="window.selectProgram('${p.id}')">
                 <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
                     <span style="font-size: var(--text-base); font-weight:700">${p.name}</span>
                     <span style="font-size: var(--text-sm); opacity:0.6">${p.shortName}</span>
@@ -1778,12 +1812,12 @@ export const renderProgramListView = () => {
     let viewTitle = 'All Programs Fleet';
     let viewSubtitle = 'Consolidated fleet monitoring across all partner schemes.';
 
-    if (selectedProgramId === 'all') {
+    if (state.filter.program === 'all') {
         displayVehicles = state.vehicles.filter(v => filteredPrograms.some(p => p.id === v.programId));
     } else {
-        const program = filteredPrograms.find(p => p.id === selectedProgramId);
+        const program = filteredPrograms.find(p => p.id === state.filter.program);
         if (program) {
-            displayVehicles = state.vehicles.filter(v => v.programId === selectedProgramId);
+            displayVehicles = state.vehicles.filter(v => v.programId === state.filter.program);
             viewTitle = program.name;
             viewSubtitle = `Detailed lifecycle monitoring for ${program.shortName} scheme.`;
         }
@@ -1814,8 +1848,8 @@ export const renderProgramListView = () => {
     const healthPct = Math.round((activeUnits / totalUnits) * 100);
     const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
 
-    // --- Pagination (20 per page) ---
-    const PAGE_SIZE = 20;
+    // --- Pagination (10 per page) ---
+    const PAGE_SIZE = 10;
     const totalPages = Math.ceil(displayVehicles.length / PAGE_SIZE) || 1;
     if (programListPage > totalPages) programListPage = totalPages;
     const paginated = displayVehicles.slice((programListPage - 1) * PAGE_SIZE, programListPage * PAGE_SIZE);
@@ -1899,7 +1933,7 @@ export const renderProgramListView = () => {
             <!-- Top Nav -->
             <div class="adm-top-nav" style="border-bottom: 1px solid var(--b1); overflow-x: auto; background: var(--s0);">
                 <div class="adm-nav horizontal-adm" style="padding: 0 20px;">
-                    <div class="adm-ni ${selectedProgramId === 'all' ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:160px; height:100%; justify-content:center; box-sizing:border-box" onclick="window.selectProgram('all')">
+                    <div class="adm-ni ${state.filter.program === 'all' ? 'on' : ''}" style="flex-direction:column; align-items:flex-start; padding:12px 16px; min-width:160px; height:100%; justify-content:center; box-sizing:border-box" onclick="window.selectProgram('all')">
                         <div style="font-weight:800; font-size: var(--text-base)">All Programs</div>
                         <div style="font-size: var(--text-sm); opacity:0.6; margin-top:4px">Consolidated View</div>
                     </div>
@@ -1918,9 +1952,9 @@ export const renderProgramListView = () => {
                         <p style="font-size: var(--text-base); color:var(--t3); margin-top:4px">${viewSubtitle}</p>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center">
-                        ${selectedProgramId !== 'all' ? `
-                            <button class="vl-pill" onclick="window.openProgramModal('${selectedProgramId}')">⚙️ Scheme Settings</button>
-                            <button class="vl-pill danger" onclick="window.confirmDeleteProgram('${selectedProgramId}')">🗑️ Delete</button>
+                        ${state.filter.program !== 'all' ? `
+                            <button class="vl-pill" onclick="window.rto.openProgramModal('${state.filter.program}')">⚙️ Scheme Settings</button>
+                            <button class="vl-pill danger" onclick="window.rto.confirmDeleteProgram('${state.filter.program}')">🗑️ Delete</button>
                         ` : ''}
                     </div>
                 </div>
@@ -1940,7 +1974,7 @@ export const renderProgramListView = () => {
                         <div class="value" style="color:var(--c-danger)">${displayVehicles.filter(v => v.status === 'immobilized').length}</div>
                     </div>
                     
-                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('health', '${selectedProgramId}')">
+                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('health', '${state.filter.program}')">
                         <div class="label">Collection Health ℹ️</div>
                         <div class="value" style="color:var(--p)">${healthPct}%</div>
                         <div class="program-tooltip">
@@ -1950,7 +1984,7 @@ export const renderProgramListView = () => {
                         </div>
                     </div>
 
-                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('maturity', '${selectedProgramId}')">
+                    <div class="program-card-stat has-tooltip clickable" onclick="window.popoutProgramStats('maturity', '${state.filter.program}')">
                         <div class="label">Fleet Maturity ℹ️</div>
                         <div class="value" style="color:var(--ac)">${maturityPct}%</div>
                         <div class="program-tooltip">
@@ -2019,15 +2053,10 @@ export const renderProgramListView = () => {
                     </div>
                 </div>
 
-                <div style="padding:12px 20px; border-top:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center; background:var(--s2); font-size: var(--text-md); font-weight:600">
-                    <div style="color:var(--t3)">
-                        Displaying ${(programListPage - 1) * PAGE_SIZE + 1}–${Math.min(programListPage * PAGE_SIZE, displayVehicles.length)} of ${displayVehicles.length} integrated monitoring records.
-                    </div>
-                    <div class="vl-pagination" style="margin-top:0">
-                        <button class="vl-page-btn" onclick="window.changeProgramPage(-1)" ${programListPage === 1 ? 'disabled' : ''}>Prev</button>
-                        <span style="color:var(--t2)">Page ${programListPage} of ${totalPages}</span>
-                        <button class="vl-page-btn" onclick="window.changeProgramPage(1)" ${programListPage === totalPages ? 'disabled' : ''}>Next</button>
-                    </div>
+                <div class="vl-pagination" style="border-top:1px solid var(--b1); margin-top:0; padding:16px 20px">
+                    <button class="vl-page-btn" onclick="window.changeProgramPage(-1)" ${programListPage === 1 ? 'disabled' : ''}>Prev</button>
+                    <div class="vl-page-info">Page ${programListPage} of ${totalPages}</div>
+                    <button class="vl-page-btn" onclick="window.changeProgramPage(1)" ${programListPage === totalPages ? 'disabled' : ''}>Next</button>
                 </div>
             </div>
         </div>
@@ -2281,8 +2310,13 @@ window.popoutProgramStats = (type, programId) => {
 };
 
 window.selectProgram = (programId) => {
-    selectedProgramId = programId;
-    renderProgramListView();
+    state.filter.program = programId;
+    const rtoTab = document.querySelector('.nav-tab[data-tab="rto-fleet"]');
+    if (rtoTab) {
+        rtoTab.click();
+    } else {
+        renderProgramListView();
+    }
 };
 
 window.toggleProgramExpansion = (programId) => {
@@ -2389,6 +2423,12 @@ window.saveProgram = (id, isEdit) => {
         window.renderProgramListView();
     }
 };
+
+// Wire up for index.html calls
+if (!window.rto) window.rto = {};
+window.rto.openProgramModal = window.openProgramModal;
+window.rto.saveProgram = window.saveProgram;
+window.rto.confirmDeleteProgram = window.confirmDeleteProgram;
 
 window.openProgramDetails = (id) => {
     const p = state.programs.find(x => x.id === id);
@@ -2747,49 +2787,38 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates — v1.5.0";
+    elTitle.innerText = "Platform Updates — v1.6.1";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)">💎 Latest Release: v1.5.0</h3>
+                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)">🏗️ Latest Release: v1.6.1</h3>
                     <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-24</span>
                 </div>
-                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">Introducing <strong>Deep Program Management</strong>. This update enriches the administrative suite with live operational telemetry, promotional management tools, and hardened global synchronization fixes.</p>
+                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">Introducing <strong>UI Standardization</strong>. This release unifies the pagination experience across all modules, ensuring a professional and predictable navigation pattern throughout the entire platform.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> DEEP PROGRAM MANAGEMENT
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> UI STANDARDIZATION
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Operational Telemetry:</strong> Live breakdown of Active, Grace, and Locked units per program directly in the management list.</li>
-                        <li><strong>Calculated KPIs:</strong> Integrated progress-driven metrics for "Collection Health" and "Fleet Maturity" at-a-glance.</li>
-                        <li><strong>Program Detail Drawer:</strong> Dedicated right-side slide panel for deep monitoring, promotions, and settings navigation.</li>
-                        <li><strong>Promotions Engine:</strong> Functional "Add Promotion" feature with rich image support and categorized incentives.</li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--c-success); border-radius:50%"></span> STABILITY & SYNC FIXES
-                    </h4>
-                    <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Global Filter Sync:</strong> Fixed bug ensuring new programs immediately appear in the RTO Fleet dropdowns.</li>
-                        <li><strong>Maturity Calculation:</strong> Resolved Maturity "NaN%" error for newly initialized programs.</li>
-                        <li><strong>Persistence Fix:</strong> Hardened the storage logic to prevent silent initialization failures during program creation.</li>
+                        <li><strong>Universal Pagination:</strong> All lists (Users, Fleet, Assets, GPS) now display exactly 10 items per page.</li>
+                        <li><strong>Consistent Controls:</strong> Unified the clickable pagination footer style across every table in the app.</li>
                     </ul>
                 </div>
 
                 <div style="border-top: 1px dashed var(--b1); padding-top: 20px; margin-top: 10px;">
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t3); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        🔄 PREVIOUS: v1.4.1 (Fleet Tracking Overhaul)
+                        🔄 PREVIOUS: v1.6.0 (Navigation Update)
                     </h4>
                     <ul style="font-size: var(--text-sm); color:var(--t3); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px; opacity: 0.8">
-                        <li><strong>Real-time Simulation:</strong> 3s movement engine with Jabodetabek boundary enforcement.</li>
-                        <li><strong>Vertical Layout:</strong> New 60/40 map top / sidebar bottom split for panoramic visibility.</li>
-                        <li><strong>Operational Labels:</strong> Marker states updated to "Running" and "Stopped" logic.</li>
+                        <li><strong>Sidebar Reorg:</strong> Reordered navigation to match business operations flow.</li>
+                        <li><strong>Standardized Labels:</strong> Renamed modules (e.g., Vehicles → Assets) for industrial clarity.</li>
+                    </ul>
+                </div>
+                        <li><strong>Promotions Engine:</strong> Integrated incentive management with image support.</li>
                     </ul>
                 </div>
             </div>

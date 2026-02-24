@@ -2,6 +2,33 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.6.1] - 2026-02-24
+
+### 🏗️ UI Standardization & Pagination
+- **Universal Pagination:** Standardized all list views (Users, Fleet, Assets, GPS) to exactly **10 items per page** for a uniform data browsing experience.
+- **Consistent UX Component:** Applied the `vl-pagination` structural pattern across all modules, ensuring unified button layouts, page indicators, and interactive states.
+- **GPS List Optimization:** Reduced the GPS items-per-page from 25 to 10 to align with the application's high-density design language.
+- **Header update**: updated header with user information.
+
+## [1.6.0] - 2026-02-24
+
+### 📂 Sidebar Reorganization & Navigation
+- **Consolidated Module Hierarchy:** Reorganized the sidebar to follow a logical operational flow: *Users → Programs (Admin) → Applications → Fleet → Finance → Assets → Maps → GPS*.
+- **Intuitive Nomenclature:** Renamed legacy tabs for better clarity:
+    - `RTO Pipeline` → **Applications**
+    - `RTO Fleet` → **Fleet**
+    - `Vehicles` → **Assets**
+    - `Fleet Tracking` → **Maps**
+    - `GPS List` → **GPS**
+    - `Programs` → **Programs (Admin)**
+- **Unified Labeling:** Standardized all view headers and dynamic labels across the UI to match the new nomenclature (e.g., "Vehicle Management" → "Assets Management").
+
+### 🔧 Critical Bug Fixes
+- **Namespace Collision:** Resolved a major conflict where `ui.js` and `rto.js` were overwriting the same `window.rto` global object.
+- **Reference Error Resolution:** Fixed a fatal `ReferenceError` for `elDrawerBackdrop` that caused initialization failures in certain environments.
+- **Global Function Exposure:** Hardened the `app.js` entry point to ensure all required UI and logic functions are correctly exposed to the global scope.
+- **Data Integrity:** Restored full data rendering and interaction across all views after resolving initialization race conditions.
+
 ## [1.5.0] - 2026-02-24
 
 ### 💎 Deep Program Management

@@ -1247,7 +1247,7 @@ export function mockHOUpload(elId, label) {
 
 // Setup globally exposed functions for onclick handlers
 export function extendGlobalWindow() {
-    window.rto = {
+    window.rto = Object.assign(window.rto || {}, {
         admV,
         setAdmFlt,
         admSrch,
@@ -1263,6 +1263,25 @@ export function extendGlobalWindow() {
         updThreshCfg,
         updDSR,
         saveCfg,
-        resetCfg
-    };
+        resetCfg,
+        admRTbl,
+        renderPUList,
+        renderScoreCfg,
+        renderWAScens,
+        selWAScen,
+        selPUOrder,
+        setPUF,
+        waContext,
+        previewImg,
+        closePreview,
+        uploadDoc
+    });
+
+    // Also bind directly to window for compatibility with app.js
+    window.admRTbl = admRTbl;
+    window.renderPUList = renderPUList;
+    window.renderScoreCfg = renderScoreCfg;
+    window.renderWAScens = renderWAScens;
+    window.selWAScen = selWAScen;
+    window.switchRtoTab = switchRtoTab;
 }

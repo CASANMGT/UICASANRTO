@@ -1,13 +1,39 @@
 import { initData, state, getFilteredVehicles, getStats, getContextStats, simulateMovement } from './modules/store.js';
 import { initMap, updateMapMarkers, focusVehicleOnMap, resizeMap } from './modules/map.js';
-import { renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, renderProgramsTable, openCommandPalette, closeCommandPalette } from './modules/ui.js';
+import { initUI, renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, renderProgramsTable, openCommandPalette, closeCommandPalette } from './modules/ui.js';
 import { getFinanceStats, getTransactions, getProgramStats } from './modules/finance.js';
 import { getGpsDevices, getGpsStats, getGpsById, createGpsDevice, updateGpsDevice, deleteGpsDevice } from './modules/gps.js';
 import * as rtoLogic from './modules/rto.js';
 
 // Expose globally for inline onclicks in index.html
-window.rto = rtoLogic;
+window.state = state; // Crucial for visibility & debugging
+window.rto = Object.assign(window.rto || {}, rtoLogic);
 Object.assign(window, rtoLogic);
+
+// Expose UI functions
+rtoLogic.extendGlobalWindow(); // Bind all RTO functions
+window.renderStats = renderStats;
+window.renderFilters = renderFilters;
+window.renderVehicleList = renderVehicleList;
+window.openModal = openModal;
+window.updateCountdowns = updateCountdowns;
+window.renderFinanceDashboard = renderFinanceDashboard;
+window.resetPagination = resetPagination;
+window.renderGpsList = renderGpsList;
+window.openGpsModal = openGpsModal;
+window.closeGpsModal = closeGpsModal;
+window.renderVehicleListView = renderVehicleListView;
+window.renderUserListView = renderUserListView;
+window.renderProgramListView = renderProgramListView;
+window.renderProgramsTable = renderProgramsTable;
+window.openCommandPalette = openCommandPalette;
+window.closeCommandPalette = closeCommandPalette;
+window.selectProgram = (pid) => {
+    state.filter.program = pid;
+    const rtoTab = document.querySelector('.nav-tab[data-tab="rto-fleet"]');
+    if (rtoTab) rtoTab.click();
+    updateView();
+};
 
 let activeTab = 'users'; // default
 
@@ -26,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initMap('map');
 
         // 3. UI
+        initUI(); // Setup listeners and global UI
         const initialStats = getStats();
         renderFilters('all', initialStats);
         updateView();
@@ -477,25 +504,4 @@ window.selectProgramSetting = (pid, el) => {
 };
 window.updatePrograms = updatePrograms;
 
-window.selectProgram = (pid) => {
-    state.filter.program = pid;
-    // Switch to RTO Fleet tab
-    const rtoTab = document.querySelector('.nav-tab[data-tab="rto-fleet"]');
-    if (rtoTab) rtoTab.click();
 
-    // Explicitly update fleet view with the new filter
-    updateView();
-};
-
-window.rto.openProgramModal = (pid) => {
-    if (typeof window.openProgramModal === 'function') {
-        window.openProgramModal(pid);
-    }
-};
-
-window.rto.confirmDeleteProgram = (pid) => {
-    if (confirm("Are you sure you want to delete program " + pid + "?")) {
-        state.programs = state.programs.filter(p => p.id !== pid);
-        renderProgramsTable();
-    }
-};
