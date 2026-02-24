@@ -17,9 +17,9 @@ export const getRiskLabel = (score) =>
     score >= 75 ? 'Low' : score >= 45 ? 'Medium' : 'High';
 
 export const getRiskColor = (label) => {
-    if (label === 'Low') return '#22C55E';
-    if (label === 'Medium') return '#F59E0B';
-    return '#EF4444';
+    if (label === 'Low') return 'var(--c-success)';
+    if (label === 'Medium') return 'var(--c-warning)';
+    return 'var(--c-danger)';
 };
 
 const OCC_EMOJI = {

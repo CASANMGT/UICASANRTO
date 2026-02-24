@@ -18,23 +18,23 @@ casan_rto/
 ├── netlify.toml                # Netlify deployment config
 ├── server.ps1                  # Local dev server (PowerShell)
 ├── css/
-│   ├── layout.css              # Grid, flex, app shell layout
-│   ├── components.css          # Cards, buttons, modals, stats bar
-│   ├── style.css               # Global design tokens & typography
+│   ├── layout.css              # 60/40 Vertical Panoramic Grid
+│   ├── components.css          # High-density Cards, Expandable Status Guide
+│   ├── style.css               # Global design tokens & IBM Plex Mono
 │   ├── finance_strip.css       # Finance program earnings strip
-│   ├── credit_bar.css          # Credit day progress bar
+│   ├── credit_bar.css          # Unified progress bars (RTO & KYC)
 │   └── map_controls.css        # Map filter overlay & legend
 └── js/
-    ├── app.js                  # App routing, event bus, view switching
+    ├── app.js                  # Simulation Loop & Event Bus
     ├── debug.js                # Dev helper utilities
     └── modules/
-        ├── store.js            # Data layer — vehicles, transactions, GPS, programs
-        ├── ui.js               # Render functions — all tab views
-        ├── map.js              # Leaflet map, directional markers, filters
-        ├── finance.js          # Finance stats & transaction calculations
-        ├── gps.js              # GPS device CRUD & status helpers
-        ├── rto.js              # RTO Application & Pickup management
-        └── utils.js            # Shared helpers (formatRupiah, timeAgo, etc.)
+        ├── store.js            # Movement Simulation Engine
+        ├── ui.js               # Render functions (v1.5.0)
+        ├── map.js              # Leaflet 1:1 directional markers
+        ├── finance.js          # Revenue analytics
+        ├── gps.js              # GPS hardware auditing
+        ├── rto.js              # RTO Applications & Pickup
+        └── utils.js            # Shared formatters & helpers
 ```
 
 ---
@@ -47,16 +47,17 @@ casan_rto/
 | Dark tile map (CartoDB, no API key) | ✅ |
 | All markers shown individually (no clustering) | ✅ |
 | **Directional arrow markers** rotating by bearing | ✅ |
-| Running vehicles → glowing SVG arrow | ✅ |
-| Stopped vehicles → colored circle with glow | ✅ |
+| **Running 🏃** vehicles → glowing SVG arrow | ✅ |
+| **Stopped 🅿️** vehicles → colored circle with glow | ✅ |
+| **Real-time Movement Engine** (3s updates) | ✅ |
+| **Vertical Panoramic Layout** (60/40 Split) | ✅ |
+| **Expandable Status Guide** (Top-aligned) | ✅ |
 | **Status filter buttons** with emoji icons | ✅ |
+| **Available** vehicle filter in sidebar | ✅ |
 | **☑️ All / 🚫 None** quick-select filter toggles | ✅ |
-| **Running 🏃 / Stopped 🅿️** movement filters | ✅ |
 | Popup: credit days remaining + cycle days | ✅ |
-| Popup: grace period rest days remaining | ✅ |
-| Popup: speed (km/h) + compass direction | ✅ |
-| Popup: locked / expiring banners | ✅ |
-| Legend: Online / Offline / Running counts | ✅ |
+| Popup: Running / Stopped / Offline status | ✅ |
+| Legend: Real-time unit counts per state | ✅ |
 | Focus on vehicle from sidebar | ✅ |
 
 ### 👤 Rider KYC & Profiles
@@ -65,7 +66,7 @@ casan_rto/
 | **High-Density Program Strip:** Filter by cards (consistent with Finance) | ✅ |
 | **Program-Level KPI Detail:** Live active/grace/immob counts per scheme | ✅ |
 | **Behavioral Summary Card:** Contextual health stats for active filter | ✅ |
-| **Risk-Based Data Correlation:** incidents linked to user risk label | ✅ |
+| **Unified Progress Design:** Linked to RTO Fleet progress bars | ✅ |
 | **Quick Filter Badges:** Click table Program → filter list instantly | ✅ |
 | Export CSV for filtered rider list | ✅ |
 | Global search (Name, Phone, NIK) | ✅ |
@@ -82,12 +83,11 @@ casan_rto/
 ### � Programs & Collections Management
 | Feature | Status |
 |---------|--------|
-| **Multi-Scheme Sidebar** for partner programs | ✅ |
-| **Collections Audit:** Visual badges (🔒/⚠️) for incidents | ✅ |
-| **Risk Audit:** Executive reasoning and color coding | ✅ |
-| **Interactive Analytics:** Health & Maturity popouts | ✅ |
-| **Data Audit Breakdown:** Logic transparency overlays | ✅ |
-| **Full CRUD** for pricing, grace, and holiday rules | ✅ |
+| **Deep Program Insights:** Live breakdown stats (Active/Grace/Locked) | ✅ |
+| **Collection & Maturity KPIs:** Score-based progress bars | ✅ |
+| **Program Details Drawer:** High-density operational slide panel | ✅ |
+| **Promotions Management:** Integrated incentives engine with image support | ✅ |
+| **Full CRUD** for pricing, grace, and scheme details | ✅ |
 | **CSV Export** for fleet and scheme auditing | ✅ |
 
 ### 📋 RTO Application Management
@@ -105,8 +105,9 @@ casan_rto/
 |---------|--------|
 | High-density 6-column grid | ✅ |
 | **Context-Aware KPIs** switching per navigation tab | ✅ |
-| Active, Grace, Immobilized, Paused counts | ✅ |
-| KYC Status, Success Rate, and Online/Offline counts | ✅ |
+| **Fleet Tracking:** Running, Stopped, No Signal, Risk, Idle | ✅ |
+| **RTO/Applications:** Approved, Pending, Scoring stats | ✅ |
+| **Finance:** Revenue, Arrears, Success Rate | ✅ |
 | Secondary trend indicators and coloring | ✅ |
 | Compact horizontal scroll on mobile | ✅ |
 
@@ -132,6 +133,16 @@ casan_rto/
 | Location with lat/lng + last ping time | ✅ |
 | Address lookup (mock) | ✅ |
 | Add / Edit / Delete GPS device modals | ✅ |
+| **Duplicate stats bar removal** (tab optimized) | ✅ |
+
+### 🎨 Navigation & Architecture
+| Feature | Status |
+|---------|--------|
+| **Renamed: RTO Fleet** (Unified Monitoring) | ✅ |
+| **Renamed: Programs** (Scheme Administration) | ✅ |
+| **Vertical Viewports:** Maximized vertical height | ✅ |
+| **Sub-Nav Layout Fix:** No stats bar occlusion | ✅ |
+| **In-App Changelog Modal:** Versioned updates | ✅ |
 
 ---
 

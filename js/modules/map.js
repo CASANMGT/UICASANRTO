@@ -19,15 +19,17 @@ const mapFilters = {
     stopped: true
 };
 
+let guideActive = false;
+
 // Colors for each status
 const COLORS = {
-    active: '#22C55E',
-    expiring: '#FF6B35',
-    grace: '#F59E0B',
-    immobilized: '#EF4444',
+    active: 'var(--c-success)',
+    expiring: 'var(--c-orange)',
+    grace: 'var(--c-warning)',
+    immobilized: 'var(--c-danger)',
     paused: '#6B7280',
-    available: '#3B82F6',
-    online: '#22C55E',
+    available: 'var(--c-info)',
+    online: 'var(--c-success)',
     offline: '#FF6B6B'
 };
 
@@ -116,8 +118,8 @@ export const renderMapControls = (vehicles) => {
                 flex-direction:column; gap:2px; padding:6px 8px; min-width:50px;
                 ${isOn ? 'border-color:' + c + '; background:' + c + '22;' : 'opacity:0.5;'}
             ">
-            <span style="font-size:18px; line-height:1">${icon}</span>
-            <span style="font-size:9px; font-weight:600; letter-spacing:0.02em">${LABELS[k]}</span>
+            <span style="font-size: var(--text-3xl); line-height:1">${icon}</span>
+            <span style="font-size: var(--text-xs); font-weight:600; letter-spacing:0.02em">${LABELS[k]}</span>
         </button>`;
     }).join('');
 
@@ -132,20 +134,60 @@ export const renderMapControls = (vehicles) => {
     const quickBtns = `
         <button class="mfb on" onclick="window.selectAllFilters()" 
             style="flex-direction:column; gap:2px; padding:6px 8px; min-width:44px; border-color:#00E5C3; background:#00E5C322; color:#00E5C3">
-            <span style="font-size:16px">☑️</span>
-            <span style="font-size:9px; font-weight:600">All</span>
+            <span style="font-size: var(--text-2xl)">☑️</span>
+            <span style="font-size: var(--text-xs); font-weight:600">All</span>
         </button>
         <button class="mfb" onclick="window.selectNoneFilters()"
             style="flex-direction:column; gap:2px; padding:6px 8px; min-width:44px; opacity:0.6">
-            <span style="font-size:16px">🚫</span>
-            <span style="font-size:9px; font-weight:600">None</span>
+            <span style="font-size: var(--text-2xl)">🚫</span>
+            <span style="font-size: var(--text-xs); font-weight:600">None</span>
         </button>
         <div style="width:1px;background:rgba(255,255,255,0.2);margin:0 3px;align-self:stretch"></div>`;
 
     overlay.innerHTML = quickBtns +
         renderBtns(statusKeys) +
         '<div style="width:1px;background:rgba(255,255,255,0.15);margin:0 3px"></div>' +
-        renderBtns(moveKeys);
+        renderBtns(moveKeys) +
+        '<div style="width:1px;background:rgba(255,255,255,0.15);margin:0 3px"></div>' +
+        `<button class="mfb ${guideActive ? 'on' : ''}" onclick="window.toggleStatusGuide()" style="flex-direction:column; gap:2px; padding:6px 12px; border-color:var(--p); color:var(--p)">
+            <span style="font-size: var(--text-2xl)">💡</span>
+            <span style="font-size: var(--text-xs); font-weight:800">Guide</span>
+        </button>`;
+
+    // Status Guide Overlay
+    let guide = document.querySelector('.mguide');
+    if (!guide) {
+        guide = document.createElement('div');
+        guide.className = 'mguide';
+        document.getElementById('map').appendChild(guide);
+    }
+    guide.className = `mguide ${guideActive ? 'active' : ''}`;
+    guide.innerHTML = `
+        <div class="mguide-header">
+            <span>Color & Status Guide</span>
+            <span style="font-size:10px; opacity:0.6; cursor:pointer" onclick="window.toggleStatusGuide()">ESC</span>
+        </div>
+        <div class="mguide-item"><span class="badge active">ACTIVE</span> <span>Normal operation</span></div>
+        <div class="mguide-item"><span class="badge expiring">⚠ EXPIRING</span> <span>Expires &lt; 24h</span></div>
+        <div class="mguide-item"><span class="badge grace">GRACE</span> <span>0 credits, 7d grace</span></div>
+        <div class="mguide-item"><span class="badge immobilized">IMMOBILIZED</span> <span>Relay Locked</span></div>
+        <div class="mguide-item"><span class="badge" style="background:#6B7280;color:#fff">PAUSED</span> <span>Suspended</span></div>
+        <div class="mguide-item"><span class="badge" style="background:var(--t3);color:#fff">AVAIL</span> <span>Unassigned</span></div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.1); display:flex; flex-direction:column; gap:8px">
+            <div class="mguide-item">
+                <div style="width:24px; height:24px; background:var(--g); border-radius:50%; border:2px solid #fff"></div>
+                <span>Online / Stopped</span>
+            </div>
+            <div class="mguide-item">
+                <svg viewBox="0 0 36 36" width="24" height="24"><polygon points="18,2 30,32 18,24 6,32" fill="var(--g)" stroke="#fff" stroke-width="2"/></svg>
+                <span>Online / Running</span>
+            </div>
+            <div class="mguide-item">
+                <div style="width:24px; height:24px; background:#FF6B6B; border-radius:50%; border:2px solid #fff"></div>
+                <span>Offline</span>
+            </div>
+        </div>
+    `;
 
     // Legend
     const onlineCount = vehicles.filter(v => v.isOnline).length;
@@ -179,6 +221,10 @@ export const renderMapControls = (vehicles) => {
         allKeys.forEach(k => mapFilters[k] = false);
         renderMapControls(vehicles);
         window.dispatchEvent(new CustomEvent('map-filter-toggle', { detail: { vehicles } }));
+    };
+    window.toggleStatusGuide = () => {
+        guideActive = !guideActive;
+        renderMapControls(vehicles);
     };
 };
 
@@ -217,7 +263,7 @@ export const updateMapMarkers = (vehicles) => {
         // Create Marker
         const credits = v.credits || 0;
         const scColor = COLORS[v.status] || '#999';
-        const finalColor = !v.isOnline ? '#FF6B6B' : (isExpiring ? '#FF6B35' : scColor);
+        const finalColor = !v.isOnline ? '#FF6B6B' : (isExpiring ? 'var(--c-orange)' : scColor);
         const bearing = v.bearing || 0;
 
         // Directional arrow icon
@@ -244,8 +290,8 @@ export const updateMapMarkers = (vehicles) => {
                 border-radius: 50%;
                 box-shadow: 0 0 8px ${finalColor}99, 0 3px 6px rgba(0,0,0,0.5);
                 display:flex; align-items:center; justify-content:center;
-                font-size:12px;
-            ">■</div>`;
+                font-size: var(--text-base);
+            "></div>`;
         }
 
         const icon = L.divIcon({
@@ -269,28 +315,28 @@ export const updateMapMarkers = (vehicles) => {
             : 0;
 
         const creditRow = isExpiring
-            ? `<div style="background:#FF6B3522; border:1px solid #FF6B35; border-radius:6px; padding:6px 8px; margin-bottom:6px">
-                <div style="font-size:10px; color:#FF6B35; font-weight:700">⚠️ EXPIRING TODAY</div>
-                <div style="font-size:11px; color:#333">Credit expires within 24h</div>
+            ? `<div style="background:var(--c-orange)22; border:1px solid var(--c-orange); border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size: var(--text-sm); color:var(--c-orange); font-weight:700">⚠️ EXPIRING TODAY</div>
+                <div style="font-size: var(--text-md); color:#333">Credit expires within 24h</div>
                </div>`
             : isGrace
-                ? `<div style="background:#F59E0B22; border:1px solid #F59E0B; border-radius:6px; padding:6px 8px; margin-bottom:6px">
-                <div style="font-size:10px; color:#F59E0B; font-weight:700">⏳ GRACE PERIOD</div>
-                <div style="font-size:11px; color:#333">${graceDaysLeft} rest days remaining</div>
+                ? `<div style="background:var(--c-warning)22; border:1px solid var(--c-warning); border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size: var(--text-sm); color:var(--c-warning); font-weight:700">⏳ GRACE PERIOD</div>
+                <div style="font-size: var(--text-md); color:#333">${graceDaysLeft} rest days remaining</div>
                </div>`
                 : v.status === 'immobilized'
-                    ? `<div style="background:#EF444422; border:1px solid #EF4444; border-radius:6px; padding:6px 8px; margin-bottom:6px">
-                <div style="font-size:10px; color:#EF4444; font-weight:700">🔒 IMMOBILIZED</div>
-                <div style="font-size:11px; color:#333">Vehicle relay locked</div>
+                    ? `<div style="background:var(--c-danger)22; border:1px solid var(--c-danger); border-radius:6px; padding:6px 8px; margin-bottom:6px">
+                <div style="font-size: var(--text-sm); color:var(--c-danger); font-weight:700">🔒 IMMOBILIZED</div>
+                <div style="font-size: var(--text-md); color:#333">Vehicle relay locked</div>
                </div>`
                     : `<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
-                <div style="text-align:center; background:#22C55E22; border:1px solid #22C55E44; border-radius:6px; padding:4px 10px; flex:1">
-                    <div style="font-size:18px; font-weight:800; color:#22C55E; font-family:'IBM Plex Mono'">${creditDaysLeft}</div>
-                    <div style="font-size:9px; color:#555; font-weight:600">CREDIT DAYS</div>
+                <div style="text-align:center; background:var(--c-success)22; border:1px solid var(--c-success)44; border-radius:6px; padding:4px 10px; flex:1">
+                    <div style="font-size: var(--text-3xl); font-weight:800; color:var(--c-success); font-family:'IBM Plex Mono'">${creditDaysLeft}</div>
+                    <div style="font-size: var(--text-xs); color:#555; font-weight:600">CREDIT DAYS</div>
                 </div>
                 <div style="text-align:center; background:#60a5fa22; border:1px solid #60a5fa44; border-radius:6px; padding:4px 10px; flex:1">
-                    <div style="font-size:18px; font-weight:800; color:#60a5fa; font-family:'IBM Plex Mono'">${v.totalDays || 30}</div>
-                    <div style="font-size:9px; color:#555; font-weight:600">CYCLE DAYS</div>
+                    <div style="font-size: var(--text-3xl); font-weight:800; color:#60a5fa; font-family:'IBM Plex Mono'">${v.totalDays || 30}</div>
+                    <div style="font-size: var(--text-xs); color:#555; font-weight:600">CYCLE DAYS</div>
                 </div>
                </div>`;
 
@@ -299,23 +345,23 @@ export const updateMapMarkers = (vehicles) => {
             : '■ Stopped';
 
         marker.bindPopup(`
-            <div style="font-family:'IBM Plex Mono'; font-size:12px; line-height:1.5; color:#000; min-width:220px; padding:4px">
+            <div style="font-family:'IBM Plex Mono'; font-size: var(--text-base); line-height:1.5; color:#000; min-width:220px; padding:4px">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:8px">
-                    <div style="font-weight:800; font-size:14px; color:#000">${v.customer || 'No Customer'}</div>
-                    <div style="font-size:10px; padding:2px 6px; background:${finalColor}25; border:1px solid ${finalColor}; border-radius:4px; color:${finalColor}; font-weight:700; white-space:nowrap">${v.status.toUpperCase()}</div>
+                    <div style="font-weight:800; font-size: var(--text-xl); color:#000">${v.customer || 'No Customer'}</div>
+                    <div style="font-size: var(--text-sm); padding:2px 6px; background:${finalColor}25; border:1px solid ${finalColor}; border-radius:4px; color:${finalColor}; font-weight:700; white-space:nowrap">${v.status.toUpperCase()}</div>
                 </div>
-                <div style="font-size:11px; font-weight:600; color:#555; margin-bottom:8px">📞 ${v.phone || '-'} &nbsp;|&nbsp; 🏍️ ${v.plate}</div>
+                <div style="font-size: var(--text-md); font-weight:600; color:#555; margin-bottom:8px">📞 ${v.phone || '-'} &nbsp;|&nbsp; 🏍️ ${v.plate}</div>
 
                 ${creditRow}
 
                 <div style="border-top:1px solid rgba(0,0,0,0.08); padding-top:6px; margin-bottom:6px">
-                    <div style="font-weight:700; color:#333; font-size:11px">${v.id} — ${v.model}</div>
+                    <div style="font-weight:700; color:#333; font-size: var(--text-md)">${v.id} — ${v.model}</div>
                 </div>
-                <div style="font-size:11px; font-weight:700; margin-bottom:4px; color:${isRunning ? '#16a34a' : '#888'}">${speedText}</div>
-                <div style="font-size:10px; font-weight:600">
+                <div style="font-size: var(--text-md); font-weight:700; margin-bottom:4px; color:${isRunning ? '#16a34a' : '#888'}">${speedText}</div>
+                <div style="font-size: var(--text-sm); font-weight:600">
                     ${v.isOnline ?
-                `<span style="color:#16a34a">🟢 Online (${timeAgo(v.lastPing)})</span>` :
-                `<span style="color:#dc2626">🔴 Offline (${timeAgo(v.lastPing)})</span>`}
+                `<span style="color:#16a34a">● ${isRunning ? 'Running' : 'Stopped'} (${timeAgo(v.lastPing)})</span>` :
+                `<span style="color:#dc2626">○ Offline (${timeAgo(v.lastPing)})</span>`}
                 </div>
             </div>
         `, { closeButton: false, className: 'custom-popup-light', maxWidth: 280 });

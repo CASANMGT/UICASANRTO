@@ -16,7 +16,7 @@
 }
 
 .cbl {
-    font-size: 9px;
+    font-size: var(--text-xs);
     color: var(--t3);
     font-weight: 700;
     letter-spacing: 1px;
@@ -24,7 +24,7 @@
 }
 
 .cbv {
-    font-size: 14px;
+    font-size: var(--text-xl);
     font-weight: 800;
     color: var(--t1);
     font-family: 'IBM Plex Mono', monospace;
@@ -47,7 +47,7 @@
 }
 
 .cbx {
-    font-size: 10px;
+    font-size: var(--text-sm);
     color: var(--t3);
     margin-top: 6px;
     display: flex;

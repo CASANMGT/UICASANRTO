@@ -1,29 +1,48 @@
 /* App Layout */
 
-#app {
-    display: grid;
-    grid-template-rows: auto auto auto 1fr;
+/* App Layout */
+
+.app-wrapper {
+    display: flex;
     height: 100vh;
     max-width: 100%;
     margin: 0 auto;
     overflow: hidden;
+    background: var(--s0);
 }
 
-/* Header */
-.app-header {
+.global-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--s1);
+    border-right: 1px solid var(--b1);
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+}
+
+.main-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header Configs */
+.app-header-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--b1);
+    height: 60px;
     background: var(--s1);
+    border-bottom: 1px solid var(--b1);
     z-index: 10;
 }
 
 .logo-area {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    /* Kept for nested elements inside sidebar */
 }
 
 .logo-box {
@@ -36,6 +55,7 @@
     justify-content: center;
     color: #000;
     font-weight: 900;
+    flex-shrink: 0;
 }
 
 .header-controls {
@@ -50,7 +70,7 @@
     color: var(--t1);
     padding: 6px 12px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: var(--text-lg);
     cursor: pointer;
 }
 
@@ -58,7 +78,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--text-base);
     color: var(--g);
     font-weight: 600;
 }
@@ -71,45 +91,44 @@
     animation: pulse 2s infinite;
 }
 
-/* Nav Tabs */
-.nav-tabs {
+/* Nav Tabs - Now Vertical */
+.vertical-nav {
     display: flex;
-    padding: 0 10px;
-    border-bottom: 1px solid var(--b1);
-    background: var(--s1);
+    flex-direction: column;
+    padding: 0;
     gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    /* Hide scrollbar for clean tab look */
+    overflow-y: auto;
+    flex: 1;
 }
 
-.nav-tabs::-webkit-scrollbar {
+.vertical-nav::-webkit-scrollbar {
     display: none;
 }
 
 .nav-tab {
     padding: 0 16px;
+    margin: 2px 12px;
     display: flex;
     align-items: center;
-    height: 48px;
+    height: 44px;
     color: var(--t2);
     cursor: pointer;
-    border-bottom: 2px solid transparent;
+    border-radius: 8px;
     transition: all 0.2s;
-    font-weight: 500;
-    font-size: 13px;
+    font-weight: 600;
+    font-size: var(--text-base);
 }
 
 .nav-tab:hover {
+    background: var(--ds2);
     color: var(--t1);
-    background: rgba(255, 255, 255, 0.02);
 }
 
 .nav-tab.active {
-    color: var(--ac);
-    border-bottom-color: var(--ac);
-    background: rgba(0, 229, 195, 0.05);
+    background: var(--dw1) !important;
+    color: var(--dw) !important;
 }
+
 
 /* Main Content Area */
 .view-container {
@@ -124,9 +143,8 @@
 
 /* Dashboard Grid (Fleet View) */
 .dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    /* Map | Sidebar */
+    display: flex;
+    flex-direction: column;
     height: 100%;
     width: 100%;
     overflow: hidden;
@@ -135,18 +153,22 @@
 .map-container {
     position: relative;
     background: #111;
-    height: 100%;
+    height: 60%;
+    /* Map gets 60% of vertical space */
     width: 100%;
+    flex-shrink: 0;
 }
 
 .panel-sidebar {
     background: var(--s1);
-    border-left: 1px solid var(--b1);
+    border-top: 1px solid var(--b1);
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 40%;
+    /* Sidebar gets 40% */
     width: 100%;
     overflow: hidden;
+    min-height: 0;
 }
 
 .panel-header {
@@ -178,7 +200,7 @@
 
 .filter-btn {
     padding: 4px 10px;
-    font-size: 11px;
+    font-size: var(--text-md);
     font-weight: 600;
     border: 1px solid var(--b1);
     border-radius: 20px;
@@ -226,7 +248,7 @@
     border: 1px solid var(--b2);
     padding: 4px 8px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: var(--text-md);
     color: var(--t2);
     cursor: pointer;
     display: flex;
@@ -241,7 +263,7 @@
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
+@media (max-width: 1024px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
         grid-template-rows: 50vh 1fr;
@@ -268,7 +290,7 @@
     }
 
     .logo-area h1 {
-        font-size: 14px !important;
+        font-size: var(--text-xl) !important;
     }
 
     .header-controls {
@@ -277,7 +299,7 @@
 
     .dealer-select {
         padding: 4px 6px;
-        font-size: 10px;
+        font-size: var(--text-sm);
         max-width: 80px;
     }
 
@@ -288,7 +310,7 @@
 
     .nav-tab {
         padding: 0 8px;
-        font-size: 11px;
+        font-size: var(--text-md);
     }
 
     .stats-bar {
