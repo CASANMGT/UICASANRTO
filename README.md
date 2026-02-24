@@ -6,7 +6,7 @@ A web-based fleet operations dashboard for managing EV motorcycles on **RTO (Ren
 
 ## 🌐 Live Demo
 
-**[https://uicasanrto-tye2h9rwo-clauxz-8397s-projects.vercel.app/](https://https://uicasanrto-tye2h9rwo-clauxz-8397s-projects.vercel.app/)**
+**[https://uicasanrto.vercel.app/](https://uicasanrto.vercel.app/)**
 
 ---
 
