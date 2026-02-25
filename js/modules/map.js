@@ -34,16 +34,16 @@ const COLORS = {
 
 // Icons for each filter button
 const ICONS = {
-    active: 'OK',
-    expiring: 'WARN',
+    active: '✅',
+    expiring: '⚠️',
     grace: '⏳',
-    immobilized: 'LOCK',
-    paused: 'P',
-    available: 'B',
-    online: 'G',
-    offline: 'R',
-    running: '->',
-    stopped: 'P'
+    immobilized: '🔒',
+    paused: '⏸️',
+    available: '🅿️',
+    online: '🟢',
+    offline: '🔴',
+    running: '🛵',
+    stopped: '🛑'
 };
 
 // Labels for filter buttons

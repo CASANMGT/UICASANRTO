@@ -28,8 +28,8 @@ casan_rto/
     ├── app.js                  # Simulation Loop & Event Bus
     ├── debug.js                # Dev helper utilities
     └── modules/
-        ├── store.js            # Movement Simulation Engine (v1.8.0)
-        ├── ui.js               # Render functions (v1.8.0)
+        ├── store.js            # Movement Simulation Engine (v1.9.0)
+        ├── ui.js               # Render functions (v1.9.0)
         ├── map.js              # Leaflet 1:1 directional markers
         ├── finance.js          # Revenue analytics
         ├── gps.js              # GPS hardware auditing
@@ -150,7 +150,7 @@ casan_rto/
 | **Renamed: GPS** (GPS List) | ✅ |
 | **Vertical Viewports:** Maximized vertical height | ✅ |
 | **Sub-Nav Layout Fix:** No stats bar occlusion | ✅ |
-| **In-App Changelog Modal:** Versioned updates (v1.8.0) | ✅ |
+| **In-App Changelog Modal:** Versioned updates (v1.9.0) | ✅ |
 
 ---
 

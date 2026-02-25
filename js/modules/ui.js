@@ -8,6 +8,7 @@ function getEl(id) { return document.getElementById(id); }
 let expandedCardId = null;
 let currentPage = 1;
 let statusGuideExpanded = true;
+const PAGE_SIZE = 20; // Global pagination constant
 
 // State for new lists
 let vehicleListFilter = { partner: 'all', status: 'all', search: '', program: 'all', sortBy: 'id', sortDir: 'asc' };
@@ -128,147 +129,7 @@ function renderStats(stats, tab = 'fleet') {
     elStatsBar.innerHTML = html;
 }
 
-function renderProgramsTable() {
-    const wrapper = getEl('programs-table-wrapper');
-    if (!wrapper) return;
 
-    // Calculate dynamic stats per program
-    const programStats = state.programs.map(p => {
-        const pVehicles = state.vehicles.filter(v => v.programId === p.id);
-        const fleetSize = pVehicles.length;
-        const activeUsers = pVehicles.filter(v => v.customer).length;
-
-        // Detailed Status Breakdown
-        const activeCount = pVehicles.filter(v => v.status === 'active').length;
-        const graceCount = pVehicles.filter(v => v.status === 'grace').length;
-        const immobilizedCount = pVehicles.filter(v => v.status === 'immobilized').length;
-        const availableCount = pVehicles.filter(v => v.status === 'available').length;
-
-        // Collection Health: (Active / Total Users)
-        const healthPct = activeUsers > 0 ? Math.round((activeCount / activeUsers) * 100) : 0;
-        const healthColor = healthPct >= 80 ? 'var(--c-success)' : (healthPct >= 60 ? 'var(--c-warning)' : 'var(--c-danger)');
-
-        // Fleet Maturity: Average RTO Progress
-        let totalProgressPct = 0;
-        let rtoVehicles = 0;
-        pVehicles.forEach(v => {
-            if (v.programType === 'RTO' && v.customer) {
-                const prog = getRTOProgress(v);
-                totalProgressPct += (prog?.paidPct || 0);
-                rtoVehicles++;
-            }
-        });
-        const maturityPct = rtoVehicles > 0 ? Math.round(totalProgressPct / rtoVehicles) : 0;
-        const maturityColor = maturityPct > 75 ? 'var(--c-success)' : (maturityPct > 25 ? 'var(--ac)' : 'var(--c-warning)');
-
-        return { ...p, fleetSize, activeUsers, activeCount, graceCount, immobilizedCount, availableCount, healthPct, healthColor, maturityPct, maturityColor, isRTO: p.type === 'RTO' };
-    });
-
-    const rows = programStats.map(p => `
-        <tr style="border-bottom:1px solid var(--b1); cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='var(--s1)'" onmouseout="this.style.background=''" onclick="window.openProgramDetails('${p.id}')">
-            <td style="padding:16px 12px; font-weight:700; color:var(--t1)">
-                <div style="font-size:var(--text-base)">${p.name}</div>
-                <div style="font-size:var(--text-xs); color:var(--t3); font-family:'IBM Plex Mono'; margin-top:4px">${p.id}</div>
-            </td>
-            <td style="padding:16px 12px;"><span class="badge" style="background:${p.partnerId === 'tangkas' ? '#A78BFA' : (p.partnerId === 'maka' ? '#60A5FA' : '#FB923C')}; color:#000; font-weight:800">${p.partnerId.toUpperCase()}</span></td>
-            <td style="padding:16px 12px; font-family:'IBM Plex Mono'; font-size:var(--text-sm)">${formatRupiah(p.price)}/d</td>
-            <td style="padding:16px 12px;">
-                <div style="font-weight:700; color:var(--t1)">${p.fleetSize} <span style="font-size:10px; color:var(--t3); font-weight:normal">vhs</span></div>
-                <div style="font-size:11px; color:var(--c-secondary); font-weight:bold">${p.availableCount} Available</div>
-            </td>
-            <td style="padding:16px 12px;">
-                <div style="display:flex; gap:8px">
-                    <span title="Active" style="color:var(--c-success); font-weight:700"> ${p.activeCount}</span>
-                    <span title="Grace Period" style="color:var(--c-warning); font-weight:700"> ${p.graceCount}</span>
-                    <span title="Locked/Inactive" style="color:var(--c-danger); font-weight:700"> ${p.immobilizedCount}</span>
-                </div>
-            </td>
-            <td style="padding:16px 12px;">
-                <div style="display:flex; align-items:center; gap:8px">
-                    <div style="width:40px; height:6px; background:var(--s2); border-radius:3px; overflow:hidden">
-                        <div style="width:${p.healthPct}%; height:100%; background:${p.healthColor}"></div>
-                    </div>
-                    <span style="font-weight:800; color:${p.healthColor}">${p.healthPct}%</span>
-                </div>
-            </td>
-            <td style="padding:16px 12px;">
-                ${p.isRTO ? `
-                <div style="display:flex; align-items:center; gap:8px">
-                    <span style="font-weight:700; color:${p.maturityColor}">${p.maturityPct}%</span>
-                    <span style="font-size:10px; color:var(--t3)">Avg</span>
-                </div>
-                ` : '<span style="color:var(--t3)">N/A (Rental)</span>'}
-            </td>
-            <td style="padding:16px 12px; text-align:right">
-                <button class="btn btn-secondary" style="padding:4px 8px; font-size:var(--text-xs)" onclick="event.stopPropagation(); window.rto.openProgramModal('${p.id}')">Edit</button>
-                <button class="btn btn-secondary" style="padding:4px 8px; font-size:var(--text-xs); color:var(--c-danger); border-color:var(--c-danger)" onclick="event.stopPropagation(); window.rto.confirmDeleteProgram('${p.id}')">Del</button>
-            </td>
-        </tr>
-    `).join('');
-
-    // Global stats for Program Admin
-    const totalPrograms = state.programs.length;
-    const totalFleet = state.vehicles.length;
-    const totalActiveUsers = state.vehicles.filter(v => v.customer).length;
-    const avgHealth = programStats.length > 0 ? Math.round(programStats.reduce((acc, p) => acc + p.healthPct, 0) / programStats.length) : 0;
-    const totalPartners = new Set(state.programs.map(p => p.partnerId)).size;
-    const totalAvailable = state.vehicles.filter(v => v.status === 'available').length;
-
-    wrapper.innerHTML = `
-        <div class="stats-bar" style="grid-template-columns: repeat(6, 1fr); margin-bottom:24px">
-            <div class="stat-card">
-                <div class="stat-label">Total Programs</div>
-                <div class="stat-value">${totalPrograms}</div>
-                <div class="stat-trend" style="color:var(--t3)">Active Schemes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Managed Fleet</div>
-                <div class="stat-value">${totalFleet}</div>
-                <div class="stat-trend">Units across all partners</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Enrollment</div>
-                <div class="stat-value">${totalActiveUsers}</div>
-                <div class="stat-trend" style="color:var(--c-success)">Active Riders</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Pool Stock</div>
-                <div class="stat-value" style="color:var(--ac)">${totalAvailable}</div>
-                <div class="stat-trend">Ready for Assign</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Network Scale</div>
-                <div class="stat-value">${totalPartners}</div>
-                <div class="stat-trend">Partner Dealers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">System Health</div>
-                <div class="stat-value" style="color:${avgHealth > 90 ? 'var(--c-success)' : 'var(--c-warning)'}">${avgHealth}%</div>
-                <div class="stat-trend">Compliance Avg</div>
-            </div>
-        </div>
-
-        <div class="card" style="padding:0; overflow:hidden; border:1px solid var(--b1);">
-            <table style="width:100%; border-collapse:collapse; text-align:left;">
-                <thead style="background:var(--s1); color:var(--t3); font-size: var(--text-xs); text-transform:uppercase; letter-spacing:0.8px;">
-                    <tr>
-                        <th style="padding:12px; font-weight:600">Program</th>
-                        <th style="padding:12px; font-weight:600">Partner</th>
-                        <th style="padding:12px; font-weight:600">Price</th>
-                        <th style="padding:12px; font-weight:600">Scale / Pool</th>
-                        <th style="padding:12px; font-weight:600">State (Act/Grc/Lck)</th>
-                        <th style="padding:12px; font-weight:600">Coll. Health</th>
-                        <th style="padding:12px; font-weight:600">Maturity</th>
-                        <th style="padding:12px; font-weight:600; text-align:right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody style="font-size: var(--text-base); color:var(--t1)">
-                    ${rows || '<tr><td colspan="9" style="padding:32px; text-align:center; color:var(--t3)">No programs configured</td></tr>'}
-                </tbody>
-            </table>
-        </div>
-    `;
-};
 
 function renderFilters(activeFilter, stats) {
     const elStatusFilters = getEl('statusFilters');
@@ -278,28 +139,26 @@ function renderFilters(activeFilter, stats) {
     const s = stats || { total: 0, active: 0, expiring: 0, grace: 0, immobilized: 0, paused: 0, online: 0, offline: 0 };
 
     const filters = [
-        { id: 'all', label: `All (${s.total || 0})`, cls: 'btn-secondary' },
-        { id: 'active', label: `Active (${s.active || 0})`, cls: 'btn-success' },
-        { id: 'expiring', label: `Expiring (${s.expiring || 0})`, cls: 'btn-warning' },
-        { id: 'grace', label: `Grace (${s.grace || 0})`, cls: 'btn-danger-light' },
-        { id: 'immobilized', label: `Locked (${s.immobilized || 0})`, cls: 'btn-danger' },
-        { id: 'paused', label: `Paused (${s.paused || 0})`, cls: 'btn-secondary' },
-        { id: 'available', label: `Available (${s.available || 0})`, cls: 'btn-secondary' },
-        { id: 'online', label: `Online (${s.online || 0})`, cls: 'btn-info' }
+        { id: 'all', label: `All(${s.total || 0})`, cls: 'btn-secondary' },
+        { id: 'active', label: `Active(${s.active || 0})`, cls: 'btn-success' },
+        { id: 'expiring', label: `Expiring(${s.expiring || 0})`, cls: 'btn-warning' },
+        { id: 'grace', label: `Grace(${s.grace || 0})`, cls: 'btn-danger-light' },
+        { id: 'immobilized', label: `Locked(${s.immobilized || 0})`, cls: 'btn-danger' },
+        { id: 'paused', label: `Paused(${s.paused || 0})`, cls: 'btn-secondary' },
+        { id: 'available', label: `Available(${s.available || 0})`, cls: 'btn-secondary' },
+        { id: 'online', label: `Online(${s.online || 0})`, cls: 'btn-info' }
     ];
 
     // Using global event dispatch for simplicity
     elStatusFilters.innerHTML = filters.map(f => {
         const isActive = activeFilter === f.id;
-        const style = isActive ? `opacity: 1; border-bottom: 2px solid var(--p);` : `opacity: 0.7`;
+        const style = isActive ? `opacity: 1; border - bottom: 2px solid var(--p); ` : `opacity: 0.7`;
 
-        return `
-        <button class="filter-btn" 
-                style="${style}; margin-right: 8px; font-weight: 600"
-                data-filter="${f.id}">
-            ${f.label}
-        </button>
-        `;
+        return `<button class="filter-btn"
+    style="${style}; margin-right: 8px; font-weight: 600"
+    data-filter="${f.id}">
+        ${f.label}
+        </button>`;
     }).join('');
 
     // Attach listeners
@@ -334,19 +193,18 @@ function renderVehicleList(vehicles, onCardClick) {
 
         // Online/Offline Indicator (Data Integrity)
         const onlineStatusHtml = v.isOnline
-            ? `<span class="badge" style="background:var(--c-success); color:#fff; border:none; display:inline-flex; align-items:center; gap:4px"> ONLINE</span>`
-            : `<span class="badge" style="background:#6B7280; color:#fff; border:none">OFFLINE</span>`;
+            ? `<span class="badge" style="background:var(--c-success); color:#fff; border:none; display:inline-flex; align-items:center; gap:4px">?? ONLINE</span>`
+            : `<span class="badge" style="background:#6B7280; color:#fff; border:none">? OFFLINE</span>`;
 
         // Badges
-        const badgesHtml = `
-            <div style="display:flex; gap:6px; flex-wrap:wrap">
-                ${v.status === 'active' ? '<span class="badge active">ACTIVE</span>' : ''}
+        const badgesHtml = `<div style="display:flex; gap:6px; flex-wrap:wrap">
+            ${v.status === 'active' ? '<span class="badge active">ACTIVE</span>' : ''}
                 ${v.status === 'grace' ? '<span class="badge grace">GRACE</span>' : ''}
                 ${v.status === 'immobilized' ? '<span class="badge immobilized">IMMOBILIZED</span>' : ''}
                 ${v.status === 'paused' ? '<span class="badge" style="background:var(--bl);color:#fff">PAUSED</span>' : ''}
                 ${v.status === 'available' ? '<span class="badge" style="background:var(--t3);color:#fff">AVAIL</span>' : ''}
-                ${v.creditExpiry ? '<span class="badge expiring"> EXPIRING</span>' : ''}
-                <span class="badge ${v.programType === 'RTO' ? 'rto' : 'rent'}">${v.programType}</span>
+                ${v.creditExpiry ? '<span class="badge expiring">? EXPIRING</span>' : ''}
+    <span class="badge ${v.programType === 'RTO' ? 'rto' : 'rent'}">${v.programType}</span>
                 ${onlineStatusHtml}
             </div>
         `;
@@ -360,9 +218,9 @@ function renderVehicleList(vehicles, onCardClick) {
         // Countdown Display
         let countdownHtml = '';
         if (v.status === 'immobilized') {
-            countdownHtml = `<span style="color:var(--d); font-weight:bold">LOCKED</span>`;
+            countdownHtml = `<span style="color:var(--d); font-weight:bold">\u00f0\u0178\u201d\u2019 LOCKED</span>`;
         } else if (v.status === 'paused') {
-            countdownHtml = `<span style="color:var(--t2)">PAUSED</span>`;
+            countdownHtml = `<span style="color:var(--t2)">? PAUSED</span>`;
         } else if (v.status === 'grace' && v.graceExpiry) {
             countdownHtml = `<span id="cd-${v.id}" class="text-orange" style="color:var(--w); font-weight:bold" data-type="grace" data-expiry="${v.graceExpiry}">00:00:00</span>`;
         } else if (v.creditExpiry) {
@@ -374,7 +232,7 @@ function renderVehicleList(vehicles, onCardClick) {
         }
 
         const expandedBody = isExpanded ? `
-            <div class="vc-body" style="display:block">
+        <div class="vc-body" style="display:block">
                 <div class="info-grid">
                     <div class="info-item"><label>Phone</label><span>${v.phone}</span></div>
                     <div class="info-item"><label>Plate</label><span>${v.plate}</span></div>
@@ -386,8 +244,8 @@ function renderVehicleList(vehicles, onCardClick) {
                     <div class="info-item"><label>Expiry</label><span>${v.graceExpiry ? 'Grace: ' + timeAgo(v.graceExpiry) : (v.creditExpiry ? 'Credit: ' + timeAgo(v.creditExpiry) : '-')}</span></div>
                 </div>
 
-                <!-- Credit Bar (Visual) -->
-                ${v.customer ? `
+                <!--Credit Bar(Visual)-->
+        ${v.customer ? `
                 <div class="cb">
                     <div class="cbh">
                         <div>
@@ -409,46 +267,43 @@ function renderVehicleList(vehicles, onCardClick) {
                         <span>Grace: 7d</span>
                     </div>
                 </div>
-                ` : ''}
+                ` : ''
+            }
 
-                <div class="action-row" style="margin-top: 16px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" onclick="window.dispatchAction('pay', '${v.id}')"> Pay / Unlock</button>
-                    <button class="btn btn-secondary" onclick="window.dispatchAction('holiday', '${v.id}')"> Holiday</button>
-                    <button class="btn btn-danger" onclick="window.dispatchAction('lock', '${v.id}')"> Lock</button>
-                </div>
-            </div>
+    <div class="action-row" style="margin-top: 16px; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="window.dispatchAction('pay', '${v.id}')"> Pay / Unlock</button>
+        <button class="btn btn-secondary" onclick="window.dispatchAction('holiday', '${v.id}')"> Holiday</button>
+        <button class="btn btn-danger" onclick="window.dispatchAction('lock', '${v.id}')"> Lock</button>
+    </div>
+            
         ` : '';
 
-        return `
-            <div class="card vehicle-card ${isExpanded ? 'expanded' : ''}" 
-                 style="${borderStyle}"
-                 data-id="${v.id}">
-                
-                <div class="vc-header">
-                    <div class="vc-id">${v.id}</div>
-                    <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0">
-                        <div class="vc-cust" style="font-size: var(--text-base); font-weight:700; color:var(--t1)">${v.customer || 'Available'}</div>
-                        <div class="vc-badges" style="flex-wrap:wrap">${badgesHtml}</div>
-                    </div>
-                    <div class="vc-credits">${countdownHtml}</div>
-                    <div class="vc-online">
-                        <div class="dot ${v.isOnline ? 'green' : 'red'}"></div>
-                        ${v.isOnline ? 'On' : 'Off'}
-                    </div>
-                </div>
-                ${expandedBody}
+        return `<div class="card vehicle-card ${isExpanded ? 'expanded' : ''}"
+    style="${borderStyle}"
+    data-id="${v.id}">
+
+        <div class="vc-header">
+            <div class="vc-id">${v.id}</div>
+            <div style="display:flex; flex-direction:column; gap:2px; flex:1; min-width:0">
+                <div class="vc-cust" style="font-size: var(--text-base); font-weight:700; color:var(--t1)">${v.customer || 'Available'}</div>
+                <div class="vc-badges" style="flex-wrap:wrap">${badgesHtml}</div>
             </div>
-        `;
+            <div class="vc-credits">${countdownHtml}</div>
+            <div class="vc-online">
+                <div class="dot ${v.isOnline ? 'green' : 'red'}"></div>
+                ${v.isOnline ? 'On' : 'Off'}
+            </div>
+        </div>
+                ${expandedBody}
+            </div>`;
     }).join('');
 
     // Pagination Controls
-    const paginationHtml = totalPages > 1 ? `
-        <div class="vl-pagination">
+    const paginationHtml = totalPages > 1 ? `<div class="vl-pagination">
             <button class="vl-page-btn" onclick="window.changePage(-1)" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
             <div class="vl-page-info">Page ${currentPage} of ${totalPages}</div>
             <button class="vl-page-btn" onclick="window.changePage(1)" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
-        </div>
-    ` : '';
+        </div>` : '';
 
     elVehicleList.innerHTML = paginationHtml + listHtml;
 
@@ -479,7 +334,7 @@ function openModal(type, data) {
 
     if (type === 'payment') {
         content.innerHTML = `
-            <div class="form-group">
+        <div class="form-group">
                 <label>Vehicle</label>
                 <div class="form-control" style="background:var(--s3);border:none">${data.id} - ${data.customer}</div>
             </div>
@@ -487,7 +342,7 @@ function openModal(type, data) {
                 <label>Days to Add</label>
                 <input type="number" class="form-control" value="7" id="payDays">
             </div>
-             <div class="form-group">
+            <div class="form-group">
                 <label>Total Amount</label>
                 <div class="form-control" style="color:var(--ac);font-weight:bold" id="payAmount">${formatRupiah(data.dailyRate * 7)}</div>
             </div>
@@ -495,7 +350,7 @@ function openModal(type, data) {
                 <button class="btn btn-secondary" onclick="window.closeModals()">Cancel</button>
                 <button class="btn btn-primary" onclick="window.confirmPayment('${data.id}')">Confirm Payment</button>
             </div>
-        `;
+    `;
 
         // Add listener for dynamic calc
         setTimeout(() => {
@@ -511,11 +366,11 @@ function openModal(type, data) {
 
     } else if (type === 'holiday') {
         content.innerHTML = `
-             <div class="form-group">
+        <div class="form-group">
                 <label>Vehicle</label>
                 <div class="form-control" style="background:var(--s3);border:none">${data.id}</div>
             </div>
-             <div class="form-group">
+            <div class="form-group">
                 <label>Reason</label>
                 <select class="form-control">
                     <option>Mudik</option>
@@ -528,7 +383,7 @@ function openModal(type, data) {
                 <button class="btn btn-secondary" onclick="window.closeModals()">Cancel</button>
                 <button class="btn btn-primary" onclick="window.closeModals()">Approve Pause</button>
             </div>
-        `;
+    `;
     }
 
     overlay.classList.add('active');
@@ -552,6 +407,8 @@ function renderFinanceDashboard(stats, transactions, programStats) {
     const container = document.getElementById('financeContent');
     if (!container) return;
 
+    window._lastFinanceArgs = [stats, transactions, programStats];
+
     // --- Pagination (20 per page) ---
     const PAGE_SIZE = 20;
     if (!window.financePage) window.financePage = 1;
@@ -560,8 +417,12 @@ function renderFinanceDashboard(stats, transactions, programStats) {
     const start = (window.financePage - 1) * PAGE_SIZE;
     const paginated = transactions.slice(start, start + PAGE_SIZE);
 
+    // --- Expansion Trackers ---
+    if (!window._txExpandSet) window._txExpandSet = new Set();
+
     // --- Transaction Rows ---
     const rows = paginated.map(t => {
+        const isTxExpanded = window._txExpandSet.has(t.id);
         const statusColor = t.status === 'paid' ? 'var(--g)' : (t.status === 'failed' ? 'var(--r)' : 'var(--w)');
         const statusLabel = (t.status || 'paid').toUpperCase();
         const v = state.vehicles ? state.vehicles.find(veh => veh.id === t.vehicleId) : null;
@@ -569,7 +430,8 @@ function renderFinanceDashboard(stats, transactions, programStats) {
         const phone = t.customerPhone || (v && v.phone) || '';
 
         return `
-        <tr style="border-bottom:1px solid var(--s3); transition:background 0.15s" 
+        <tr style="border-bottom:1px solid var(--s3); transition:background 0.15s; cursor:pointer" 
+            onclick="window._toggleTxExpand('${t.id}')"
             onmouseover="this.style.background='var(--s2)'" 
             onmouseout="this.style.background=''">
             <td style="padding:10px 12px; font-family:'IBM Plex Mono'; font-size: var(--text-base); color:var(--t2)">${t.id}</td>
@@ -584,7 +446,7 @@ function renderFinanceDashboard(stats, transactions, programStats) {
             </td>
             <td style="padding:10px 12px">
                 <div style="font-size: var(--text-md); font-weight:700; color:var(--t1); margin-bottom:2px">
-                    ${(t.partnerId || '').charAt(0).toUpperCase() + (t.partnerId || '').slice(1)}  ${t.brand || ''}
+                    ${(t.partnerId || '').charAt(0).toUpperCase() + (t.partnerId || '').slice(1)} ${t.brand || ''}
                 </div>
                 <span style="font-size: var(--text-sm); padding:1px 6px; background:var(--s3); border-radius:4px; color:var(--t2); border:1px solid var(--b1)">
                     ${t.program || t.type || 'RTO'}
@@ -599,12 +461,58 @@ function renderFinanceDashboard(stats, transactions, programStats) {
             <td style="padding:10px 12px">
                 <span style="font-size: var(--text-md); font-weight:600; color:${statusColor}">${statusLabel}</span>
             </td>
-        </tr>`;
+        </tr>
+        ${isTxExpanded ? `
+        <tr style="background:var(--s1); border-bottom:1px solid var(--s3)">
+            <td colspan="9" style="padding:16px 24px">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px">
+                    <div>
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Transaction Identity</div>
+                        <div style="display:flex; flex-direction:column; gap:8px">
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                <span style="color:var(--t3); font-size:var(--text-sm)">Timestamp</span>
+                                <span style="color:var(--t1); font-weight:600; font-family:'IBM Plex Mono'">${new Date(t.date).toISOString().replace('T', ' ').split('.')[0]}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                <span style="color:var(--t3); font-size:var(--text-sm)">Method</span>
+                                <span style="color:var(--t1); font-weight:600">${t.method || 'Unknown'}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between">
+                                <span style="color:var(--t3); font-size:var(--text-sm)">External ID</span>
+                                <span style="color:var(--t1); font-weight:600; font-family:'IBM Plex Mono'">${t.extId || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Fee Distribution</div>
+                        <div style="display:flex; flex-direction:column; gap:8px">
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                <span style="color:var(--t3); font-size:var(--text-sm)">Gross Amount</span>
+                                <span style="color:var(--t1); font-weight:700">${formatRupiah(t.amount)}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                <span style="color:var(--ac); font-size:var(--text-sm); font-weight:600">CASAN Share</span>
+                                <span style="color:var(--ac); font-weight:800">${formatRupiah(t.casanShare || 0)}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between">
+                                <span style="color:var(--p); font-size:var(--text-sm); font-weight:600">Partner Net</span>
+                                <span style="color:var(--p); font-weight:800">${formatRupiah(t.amount - (t.casanShare || 0))}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px; justify-content:center">
+                        <button class="btn btn-secondary" style="justify-content:center" onclick="window.openVehicleDrawer('${t.vehicleId}')">View Asset Track </button>
+                        <button class="btn btn-secondary" style="justify-content:center" onclick="window.openUserDrawer('${v?.userId || t.userId}')">View Renter Profile</button>
+                    </div>
+                </div>
+            </td>
+        </tr>` : ''}
+        `;
     }).join('');
 
     // --- Pagination Controls ---
     const txPagination = totalPages > 1 ? `
-    <div style="padding:12px 16px; border-top:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center; flex-shrink:0">
+        <div style="padding:12px 16px; border-top:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center; flex-shrink:0">
         <span style="font-size: var(--text-base); color:var(--t3)">${start + 1}${Math.min(start + PAGE_SIZE, transactions.length)} of ${transactions.length}</span>
         <div style="display:flex; gap:6px; align-items:center">
             <button class="btn btn-secondary" style="padding:4px 10px; font-size: var(--text-base)"
@@ -622,18 +530,19 @@ function renderFinanceDashboard(stats, transactions, programStats) {
 
     // --- Program Strip ---
     const programsHtml = programStats && programStats.length ? `
-    <div class="fns" style="margin-bottom:20px">
-        ${programStats.map(p => {
+        <div class="fns" style="margin-bottom:20px">
+            ${programStats.map(p => {
         const borderColor = p.partnerId === 'tangkas' ? '#A78BFA' : (p.partnerId === 'maka' ? '#60A5FA' : '#FB923C');
         return `
         <div class="pc" style="border-left:4px solid ${borderColor}; cursor:pointer" 
              onclick="window.dispatchEvent(new CustomEvent('finance-program-change', {detail:'${p.id}'}))">
             <h4 style="margin:0 0 8px">${p.shortName} <span style="font-size: var(--text-sm);opacity:0.7;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">${p.type}</span></h4>
-            <div style="font-size: var(--text-5xl); font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${formatRupiah(p.totalEarnings)}</div>
+            <div style="font-size: var(--text-3xl); font-weight:700; font-family:'IBM Plex Mono'; color:var(--g)">${formatShortCurrency(p.totalEarnings || 0)}</div>
             <div style="font-size: var(--text-md); color:var(--t3); margin-top:4px">${p.activeCount}/${p.vehicleCount} active units</div>
             <div style="font-size: var(--text-sm); color:var(--ac); margin-top:6px; font-family:'IBM Plex Mono'; font-weight:700">CASAN: ${formatRupiah(p.casanEarnings || 0)} <span style="font-size:var(--text-xs); opacity:0.6; font-weight:400">(${p.commissionType === 'fixed' ? `Rp ${(p.commissionFixed || 0).toLocaleString('id-ID')}/day` : `${Math.round((p.commissionRate ?? 0.1) * 100)}%`})</span></div>
         </div>`;
-    }).join('')}
+    }).join('')
+        }
     </div>` : '';
 
     container.innerHTML = `
@@ -654,65 +563,65 @@ function renderFinanceDashboard(stats, transactions, programStats) {
                 </div>
             </div>
 
-            <!-- Program Earnings Strip (clickable) -->
-            ${programsHtml}
+            <!-- Program Earnings Strip(clickable) -->
+        ${programsHtml}
 
-            <!-- Summary Cards -->
+        <!-- Summary Cards -->
             <div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:16px; flex-shrink:0">
                 <div class="card stat-card">
                     <h3>Total Revenue</h3>
-                    <div class="value text-green">${stats.revenue}</div>
+                    <div class="value text-green">${formatShortCurrency(stats.revenue || 0)}</div>
                     <div class="sub">Gross Volume</div>
                 </div>
                 <div class="card stat-card">
                     <h3>Partner Payout</h3>
-                    <div class="value" style="color:var(--p)">${stats.partner}</div>
+                    <div class="value" style="color:var(--p)">${formatShortCurrency(stats.partner || 0)}</div>
                     <div class="sub">After Fees</div>
                 </div>
                 <div class="card stat-card">
                     <h3>CASAN Fees</h3>
-                    <div class="value" style="color:var(--ac)">${stats.casan}</div>
+                    <div class="value" style="color:var(--ac)">${formatShortCurrency(stats.casan || 0)}</div>
                     <div class="sub">Platform Share</div>
                 </div>
                 <div class="card stat-card">
                     <h3>Outstanding</h3>
-                    <div class="value text-red">${stats.outstanding}</div>
+                    <div class="value text-red">${formatShortCurrency(stats.outstanding || 0)}</div>
                     <div class="sub">Potential Loss</div>
                 </div>
             </div>
 
             <!-- Transaction Table -->
-            <div>
-                <div class="card" style="display:flex; flex-direction:column; overflow:hidden">
-                    <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0">Recent Transactions</h3>
-                        <span style="font-size: var(--text-base); color:var(--t3)">${transactions.length} records</span>
-                    </div>
-                    <div style="overflow-x:auto">
-                        <table style="width:100%; border-collapse:collapse; font-size: var(--text-lg); min-width:600px">
-                            <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
-                                <tr style="text-align:left; color:var(--t3)">
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">TX ID</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">DATE & TIME</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">VEHICLE</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">USER / PHONE</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">PROGRAM</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">METHOD</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md); color:var(--ac)">CASAN FEE</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md); text-align:right">AMOUNT</th>
-                                    <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">STATUS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows || '<tr><td colspan="9" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                    ${txPagination}
+        <div>
+            <div class="card" style="display:flex; flex-direction:column; overflow:hidden">
+                <div style="padding:14px 16px; border-bottom:1px solid var(--s3); display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0">Recent Transactions</h3>
+                    <span style="font-size: var(--text-base); color:var(--t3)">${transactions.length} records</span>
                 </div>
+                <div style="overflow-x:auto">
+                    <table style="width:100%; border-collapse:collapse; font-size: var(--text-lg); min-width:600px">
+                        <thead style="position:sticky; top:0; background:var(--s2); z-index:10">
+                            <tr style="text-align:left; color:var(--t3)">
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">TX ID</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">DATE & TIME</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">VEHICLE</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">USER / PHONE</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">PROGRAM</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">METHOD</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md); color:var(--ac)">CASAN FEE</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md); text-align:right">AMOUNT</th>
+                                <th style="padding:10px 12px; font-weight:500; font-size: var(--text-md)">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="9" style="padding:24px; text-align:center; color:var(--t3)">No transactions for selected filter</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                ${txPagination}
             </div>
         </div>
-    `;
+        
+        `;
 
     // Attach program filter listener (runs after innerHTML set)
     const sel = document.getElementById('programFilter');
@@ -724,6 +633,16 @@ function renderFinanceDashboard(stats, transactions, programStats) {
     }
 };
 
+window._toggleTxExpand = (id) => {
+    if (!window._txExpandSet) window._txExpandSet = new Set();
+    if (window._txExpandSet.has(id)) window._txExpandSet.delete(id);
+    else window._txExpandSet.add(id);
+    // Trigger Finance re-render
+    if (typeof window.renderFinanceDashboard === 'function' && window._lastFinanceArgs) {
+        window.renderFinanceDashboard(...window._lastFinanceArgs);
+    }
+};
+
 
 function formatDate(iso) {
     return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -731,13 +650,10 @@ function formatDate(iso) {
 
 // Helper for short currency format (e.g., 100K, 1.2M)
 function formatShortCurrency(amount) {
-    if (amount >= 1000000) {
-        return `Rp${(amount / 1000000).toFixed(1)}M`;
-    }
-    if (amount >= 1000) {
-        return `Rp${(amount / 1000).toFixed(0)}K`;
-    }
-    return `Rp${amount}`;
+    if (amount >= 1000000000) return `Rp ${(amount / 1000000000).toFixed(2)}B`;
+    if (amount >= 1000000) return `Rp ${(amount / 1000000).toFixed(2)}M`;
+    if (amount >= 1000) return `Rp ${(amount / 1000).toFixed(2)}K`;
+    return `Rp ${Math.round(amount).toLocaleString('id-ID')}`;
 }
 
 function updateCountdowns() {
@@ -756,7 +672,7 @@ function updateCountdowns() {
             const isUrgent = cd.hours === 0 && cd.minutes < 60;
             if (isUrgent) el.style.color = 'var(--d)';
 
-            el.textContent = `${cd.hours}h ${cd.minutes}m ${cd.seconds}s`;
+            el.textContent = `${cd.hours}h ${cd.minutes}m ${cd.seconds} s`;
         }
     });
 };
@@ -801,8 +717,8 @@ const renderGpsList = (devices, stats, filter = {}) => {
 
     // Stats bar
     const statsHtml = `
-    <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px">
-        ${[
+        <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:24px">
+            ${[
             { label: 'Total', val: stats.total, color: 'var(--t1)' },
             { label: 'Online', val: stats.online, color: 'var(--c-success)' },
             { label: 'Offline', val: stats.offline, color: 'var(--c-danger)' },
@@ -815,31 +731,32 @@ const renderGpsList = (devices, stats, filter = {}) => {
                 <h3 style="font-size: var(--text-md)">${s.label}</h3>
                 <div class="value" style="color:${s.color}; font-size: var(--text-5xl)">${s.val}</div>
             </div>
-        `).join('')}
+        `).join('')
+        }
     </div>`;
 
     // Filter + action toolbar
     const toolbar = `
-    <div style="display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap">
-        <input type="text" id="gpsSearch" class="search-bar" style="flex:1; min-width:200px"
-            placeholder="Search ID, IMEI, plate..." value="${filter.search || ''}">
-        <select id="gpsStatusFilter" class="form-control" style="width:140px">
-            <option value="all" ${!filter.status || filter.status === 'all' ? 'selected' : ''}>All Status</option>
-            <option value="Online" ${filter.status === 'Online' ? 'selected' : ''}>Online</option>
-            <option value="Offline" ${filter.status === 'Offline' ? 'selected' : ''}>Offline</option>
-            <option value="Low Signal" ${filter.status === 'Low Signal' ? 'selected' : ''}>Low Signal</option>
-            <option value="Tampered" ${filter.status === 'Tampered' ? 'selected' : ''}>Tampered</option>
-        </select>
-        <select id="gpsBrandFilter" class="form-control" style="width:130px">
-            <option value="all">All Brands</option>
-            <option value="Weloop" ${filter.brand === 'Weloop' ? 'selected' : ''}>Weloop</option>
-            <option value="Teltonika" ${filter.brand === 'Teltonika' ? 'selected' : ''}>Teltonika</option>
-            <option value="Concox" ${filter.brand === 'Concox' ? 'selected' : ''}>Concox</option>
-        </select>
-        <button class="btn btn-primary" id="gpsAddBtn" style="white-space:nowrap">
-             Add Device
-        </button>
-    </div>`;
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:20px; flex-wrap:wrap">
+            <input type="text" id="gpsSearch" class="search-bar" style="flex:1; min-width:200px"
+                placeholder="Search ID, IMEI, plate..." value="${filter.search || ''}">
+                <select id="gpsStatusFilter" class="form-control" style="width:140px">
+                    <option value="all" ${!filter.status || filter.status === 'all' ? 'selected' : ''}>All Status</option>
+                    <option value="Online" ${filter.status === 'Online' ? 'selected' : ''}>Online</option>
+                    <option value="Offline" ${filter.status === 'Offline' ? 'selected' : ''}>Offline</option>
+                    <option value="Low Signal" ${filter.status === 'Low Signal' ? 'selected' : ''}>Low Signal</option>
+                    <option value="Tampered" ${filter.status === 'Tampered' ? 'selected' : ''}>Tampered</option>
+                </select>
+                <select id="gpsBrandFilter" class="form-control" style="width:130px">
+                    <option value="all">All Brands</option>
+                    <option value="Weloop" ${filter.brand === 'Weloop' ? 'selected' : ''}>Weloop</option>
+                    <option value="Teltonika" ${filter.brand === 'Teltonika' ? 'selected' : ''}>Teltonika</option>
+                    <option value="Concox" ${filter.brand === 'Concox' ? 'selected' : ''}>Concox</option>
+                </select>
+                <button class="btn btn-primary" id="gpsAddBtn" style="white-space:nowrap">
+                    Add Device
+                </button>
+            </div>`;
 
     // Table rows
     const rows = pageDevices.map(d => {
@@ -868,8 +785,8 @@ const renderGpsList = (devices, stats, filter = {}) => {
             `<div style="display:flex; flex-direction:column; gap:2px">
                 ${addressHtml}
                 <div style="display:flex; align-items:center; gap:8px">
-                    <a href="#" onclick="window.dispatchEvent(new CustomEvent('focus-vehicle', {detail:'${d.vehicleId}'})); return false;" 
-                       style="color:var(--ac); text-decoration:none; font-family:'IBM Plex Mono'; font-size: var(--text-sm)">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</a>
+                    <a href="#" onclick="window.dispatchEvent(new CustomEvent('focus-vehicle', {detail:'${d.vehicleId}'})); return false;"
+                        style="color:var(--ac); text-decoration:none; font-family:'IBM Plex Mono'; font-size: var(--text-sm)">${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}</a>
                     <span style="font-size: var(--text-sm); color:var(--t3); background:var(--s3); padding:1px 4px; border-radius:3px">${d.lastPingTime || ''}</span>
                 </div>
             </div>` :
@@ -911,29 +828,31 @@ const renderGpsList = (devices, stats, filter = {}) => {
                         onclick="window.dispatchEvent(new CustomEvent('gps-delete', {detail:'${d.id}'}))">Del</button>
                 </div>
             </td>
-        </tr>`;
+        </tr>
+         `;
     }).join('');
 
     const noResults = pageDevices.length === 0
-        ? `<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td></tr>`
+        ? ` > <td colspan="7" style="padding:32px; text-align:center; color:var(--t3)">No devices found</td> `
         : '';
 
     const paginationHtml = `
-    <div class="vl-pagination">
-        <button class="vl-page-btn" onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>Prev</button>
-        <div class="vl-page-info">Page ${window.gpsPage} of ${totalPages}</div>
-        <button class="vl-page-btn" onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next</button>
-    </div>`;
+        <div class="vl-pagination">
+            <button class="vl-page-btn" onclick="window.changeGpsPage(-1)" ${window.gpsPage === 1 ? 'disabled' : ''}>Prev</button>
+            <div class="vl-page-info">Page ${window.gpsPage} of ${totalPages}</div>
+            <button class="vl-page-btn" onclick="window.changeGpsPage(1)" ${window.gpsPage === totalPages ? 'disabled' : ''}>Next</button>
+        </div>
+     `;
 
     container.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-        <div>
-            <h2 style="margin:0 0 4px">GPS Dashboard</h2>
-            <div style="color:var(--t3); font-size: var(--text-lg)">${stats.total} devices  ${stats.online} online</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <div>
+                <h2 style="margin:0 0 4px">GPS Dashboard</h2>
+                <div style="color:var(--t3); font-size: var(--text-lg)">${stats.total} devices  ${stats.online} online</div>
+            </div>
         </div>
-    </div>
 
-    ${statsHtml}
+        ${statsHtml}
     ${toolbar}
 
     <div class="card" style="overflow:hidden">
@@ -984,15 +903,15 @@ const openGpsModal = (device = null, vehicles = []) => {
     if (!overlay || !content) return;
 
     const isEdit = !!device;
-    title.textContent = isEdit ? ` Edit Device  ${device.id}` : ' Add GPS Device';
+    title.textContent = isEdit ? `?? Edit Device \u00ef\u00bf\u00bd ${device.id}` : '?? Add GPS Device';
 
     const vehicleOptions = [
-        `<option value=""> Unassigned </option>`,
-        ...vehicles.map(v => `<option value="${v.id}" ${isEdit && device.vehicleId === v.id ? 'selected' : ''}>${v.id}  ${v.plate}</option>`)
+        `<option value="">Unassigned</option>`,
+        ...vehicles.map(v => `<option value="${v.id}" ${isEdit && device.vehicleId === v.id ? 'selected' : ''}>${v.id} \u00ef\u00bf\u00bd ${v.plate}</option>`)
     ].join('');
 
     content.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:14px; padding-top:8px">
+        <div style="display:flex; flex-direction:column; gap:14px; padding-top:8px">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
             <div>
                 <label style="font-size: var(--text-md); color:var(--t3); display:block; margin-bottom:4px">Brand</label>
@@ -1101,23 +1020,63 @@ const renderVehicleListView = () => {
             </div>`;
 
         const STNK = getSTNKAlert(v);
-        const stnkHtml = STNK ? `<span class="vl-status" style="background:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}22; color:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}">${STNK.label}</span>` : '<span style="color:var(--t3)"></span>';
+        const stnkHtml = STNK ? `<span class="vl-status" style="background:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}22; color:${STNK.type === 'expired' ? 'var(--c-danger)' : 'var(--c-warning)'}">${STNK.label}</span>` : '<span style="color:var(--t3)">OK</span>';
+
+        const program = state.programs.find(p => p.id === v.programId);
+        const isExpanded = window._vehicleExpandSet && window._vehicleExpandSet.has(v.id);
+        const statusColor = v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : (v.status === 'immobilized' ? 'var(--c-danger)' : '#6B7280'));
+
+        const expandRow = isExpanded ? `
+        <tr style="background:var(--s1); border-bottom:2px solid var(--b1)">
+            <td colspan="9" style="padding:16px 20px">
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px">
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Program Scheme</div>
+                        <div style="font-weight:700; color:var(--t1); margin-top:4px">${program?.name || 'N/A'}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${program?.type || ''} ? ${v.programId || ''}</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Daily Rate</div>
+                        <div style="font-weight:800; color:var(--ac); font-family:'IBM Plex Mono'; margin-top:4px">${formatRupiah(v.dailyRate || 0)}/hari</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">Grace: ${program?.grace || 0} hari</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Credit Balance</div>
+                        <div style="font-weight:800; color:${creditColor}; font-size:var(--text-xl); margin-top:4px">${v.credits} days</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${v.transactions ? v.transactions.length : 0} cycles paid</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">RTO Progress</div>
+                        ${prog ? `<div style="font-weight:800; color:var(--g); font-size:var(--text-xl); margin-top:4px">${prog.paidPct}%</div><div style="font-size:var(--text-xs); color:var(--t3)">${prog.monthsLeft} months remaining</div>` : '<div style="color:var(--t3); margin-top:4px">N/A (Rental)</div>'}
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">STNK / Docs</div>
+                        <div style="margin-top:4px">${stnkHtml}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">${v.stnkExpiry ? 'Exp: ' + new Date(v.stnkExpiry).toLocaleDateString('id-ID') : 'No data'}</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Actions</div>
+                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openVehicleDrawer('${v.id}')">\u00f0\u0178\u201d\u008d Full Audit</button>
+                    </div>
+                </div>
+            </td>
+        </tr>` : '';
 
         return `
-            <tr data-status="${v.status}" onclick="window.openVehicleDrawer('${v.id}')">
-                <td style="font-weight:700">${v.id}<div style="font-size: var(--text-sm); font-weight:400; color:var(--t3)">${v.plate}</div></td>
-                <td>
-                    <div style="font-weight:600">${v.customer || ''}</div>
+            <tr data-status="${v.status}" style="cursor:pointer; border-bottom:1px solid var(--b1); transition:background 0.15s" onmouseover="if(!this.dataset.expanded)this.style.background='var(--s1)'" onmouseout="this.style.background=''" onclick="if(!window._vehicleExpandSet)window._vehicleExpandSet=new Set(); window._vehicleExpandSet.has('${v.id}')?window._vehicleExpandSet.delete('${v.id}'):window._vehicleExpandSet.add('${v.id}'); this.dataset.expanded=window._vehicleExpandSet.has('${v.id}')?'1':''; renderVehicleListView()">
+                <td style="font-weight:700; padding:10px 12px"><div style="display:flex; align-items:center; gap:6px"><span style="color:var(--t3); font-size:var(--text-lg)">${isExpanded ? '&#9660;' : '&#9654;'}</span><div>${v.id}<div style="font-size: var(--text-sm); font-weight:400; color:var(--t3)">${v.plate}</div></div></div></td>
+                <td style="padding:10px 12px">
+                    <div style="font-weight:600">${v.customer || '<span style="color:var(--t3)">&#8212; Unassigned</span>'}</div>
                     <div style="font-size: var(--text-sm); color:var(--t3)">${v.phone || ''}</div>
                 </td>
-                <td><span class="vl-status" style="background:${(v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : (v.status === 'immobilized' ? 'var(--c-danger)' : '#6B7280')))}22; color:${(v.status === 'active' ? 'var(--c-success)' : (v.status === 'grace' ? 'var(--c-warning)' : (v.status === 'immobilized' ? 'var(--c-danger)' : '#6B7280')))}">${v.status.toUpperCase()}</span></td>
-                <td>${v.brand}<div style="font-size: var(--text-sm); color:var(--t3)">${v.programType}</div></td>
-                <td>${creditHtml}</td>
-                <td>${progressHtml}</td>
-                <td>${stnkHtml}</td>
-                <td><div class="dot ${v.isOnline ? 'green' : 'red'}" style="display:inline-block; margin-right:4px"></div>${v.isOnline ? 'On' : 'Off'}</td>
-                <td><button class="vl-pill"> Detail</button></td>
-            </tr>`;
+                <td style="padding:10px 12px"><span class="vl-status" style="background:${statusColor}22; color:${statusColor}">${v.status.toUpperCase()}</span></td>
+                <td style="padding:10px 12px">${v.brand}<div style="font-size: var(--text-sm); color:var(--t3)">${v.programType}</div></td>
+                <td style="padding:10px 12px">${creditHtml}</td>
+                <td style="padding:10px 12px">${progressHtml}</td>
+                <td style="padding:10px 12px">${stnkHtml}</td>
+                <td style="padding:10px 12px"><div class="dot ${v.isOnline ? 'green' : 'red'}" style="display:inline-block; margin-right:4px"></div>${v.isOnline ? 'On' : 'Off'}</td>
+                <td style="padding:10px 12px"><button class="vl-pill" style="font-size:var(--text-xs)" onclick="event.stopPropagation(); window.openVehicleDrawer('${v.id}')"> Audit</button></td>
+            </tr>${expandRow}`;
     }).join('');
 
     elVehicleListContent.innerHTML = `
@@ -1200,7 +1159,7 @@ const renderUserListView = () => {
     const tableRows = paginated.map(u => {
         const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2);
         const riskColor = getRiskColor(u.riskLabel);
-        const genderIcon = u.gender === 'Male' ? '' : '';
+        const genderIcon = u.gender === 'Male' ? '\u00f0\u0178\u2018\u00a8' : '\u00f0\u0178\u2018\u00a9';
         const genderColor = u.gender === 'Male' ? '#60A5FA' : '#F472B6';
 
         // Progress Bar for RTO users
@@ -1218,18 +1177,67 @@ const renderUserListView = () => {
             </div>
         ` : '<span style="color:var(--t3); font-size: var(--text-sm)"></span>';
 
+        const userVehicle = state.vehicles.find(veh => veh.userId === u.userId);
+        const isUserExpanded = window._userExpandSet && window._userExpandSet.has(u.userId);
+
+        const userExpandRow = isUserExpanded ? `
+        <tr style="background:var(--s1); border-bottom:2px solid var(--b1)">
+            <td colspan="8" style="padding:16px 20px">
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px">
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Identity</div>
+                        <div style="font-weight:700; color:var(--t1); margin-top:4px">${u.name}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${u.gender || 'Unknown'} \u00ef\u00bf\u00bd ${u.age || '?'}y</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">ID: ${u.userId}</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Contact</div>
+                        <div style="font-weight:700; color:var(--t1); margin-top:4px; font-family:'IBM Plex Mono'">${u.phone}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px; line-height:1.4">${u.address || 'N/A'}</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Financial</div>
+                        <div style="font-weight:800; color:var(--ac); font-family:'IBM Plex Mono'; margin-top:4px">${formatRupiah(u.income || 0)}/bln</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">Employer: ${u.employer || 'N/A'}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">Joined: ${new Date(u.joinDate).toLocaleDateString('id-ID')}</div>
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Risk Profile</div>
+                        <div style="font-weight:800; font-size:var(--text-xl); color:${riskColor}; margin-top:4px">${u.riskScore}</div>
+                        <div style="font-size:var(--text-xs); font-weight:700; color:${riskColor}">${u.riskLabel}</div>
+                        ${userVehicle ? `<div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">Lock: ${userVehicle.immobilizeLog?.length || 0}x \u00ef\u00bf\u00bd Grace: ${userVehicle.graceEncounters || 0}x</div>` : ''}
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Assigned Vehicle</div>
+                        ${userVehicle ? `
+                        <div style="font-weight:700; font-family:'IBM Plex Mono'; color:var(--t1); margin-top:4px">${userVehicle.id}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${userVehicle.plate} \u00ef\u00bf\u00bd ${userVehicle.brand}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">Credits: ${userVehicle.credits}d</div>
+                        ` : '<div style="color:var(--t3); margin-top:4px; font-size:var(--text-sm)">No vehicle assigned</div>'}
+                    </div>
+                    <div style="background:var(--s2); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px">
+                        <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Actions</div>
+                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openUserDrawer('${u.userId}')">Full Profile \u00e2\u2020\u2019</button>
+                    </div>
+                </div>
+            </td>
+        </tr>` : '';
+
         return `
-            <tr onclick="window.openUserDrawer('${u.userId}')">
-                <td>
-                    <div style="display:flex; align-items:center; gap:10px">
-                        <div class="vl-avatar" style="background:${genderColor}">${initials}</div>
-                        <div>
-                            <div style="font-weight:700">${u.name}</div>
-                            <div style="font-size: var(--text-sm); color:var(--t3)">${u.userId}</div>
+            <tr style="cursor:pointer; border-bottom:1px solid var(--b1); transition:background 0.15s" onmouseover="this.style.background='var(--s1)'" onmouseout="this.style.background=''" onclick="if(!window._userExpandSet)window._userExpandSet=new Set(); window._userExpandSet.has('${u.userId}')?window._userExpandSet.delete('${u.userId}'):window._userExpandSet.add('${u.userId}'); renderUserListView()">
+                <td style="padding:10px 12px">
+                    <div style="display:flex; align-items:center; gap:6px">
+                        <span style="color:var(--t3); font-size:var(--text-lg)">${isUserExpanded ? '&#9660;' : '&#9654;'}</span>
+                        <div style="display:flex; align-items:center; gap:10px">
+                            <div class="vl-avatar" style="background:${genderColor}">${initials}</div>
+                            <div>
+                                <div style="font-weight:700">${u.name}</div>
+                                <div style="font-size: var(--text-sm); color:var(--t3)">${u.userId}</div>
+                            </div>
                         </div>
                     </div>
                 </td>
-                <td>
+                <td style="padding:10px 12px">
                     <div style="display:flex; gap:4px; flex-wrap:wrap">
                         ${u.vehicleIds.map(id => {
             const v = state.vehicles.find(veh => veh.id === id);
@@ -1245,43 +1253,43 @@ const renderUserListView = () => {
         }).filter(Boolean).join('')}
                     </div>
                 </td>
-                <td>${progressHtml}</td>
-                <td>
+                <td style="padding:10px 12px">${progressHtml}</td>
+                <td style="padding:10px 12px">
                     <div style="display:flex; justify-content:center; gap:4px">
                         ${(() => {
                 const v = state.vehicles.find(veh => veh.userId === u.userId);
-                if (!v) return '<span style="color:var(--t3); opacity:0.3"></span>';
+                if (!v) return '<span style="color:var(--t3); opacity:0.3">\u00ef\u00bf\u00bd</span>';
                 return `
                                 ${v.immobilizeLog?.length > 0 ? `
                                     <div class="vl-pill" style="background:rgba(239, 68, 68, 0.15); color:var(--c-danger); border-color:rgba(239, 68, 68, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.immobilizeLog.length} Immobilizations">
-                                        LOCKED: ${v.immobilizeLog.length}
+                                        <span style="font-size:1.2em; vertical-align:middle;">\u00f0\u0178\u201d\u2019</span> LOCKED: ${v.immobilizeLog.length}
                                     </div>
-                                ` : '<span style="color:var(--t3); opacity:0.3"></span>'}
+                                ` : '<span style="color:var(--t3); opacity:0.3">\u00ef\u00bf\u00bd</span>'}
                                 ${v.graceEncounters > 0 ? `
                                     <div class="vl-pill" style="background:rgba(245, 158, 11, 0.15); color:var(--c-warning); border-color:rgba(245, 158, 11, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.graceEncounters} Grace Period Entries">
-                                        WARN: ${v.graceEncounters}
+                                        <span style="font-size:1.2em; vertical-align:middle;">\u00e2\u0161\u00a0\u00ef\u00b8\u008f</span> WARN: ${v.graceEncounters}
                                     </div>
-                                ` : '<span style="color:var(--t3); opacity:0.3"></span>'}
+                                ` : ''}
                             `;
             })()}
                     </div>
                 </td>
-                <td>
+                <td style="padding:10px 12px">
                     <div class="vl-risk-bar" style="background:${riskColor}22; color:${riskColor}">
                         <div style="width:12px; height:12px; border-radius:50%; background:${riskColor}"></div>
                         ${u.riskLabel} (${u.riskScore})
                     </div>
                 </td>
-                <td>
-                    ${u.vehicleIds.length > 0 ? `<span style="font-size: var(--text-sm); background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size: var(--text-sm)"></span>'}
+                <td style="padding:10px 12px">
+                    ${u.vehicleIds.length > 0 ? `<span style="font-size: var(--text-sm); background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size: var(--text-sm)">\u00ef\u00bf\u00bd</span>'}
                 </td>
-                <td>
+                <td style="padding:10px 12px">
                     <div style="font-size: var(--text-base)">${u.phone}</div>
                     <div style="font-size: var(--text-sm); color:var(--t3)">${u.address.substring(0, 20)}...</div>
                 </td>
-                <td>${new Date(u.joinDate).toLocaleDateString()}</td>
-                <td><button class="vl-pill" onclick="window.openUserDrawer('${u.userId}')">Profile</button></td>
-            </tr>`;
+                <td style="padding:10px 12px">${new Date(u.joinDate).toLocaleDateString('id-ID')}</td>
+                <td style="padding:10px 12px"><button class="vl-pill" onclick="event.stopPropagation(); window.openUserDrawer('${u.userId}')">Profile</button></td>
+            </tr>${userExpandRow}`;
     }).join('');
 
     const allUsers = getUsers({}); // Get all users for pill counts
@@ -1384,23 +1392,23 @@ const renderUserListView = () => {
             <table class="vl-table">
                 <thead>
                     <tr>
-                        <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '' : '') : ''}</th>
+                        <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '\u00e2\u2020\u2018' : '\u00e2\u2020\u201c') : ''}</th>
                         <th>PROGRAM</th>
                         <th>PROGRESS</th>
                         <th style="text-align:center">COLLECTION AUDIT</th>
                         <th onclick="window.setUserSort('riskScore')">RISK SCORE</th>
                         <th>VEHICLE</th>
                         <th>CONTACT</th>
-                        <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '' : '') : ''}</th>
+                        <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '\u00e2\u2020\u2018' : '\u00e2\u2020\u201c') : ''}</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>${tableRows}</tbody>
             </table>
             <div class="vl-pagination">
-                <button class="vl-page-btn" onclick="window.changeUserPage(-1)" ${userListPage === 1 ? 'disabled' : ''}>[Prev]</button>
+                <button class="vl-page-btn" onclick="window.changeUserPage(-1)" ${userListPage === 1 ? 'disabled' : ''}>Prev</button>
                 <div class="vl-page-info">Page ${userListPage} of ${totalPages}</div>
-                <button class="vl-page-btn" onclick="window.changeUserPage(1)" ${userListPage === totalPages ? 'disabled' : ''}>[Next]</button>
+                <button class="vl-page-btn" onclick="window.changeUserPage(1)" ${userListPage === totalPages ? 'disabled' : ''}>Next</button>
             </div>
         </div>`;
 
@@ -1467,7 +1475,7 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
     const txs = getVehicleTransactions(id);
     const rto = getRTOProgress(v);
     const STNK = getSTNKAlert(v);
-    const initials = (v.customer || '??').split(' ').map(n => n[0]).join('').substring(0, 2);
+    const initials = (v.customer || 'UN').split(' ').map(n => n[0]).join('').substring(0, 2);
 
     const backBtn = drawerStack.length > 0 ? `<button class="drawer-back" onclick="window.popDrawerStack()"> Back</button>` : '';
 
@@ -1852,10 +1860,14 @@ const renderProgramListView = () => {
     const healthPct = Math.round((activeUnits / totalUnits) * 100);
     const maturityPct = displayVehicles.length > 0 ? Math.round(displayVehicles.reduce((acc, v) => acc + (getRTOProgress(v)?.paidPct || 0), 0) / displayVehicles.length) : 0;
 
-    // --- Pagination (10 per page) ---
-    const PAGE_SIZE = 10;
-    const totalPages = Math.ceil(displayVehicles.length / PAGE_SIZE) || 1;
+    // --- Expansion Trackers ---
+    if (!window._renterExpandSet) window._renterExpandSet = new Set();
+
+    // --- Pagination ---
+    const totalPages = Math.max(1, Math.ceil(displayVehicles.length / PAGE_SIZE));
     if (programListPage > totalPages) programListPage = totalPages;
+    if (programListPage < 1) programListPage = 1;
+
     const paginated = displayVehicles.slice((programListPage - 1) * PAGE_SIZE, programListPage * PAGE_SIZE);
 
     const tableRows = paginated.map(v => {
@@ -1881,11 +1893,21 @@ const renderProgramListView = () => {
             </div>
         ` : '<span style="color:var(--t3); font-size: var(--text-sm)"></span>';
 
+        const isRenterExpanded = window._renterExpandSet.has(v.id);
+
         return `
-            <tr>
-                <td>
-                    <div style="font-size: var(--text-sm); color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
-                    <div style="font-size: var(--text-md); font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
+            <tr style="transition:background 0.15s; cursor:pointer" 
+                onclick="event.target.tagName !== 'BUTTON' && window._toggleRenterExpand('${v.id}')"
+                onmouseover="this.style.background='var(--s2)'" 
+                onmouseout="this.style.background=''">
+                <td style="padding:10px 12px">
+                    <div style="display:flex; align-items:center; gap:8px">
+                        <span style="color:var(--t3); font-size:var(--text-lg); flex-shrink:0">${isRenterExpanded ? '\u00e2\u2013\u00bc' : '\u00e2\u2013\u00b6'}</span>
+                        <div>
+                            <div style="font-size: var(--text-sm); color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
+                            <div style="font-size: var(--text-md); font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <div style="font-weight:700; font-size: var(--text-lg); color:var(--t1)">${v.customer || 'Available'}</div>
@@ -1927,11 +1949,66 @@ const renderProgramListView = () => {
                 </td>
                 <td style="text-align:right">
                     <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center">
-                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openEditRenterModal('${v.id}')">✏ Edit</button>
-                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openVehicleDrawer('${v.id}')">🔍 Audit</button>
+                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openEditRenterModal('${v.id}')">\u00e2\u0153\u008f\u00ef\u00b8\u008f Edit</button>
+                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openVehicleDrawer('${v.id}')">\u00f0\u0178\u201d\u008d Audit</button>
                     </div>
                 </td>
             </tr>
+            ${isRenterExpanded ? `
+            <tr style="background:var(--s1); border-bottom:1px solid var(--b1)">
+                <td colspan="8" style="padding:16px 24px">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px">
+                        <div>
+                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Rider Identity</div>
+                            <div style="display:flex; flex-direction:column; gap:8px">
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">NIK</span>
+                                    <span style="color:var(--t1); font-weight:600; font-family:'IBM Plex Mono'">${rider?.nik || v.nik || '-'}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Join Date</span>
+                                    <span style="color:var(--t1); font-weight:600">${rider?.joinDate ? new Date(rider.joinDate).toLocaleDateString('id-ID') : '-'}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Phone (WA)</span>
+                                    <span style="color:var(--t1); font-weight:600">${riderPhone}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Emergency Contact</div>
+                            <div style="display:flex; flex-direction:column; gap:8px">
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Name</span>
+                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.name || '-'}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Relationship</span>
+                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.relationship || '-'}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Phone</span>
+                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.phone || '-'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">RTO Performance</div>
+                            <div style="display:flex; flex-direction:column; gap:8px">
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Total Paid</span>
+                                    <span style="color:var(--g); font-weight:800">${formatRupiah(rider?.totalPaid || 0)}</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
+                                    <span style="color:var(--t3); font-size:var(--text-sm)">Missed Payments</span>
+                                    <span style="color:var(--c-danger); font-weight:800">${rider?.missedPayments || 0}</span>
+                                </div>
+                                <button class="btn btn-secondary" style="margin-top:4px; font-size:var(--text-xs); justify-content:center" onclick="window.openUserDrawer('${rider?.userId || v.userId}')">View Full Payment History</button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : ''}
         `;
     }).join('');
 
@@ -1956,9 +2033,9 @@ const renderProgramListView = () => {
                     </div>
                     <div style="display:flex; gap:10px; align-items:center">
                         ${state.filter.program !== 'all' ? `
-                            <button class="vl-pill" onclick="window.rto.openProgramModal('${state.filter.program}')">⚙ Scheme Settings</button>
+                            <button class="vl-pill" onclick="window.rto.openProgramModal('${state.filter.program}')">Scheme Settings ??</button>
                         ` : ''}
-                        <button onclick="window.openAddRenterModal()" style="background:var(--ac); color:#000; border:none; font-weight:800; font-size:var(--text-base); padding:10px 20px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 4px 14px rgba(0,229,195,0.3); transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">＋ Add Renter</button>
+                        <button onclick="window.openAddRenterModal()" style="background:var(--ac); color:#000; border:none; font-weight:800; font-size:var(--text-base); padding:10px 20px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 4px 14px rgba(0,229,195,0.3); transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ Add Renter</button>
                     </div>
                 </div>
 
@@ -2953,47 +3030,47 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates  v1.8.0";
+    elTitle.innerText = "Platform Updates  v1.9.0";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v1.8.0</h3>
-                    <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-25</span>
+                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v1.9.0</h3>
+                    <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-26</span>
                 </div>
-                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>Commission, Renters & UX Overhaul</strong> is here. This release introduces flexible dual-mode commissions, a completely redesigned Renters management workflow, and enhanced financial transparency.</p>
+                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>UI Consistency & Stability</strong> update is live. This release finalizes the premium visual experience, resolves critical map/GPS rendering bugs, and standardizes data expansion across all modules.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> COMMISSION & FINANCE
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> UI/UX CONSISTENCY
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Dual Commission Mode:</strong> Switch programs between % Percentage or Fixed Rp/day sharing.</li>
-                        <li><strong>CASAN Fee Column:</strong> Replaced legacy counters with exact platform revenue share in Finance.</li>
-                        <li><strong>Smart Displays:</strong> Program cards now show active commission rates for better oversight.</li>
+                        <li><strong>Emoji Restoration:</strong> Fixed all broken icons and emoji placeholders in GPS and Maps.</li>
+                        <li><strong>Expandable Lists:</strong> Deep-dive details added to Users, Renters, and Vehicles.</li>
+                        <li><strong>Premium Polish:</strong> Standardized IBM Plex Mono typography and layout margins.</li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> RENTER MANAGEMENT
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> STABILITY & DATA
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>+ Add Renter:</strong> New high-visibility workflow for manual renter registration.</li>
-                        <li><strong>Inline Editing:</strong> Dedicated edit pills on every row for fast profile updates.</li>
-                        <li><strong>Identity Enforcement:</strong> Mandatory phone uniqueness check to prevent duplicate profiles.</li>
+                        <li><strong>Map Syntax Fix:</strong> Resolved HTML corruption in vehicle markers and popups.</li>
+                        <li><strong>Initialization Hardening:</strong> Fixed race conditions during dashboard startup.</li>
+                        <li><strong>Currency Standardization:</strong> Unified Rp. formatting for all financial modules.</li>
                     </ul>
                 </div>
 
                 <div style="border-top: 1px dashed var(--b1); padding-top: 20px; margin-top: 10px;">
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t3); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                         PREVIOUS: v1.7.0 (Terminology Split)
+                         PREVIOUS: v1.8.0 (Commission & Renters)
                     </h4>
                     <ul style="font-size: var(--text-sm); color:var(--t3); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px; opacity: 0.8">
-                        <li><strong>Vehicles vs Renters:</strong> Clarified split between inventory (assets) and participants (riders).</li>
-                        <li><strong>Branding Update:</strong> Sidebar updated to "CASAN Operations" with unified naming.</li>
+                        <li><strong>Dual Commissions:</strong> Support for % or Fixed Rp/day sharing.</li>
+                        <li><strong>Renters Overhaul:</strong> New manual onboarding and inline editing tools.</li>
                     </ul>
                 </div>
             </div>
@@ -3044,7 +3121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-// ─── COMMISSION MODE TOGGLE ──────────────────────────────────────────────────
+// --- COMMISSION MODE TOGGLE --------------------------------------------------
 window._setPCommissionMode = (mode) => {
     const typeEl = document.getElementById('pCommissionType');
     const pctBtn = document.getElementById('commBtn_pct');
@@ -3061,7 +3138,23 @@ window._setPCommissionMode = (mode) => {
     if (fixField) fixField.style.display = mode === 'fixed' ? 'block' : 'none';
 };
 
-// ─── ADD RENTER MODAL ─────────────────────────────────────────────────────────
+window._setNPCCommissionMode = (mode) => {
+    const typeEl = document.getElementById('np-commType');
+    const pctBtn = document.getElementById('npCommBtn_pct');
+    const fixBtn = document.getElementById('npCommBtn_fix');
+    const pctField = document.getElementById('npCommField_pct');
+    const fixField = document.getElementById('npCommField_fix');
+    if (!typeEl) return;
+    typeEl.value = mode;
+    const active = 'background:var(--ac); color:#000;';
+    const inactive = 'background:var(--s3); color:var(--t2);';
+    if (pctBtn) pctBtn.style.cssText += mode === 'percentage' ? active : inactive;
+    if (fixBtn) fixBtn.style.cssText += mode === 'fixed' ? active : inactive;
+    if (pctField) pctField.style.display = mode === 'percentage' ? 'block' : 'none';
+    if (fixField) fixField.style.display = mode === 'fixed' ? 'block' : 'none';
+};
+
+// --- ADD RENTER MODAL ---------------------------------------------------------
 window.openAddRenterModal = () => {
     const programs = state.programs;
     const availableVehicles = state.vehicles.filter(v => v.status === 'available');
@@ -3092,14 +3185,14 @@ window.openAddRenterModal = () => {
                     <div class="form-group">
                         <label style="color:var(--t3); font-weight:700">Program *</label>
                         <select id="rnProgram" style="background:var(--s3); border-color:var(--b2)" onchange="window._updateRenterVehicleList()">
-                            <option value="">— Select Program —</option>
+                            <option value="">? Select Program ?</option>
                             ${programs.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group">
                         <label style="color:var(--t3); font-weight:700">Assign Vehicle *</label>
                         <select id="rnVehicle" style="background:var(--s3); border-color:var(--b2)">
-                            <option value="">— Select Program first —</option>
+                            <option value="">? Select Program first ?</option>
                         </select>
                     </div>
                 </div>
@@ -3125,13 +3218,13 @@ window.openAddRenterModal = () => {
             <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
                 <button class="vl-pill" onclick="window.closeGpsModal()">Cancel</button>
                 <button onclick="window.saveRenter(null)" style="background:var(--ac); color:#000; border:none; font-weight:800; padding:10px 28px; border-radius:8px; cursor:pointer; font-size:var(--text-base)">
-                    ＋ Register Renter
+                    + Register Renter
                 </button>
             </div>
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<div style="display:flex; align-items:center; gap:10px; color:var(--ac)"><span>＋</span> New Renter</div>`;
+    document.getElementById('gpsModalTitle').innerHTML = `<div style="display:flex; align-items:center; gap:10px; color:var(--ac)"><span>+</span> New Renter</div>`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
@@ -3142,12 +3235,12 @@ window._updateRenterVehicleList = () => {
     if (!sel) return;
     const available = state.vehicles.filter(v => v.status === 'available' && (progId ? v.programId === progId : true));
     sel.innerHTML = available.length
-        ? `<option value="">— Choose a vehicle —</option>` + available.map(v => `<option value="${v.id}">${v.plate} · ${v.model}</option>`).join('')
+        ? `<option value="">? Choose a vehicle ?</option>` + available.map(v => `<option value="${v.id}">${v.plate} ? ${v.model}</option>`).join('')
         : `<option value="">No available vehicles in this program</option>`;
     document.getElementById('rnVehicleInfo').textContent = available.length ? `${available.length} vehicle(s) available for assignment` : '';
 };
 
-// ─── EDIT RENTER MODAL ────────────────────────────────────────────────────────
+// --- EDIT RENTER MODAL --------------------------------------------------------
 window.openEditRenterModal = (vehicleId) => {
     const v = state.vehicles.find(x => x.id === vehicleId);
     if (!v) return;
@@ -3178,7 +3271,7 @@ window.openEditRenterModal = (vehicleId) => {
                 <div style="display:flex; gap:12px; align-items:center; padding:12px; background:var(--s3); border-radius:8px; border:1px solid var(--b1)">
                     <div>
                         <div style="font-family:'IBM Plex Mono'; font-weight:800; color:var(--t1)">${v.plate}</div>
-                        <div style="font-size:var(--text-sm); color:var(--t3)">${v.model} · ${state.programs.find(p => p.id === v.programId)?.name || v.programId}</div>
+                        <div style="font-size:var(--text-sm); color:var(--t3)">${v.model} ? ${state.programs.find(p => p.id === v.programId)?.name || v.programId}</div>
                     </div>
                     <div style="margin-left:auto">
                         <span style="padding:3px 10px; border-radius:4px; font-weight:800; font-size:var(--text-sm); background:${v.status === 'active' ? 'var(--c-success)22' : 'var(--c-warning)22'}; color:${v.status === 'active' ? 'var(--c-success)' : 'var(--c-warning)'}">${v.status.toUpperCase()}</span>
@@ -3205,18 +3298,18 @@ window.openEditRenterModal = (vehicleId) => {
             <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px">
                 <button class="vl-pill" onclick="window.closeGpsModal()">Cancel</button>
                 <button onclick="window.saveRenter('${v.id}')" style="background:var(--ac); color:#000; border:none; font-weight:800; padding:10px 28px; border-radius:8px; cursor:pointer; font-size:var(--text-base)">
-                    ✓ Save Changes
+                    ? Save Changes
                 </button>
             </div>
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<div style="display:flex; align-items:center; gap:10px; color:var(--ac)"><span>✏</span> Edit Renter — ${v.customer || v.rtoId}</div>`;
+    document.getElementById('gpsModalTitle').innerHTML = `<div style="display:flex; align-items:center; gap:10px; color:var(--ac)"><span>?</span> Edit Renter ? ${v.customer || v.rtoId}</div>`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
 
-// ─── SAVE RENTER (NEW or EDIT) ────────────────────────────────────────────────
+// --- SAVE RENTER (NEW or EDIT) ------------------------------------------------
 window.saveRenter = (vehicleId) => {
     const name = (document.getElementById('rnName')?.value || '').trim();
     const phone = (document.getElementById('rnPhone')?.value || '').trim();
@@ -3227,19 +3320,19 @@ window.saveRenter = (vehicleId) => {
 
     const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } };
 
-    if (!name) return showErr('⚠ Full name is required.');
-    if (!phone) return showErr('⚠ Phone number is required.');
+    if (!name) return showErr('? Full name is required.');
+    if (!phone) return showErr('? Phone number is required.');
 
     if (!vehicleId) {
         // NEW RENTER
         const progId = document.getElementById('rnProgram')?.value;
         const vehId = document.getElementById('rnVehicle')?.value;
-        if (!progId) return showErr('⚠ Please select a program.');
-        if (!vehId) return showErr('⚠ Please assign a vehicle.');
+        if (!progId) return showErr('? Please select a program.');
+        if (!vehId) return showErr('? Please assign a vehicle.');
 
         // Uniqueness check
         const duplicate = state.users.find(u => u.phone === phone);
-        if (duplicate) return showErr(`⚠ Phone ${phone} is already registered to ${duplicate.name}.`);
+        if (duplicate) return showErr(`? Phone ${phone} is already registered to ${duplicate.name}.`);
 
         const newId = `USR-${String(state.users.length + 1).padStart(3, '0')}`;
         const newUser = {
@@ -3268,9 +3361,9 @@ window.saveRenter = (vehicleId) => {
         const v = state.vehicles.find(x => x.id === vehicleId);
         const rider = state.users.find(u => u.userId === v?.userId);
 
-        // Uniqueness check — allow same phone for the same person
+        // Uniqueness check ? allow same phone for the same person
         const duplicate = state.users.find(u => u.phone === phone && u.userId !== rider?.userId);
-        if (duplicate) return showErr(`⚠ Phone ${phone} is already registered to ${duplicate.name}.`);
+        if (duplicate) return showErr(`? Phone ${phone} is already registered to ${duplicate.name}.`);
 
         if (v) { v.customer = name; v.phone = phone; v.nik = nik; }
         if (rider) {
@@ -3289,7 +3382,7 @@ window.saveRenter = (vehicleId) => {
     // Show toast
     const toastEl = document.getElementById('adm-toast');
     if (toastEl) {
-        toastEl.textContent = vehicleId ? `✓ Renter "${name}" updated.` : `✓ Renter "${name}" registered successfully.`;
+        toastEl.textContent = vehicleId ? `? Renter "${name}" updated.` : `? Renter "${name}" registered successfully.`;
         toastEl.classList.add('show');
         setTimeout(() => toastEl.classList.remove('show'), 3000);
     }
@@ -3322,13 +3415,19 @@ try {
     window.closeCommandPalette = closeCommandPalette;
     window.closeGPSModal = closeGPSModal;
     window.openChangelogModal = openChangelogModal;
-    window.renderProgramsTable = renderProgramsTable;
     console.log('UI Module: All exports bound successfully.');
 } catch (e) {
     console.error('UI Module: Final binding failed', e);
 }
 
-// ── PROGRAMS ADMIN TABLE WITH FLEET DETAILS ────────────────────────────────────
+window._toggleRenterExpand = (id) => {
+    if (!window._renterExpandSet) window._renterExpandSet = new Set();
+    if (window._renterExpandSet.has(id)) window._renterExpandSet.delete(id);
+    else window._renterExpandSet.add(id);
+    if (typeof renderProgramListView === 'function') renderProgramListView();
+};
+
+// -- PROGRAMS ADMIN TABLE WITH FLEET DETAILS ------------------------------------
 function renderProgramsTable() {
     const container = document.getElementById('programsContent');
     if (!container) return;
@@ -3419,7 +3518,7 @@ function renderProgramsTable() {
                     <div style="width:40px;height:40px;border-radius:10px;background:${prog.color || 'var(--dac)'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#000;flex-shrink:0">${(prog.name || prog.id || '?')[0]}</div>
                     <div style="min-width:0">
                         <div style="font-weight:800;color:var(--dt1);font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${prog.name || prog.id}</div>
-                        <div style="font-size:10px;color:var(--dt3);margin-top:1px">${prog.type || 'RTO'} · ${prog.partnerName || prog.partnerId || '—'}</div>
+                        <div style="font-size:10px;color:var(--dt3);margin-top:1px">${prog.type || 'RTO'} ? ${prog.partnerName || prog.partnerId || '?'}</div>
                     </div>
                 </div>
                 <!-- RTO Fleet Status -->
@@ -3477,9 +3576,9 @@ function renderProgramsTable() {
             </div>
             <!-- Actions Buttons -->
             <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;">
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramDetails('${prog.id}')">⚙️ Edit</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">🏍️ Fleet</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">🔄 Pool</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramDetails('${prog.id}')">\u00e2\u0153\u008f\u00ef\u00b8\u008f Edit</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">\u00f0\u0178\u008f\u008d\u00ef\u00b8\u008f Fleet</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">\u00f0\u0178\u201c\u00a6 Pool</button>
             </div>
         </div>`;
     }).join('');
@@ -3496,7 +3595,7 @@ function renderProgramsTable() {
             <!-- Page Header -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
                 <div>
-                    <h2 style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);margin:0">⚙️ Programs Admin</h2>
+                    <h2 style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);margin:0">\u00e2\u0161\u2122\u00ef\u00b8\u008f Programs Admin</h2>
                     <div style="font-size:var(--text-xs);color:var(--dt3);margin-top:2px">Manage programs, fleet allocation &amp; assignment</div>
                 </div>
                 <button class="btn" style="font-size:var(--text-xs);background:var(--dac);color:#000;border:none;font-weight:800;padding:8px 18px" onclick="window.openCreateProgramModal()">
@@ -3504,24 +3603,24 @@ function renderProgramsTable() {
                 </button>
             </div>
 
-            <!-- Global Fleet Stats -->
+            <!-- Global Scheme Stats -->
             <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px">
-                <div class="kpi"><div class="kpi-l">Total Inventory</div><div class="kpi-v" style="color:var(--dt1)">${totalVehicles}</div><div class="kpi-d">All vehicles</div></div>
-                <div class="kpi"><div class="kpi-l">Active</div><div class="kpi-v" style="color:var(--dg)">${totalActive}</div><div class="kpi-d">On the road</div></div>
-                <div class="kpi"><div class="kpi-l">Available</div><div class="kpi-v" style="color:var(--dac)">${totalAvailable}</div><div class="kpi-d">Ready to assign</div></div>
-                <div class="kpi"><div class="kpi-l">Immobilized</div><div class="kpi-v" style="color:var(--dd)">${totalLocked}</div><div class="kpi-d">Credit out</div></div>
-                <div class="kpi"><div class="kpi-l">Pending Apps</div><div class="kpi-v" style="color:var(--dw)">${totalPendingApps}</div><div class="kpi-d">Awaiting vehicle</div></div>
+                <div class="kpi"><div class="kpi-l">Total Schemes</div><div class="kpi-v" style="color:var(--dt1)">${programs.length}</div><div class="kpi-d">Active RTO/Rent</div></div>
+                <div class="kpi"><div class="kpi-l">Partners</div><div class="kpi-v" style="color:var(--dg)">${new Set(programs.map(p => p.partnerId)).size}</div><div class="kpi-d">Active Dealers</div></div>
+                <div class="kpi"><div class="kpi-l">Avg. Health</div><div class="kpi-v" style="color:var(--dac)">${totalVehicles > 0 ? Math.round((totalActive / totalVehicles) * 100) : 0}%</div><div class="kpi-d">Collection Rate</div></div>
+                <div class="kpi"><div class="kpi-l">Est. Daily Rev</div><div class="kpi-v" style="color:var(--ac); font-size:var(--text-xl)">${formatShortCurrency(programs.reduce((acc, p) => acc + (progVehicles(p.id).filter(v => v.status === 'active').length * (p.price || 0)), 0))}</div><div class="kpi-d">Gross Daily</div></div>
+                <div class="kpi"><div class="kpi-l">Pending Apps</div><div class="kpi-v" style="color:var(--dw)">${totalPendingApps}</div><div class="kpi-d">Queue Length</div></div>
             </div>
 
             <!-- Programs 2-column Grid -->
             ${programs.length === 0
-            ? `<div style="padding:60px;text-align:center;color:var(--dt3)"><div style="font-size:48px;margin-bottom:12px">📭</div><div style="font-weight:700">No programs configured</div><button class="btn" style="margin-top:16px;background:var(--dac);color:#000;border:none;font-weight:800" onclick="window.openCreateProgramModal()">+ Create First Program</button></div>`
+            ? `<div style="padding:60px;text-align:center;color:var(--dt3)"><div style="font-size:48px;margin-bottom:12px">\u00f0\u0178\u201c\u2039</div><div style="font-weight:700">No programs configured</div><button class="btn" style="margin-top:16px;background:var(--dac);color:#000;border:none;font-weight:800" onclick="window.openCreateProgramModal()">+ Create First Program</button></div>`
             : `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">${programCards}</div>`
         }
         </div>`;
 }
 
-// ── CREATE PROGRAM MODAL ────────────────────────────────────────────────────
+// -- CREATE PROGRAM MODAL ----------------------------------------------------
 window.openCreateProgramModal = () => {
     const partners = (state.programs || [])
         .map(p => p.partnerName || p.partnerId)
@@ -3587,6 +3686,23 @@ window.openCreateProgramModal = () => {
                     <input type="text" id="np-holidays" placeholder="e.g. Sunday, 17-8" style="background:var(--s3);border-color:var(--b2)">
                 </div>
             </div>
+            <div style="background:var(--s2); border:1px solid var(--b1); border-radius:8px; padding:16px;">
+                <label style="color:var(--ac); font-weight:800; font-size:11px; text-transform:uppercase; display:block; margin-bottom:12px">Commission Config</label>
+                <div style="display:flex; gap:0; border:1px solid var(--b2); border-radius:8px; overflow:hidden; width:fit-content; margin-bottom:12px">
+                    <button id="npCommBtn_pct" type="button" onclick="window._setNPCCommissionMode('percentage')" style="padding:7px 18px; font-weight:700; font-size:var(--text-sm); border:none; cursor:pointer; background:var(--ac); color:#000; transition:all 0.2s">% Pct</button>
+                    <button id="npCommBtn_fix" type="button" onclick="window._setNPCCommissionMode('fixed')" style="padding:7px 18px; font-weight:700; font-size:var(--text-sm); border:none; cursor:pointer; background:var(--s3); color:var(--t2); transition:all 0.2s">Rp Fixed</button>
+                </div>
+                <input type="hidden" id="np-commType" value="percentage">
+                <div id="npCommField_pct">
+                    <label style="font-size:11px; color:var(--t3)">Rate (%)</label>
+                    <input type="number" id="np-commRate" placeholder="e.g. 10" value="10" style="background:var(--s3);border-color:var(--ac)">
+                </div>
+                <div id="npCommField_fix" style="display:none">
+                    <label style="font-size:11px; color:var(--t3)">Fixed Fee (Rp)</label>
+                    <input type="number" id="np-commFixed" placeholder="e.g. 5000" value="5000" style="background:var(--s3);border-color:var(--ac)">
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label>Eligible Models (comma separated)</label>
                 <input type="text" id="np-models" placeholder="e.g. Zeeho AE8, Zeeho AE2" style="background:var(--s3);border-color:var(--b2)">
@@ -3602,7 +3718,7 @@ window.openCreateProgramModal = () => {
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>⚙️</span> Create New Program`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00e2\u017e\u2022</span> Create New Program`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
@@ -3627,11 +3743,16 @@ window.saveNewProgram = () => {
     const colorMap = { tangkas: '#7C3AED', maka: '#16A34A', united: '#EA580C' };
 
     const newId = 'P-' + shortName.toUpperCase().replace(/\s+/g, '-').slice(0, 8) + '-' + type.slice(0, 3).toUpperCase();
+    const commType = document.getElementById('np-commType')?.value || 'percentage';
+
     const newProg = {
         id: newId, name, shortName, partnerId, partnerName: partnerNames[partnerId] || partnerId,
         type, dailyPrice, gracePeriod, minSalary, targetScore, contractDays,
         holidays, eligibleModels, heroPhoto, color: colorMap[partnerId] || 'var(--dac)',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        commissionType: commType,
+        commissionRate: commType === 'percentage' ? parseFloat(document.getElementById('np-commRate')?.value || 10) / 100 : 0,
+        commissionFixed: commType === 'fixed' ? parseInt(document.getElementById('np-commFixed')?.value || 5000) : 0
     };
 
     if (!state.programs) state.programs = [];
@@ -3640,7 +3761,7 @@ window.saveNewProgram = () => {
     renderProgramsTable();
 
     const toast = document.getElementById('adm-toast');
-    if (toast) { toast.textContent = `✅ Program "${name}" created (${newId})`; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+    if (toast) { toast.textContent = `? Program "${name}" created (${newId})`; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
 };
 
 window.openAssetPoolModal = (programId) => {
@@ -3708,7 +3829,7 @@ window.openAssetPoolModal = (programId) => {
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>🔄</span> Manage Asset Pool for ${p.shortName}`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00f0\u0178\u201c\u00a6</span> Manage Asset Pool for ${p.shortName}`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
@@ -3743,7 +3864,7 @@ window.openProgramUsersModal = (programId) => {
                             <div style="padding:10px; border-bottom:1px solid var(--b1); display:flex; justify-content:space-between; align-items:center">
                                 <div>
                                     <div style="font-weight:700; font-size:var(--text-sm)">${v.customer}</div>
-                                    <div style="font-size:var(--text-xs); color:var(--t3)">${v.plate} · ${v.model}</div>
+                                    <div style="font-size:var(--text-xs); color:var(--t3)">${v.plate} \u00ef\u00bf\u00bd ${v.model}</div>
                                 </div>
                                 <div style="text-align:right">
                                     <div style="font-size:10px; font-weight:800; color:var(--ac)">${prog ? prog.percent : 0}%</div>
@@ -3779,7 +3900,7 @@ window.openProgramUsersModal = (programId) => {
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>👥</span> RTO Community for ${p.shortName}`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00f0\u0178\u00a4\u009d</span> RTO Community for ${p.shortName}`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
@@ -3808,11 +3929,11 @@ window.openProgramFleetModal = (programId) => {
         ? `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--dt3);font-size:var(--text-sm)">No vehicles in this program yet</td></tr>`
         : vs.map(v => {
             const user = state.users.find(u => u.name === v.customer) || {};
-            const phone = user.phone || v.phone || '—';
-            const driver = v.customer || v.userId ? `<div style="font-size:var(--text-sm);color:var(--dt1);font-weight:600">${v.customer || '—'}</div><div style="font-size:10px;color:var(--dt3)">${v.userId || ''}</div>` : '<span style="color:var(--dt3);font-size:var(--text-sm)">—</span>';
+            const phone = user.phone || v.phone || "\u00ef\u00bf\u00bd";
+            const driver = v.customer || v.userId ? `<div style="font-size:var(--text-sm);color:var(--dt1);font-weight:600">${v.customer || "\u00ef\u00bf\u00bd"}</div><div style="font-size:10px;color:var(--dt3)">${v.userId || ""}</div>` : "<span style='color:var(--dt3);font-size:var(--text-sm)'>" + "\u2014" + "</span>";
             const assignBtn = v.status === 'available' && progApps.length > 0
                 ? `<button class="btn" style="font-size:10px;padding:3px 10px;background:var(--dac1);border:1px solid rgba(251,191,36,.3);color:var(--dac)"
-                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">⚡ Assign</button>`
+                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">?? Assign</button>`
                 : v.status === 'available'
                     ? `<span style="font-size:10px;color:var(--dt3)">No pending apps</span>`
                     : '';
@@ -3821,8 +3942,8 @@ window.openProgramFleetModal = (programId) => {
                 <td style="padding:10px;">${driver}</td>
                 <td style="padding:10px;font-size:var(--text-xs);color:var(--dt2)">${phone}</td>
                 <td style="padding:10px;">${statusChip(v.status)}</td>
-                <td style="padding:10px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);color:var(--dt1)"><div style="font-weight:700">${v.plate || v.id}</div><div style="font-size:10px;color:var(--dt3)">${v.model || '—'}</div></td>
-                <td style="padding:10px;font-size:var(--text-xs);color:var(--dt3)">${v.credits !== undefined ? v.credits + 'd' : '—'}</td>
+                <td style="padding:10px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);color:var(--dt1)"><div style="font-weight:700">${v.plate || v.id}</div><div style="font-size:10px;color:var(--dt3)">${v.model || "\u00ef\u00bf\u00bd"}</div></td>
+                <td style="padding:10px;font-size:var(--text-xs);color:var(--dt3)">${v.credits !== undefined ? v.credits + "d" : "\u00ef\u00bf\u00bd"}</td>
                 <td style="padding:10px;">${assignBtn}</td>
             </tr>`;
         }).join('');
@@ -3874,12 +3995,12 @@ window.openProgramFleetModal = (programId) => {
             ${vs.length > 0 ? `<div style="padding:10px 16px;margin-top:16px;border:1px solid var(--db1);border-radius:8px;background:var(--ds2);display:flex;justify-content:space-between;align-items:center">
                 <div style="font-size:var(--text-xs);color:var(--dt3)">${availableCount} vehicle${availableCount !== 1 ? 's' : ''} available for assignment</div>
                 ${availableCount > 0 && progApps.length > 0 ? `<button class="btn btn-secondary" style="font-size:var(--text-xs);padding:6px 14px" 
-                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">⚡ Assign Next Applicant</button>` : ''}
+                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">?? Assign Next Applicant</button>` : ''}
             </div>` : ''}
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>🏍️</span> Fleet Details for ${p.shortName}`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00f0\u0178\u008f\u008d\u00ef\u00b8\u008f</span> Fleet Details for ${p.shortName}`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };

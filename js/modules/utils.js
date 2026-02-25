@@ -1,21 +1,18 @@
 /* Utility Functions */
 
 function formatRupiah(number) {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(number);
+    if (!number && number !== 0) return 'Rp. 0';
+    return 'Rp. ' + Math.round(number).toLocaleString('id-ID');
 }
 
 function formatShortCurrency(number) {
-    if (!number && number !== 0) return 'Rp0';
-    if (Math.abs(number) >= 1000000000) return `Rp${(number / 1000000000).toFixed(1)}B`;
-    if (Math.abs(number) >= 1000000) return `Rp${(number / 1000000).toFixed(1)}M`;
-    if (Math.abs(number) >= 1000) return `Rp${(number / 1000).toFixed(0)}K`;
-    return `Rp${number}`;
+    if (!number && number !== 0) return 'Rp 0';
+    if (Math.abs(number) >= 1000000000) return `Rp ${(number / 1000000000).toFixed(2)}.B`;
+    if (Math.abs(number) >= 1000000) return `Rp ${(number / 1000000).toFixed(2)}.M`;
+    if (Math.abs(number) >= 1000) return `Rp ${(number / 1000).toFixed(2)}.K`;
+    return `Rp ${Math.round(number)}`;
 }
+
 
 function formatDate(isoString) {
     if (!isoString) return '-';

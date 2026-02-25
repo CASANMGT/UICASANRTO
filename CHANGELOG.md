@@ -2,6 +2,26 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.9.0] - 2026-02-26
+
+### 🎨 UI/UX Consistency Polish
+- **Emoji & Icon Restoration:** Fixed broken emoji placeholders and icons throughout the application (GPS, Maps, and Lists).
+- **Premium Aesthetics:** Standardized typography (IBM Plex Mono) and spacing for a more unified, state-of-the-art feel.
+- **Race Condition Resolution:** Fixed UI initialization failures that prevented the dashboard from loading correctly.
+
+### 📡 GPS & Map Stability
+- **Syntax Integrity:** Fixed HTML syntax corruption in GPS lists and Map popups that caused rendering bugs.
+- **Enhanced Observability:** Restored missing emojis and visual status indicators in the live tracker.
+
+### 🛠️ Functional Refinements
+- **Expandable Detail Panels:** Added expandable sections to User, Renter, Transaction, and Vehicle lists for deeper data access.
+- **Program Management UX:** Optimized the program management interface and enhanced the Program Creation modal with concurrent scheme settings.
+- **Currency Standardization:** Unified all financial data display to Indonesian Rupiah (Rp.) with proper dot-separation.
+
+### 🔧 Core System Hardening
+- **Namespace Safety:** Resolved duplicate function declarations and namespace collisions in `ui.js`.
+- **Loading Optimization:** Corrected script execution order in `index.html` to resolve `ReferenceError` issues.
+
 ## [1.8.0] - 2026-02-25
 
 ### 💰 Dual-Mode Commission System
