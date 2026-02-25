@@ -1,23 +1,23 @@
-/* Store & Data Generation */
+﻿/* Store & Data Generation */
 
 /* Store & Data Generation */
 
-export const partners = [
+const partners = [
     { id: 'tangkas', name: 'Tangkas Motors', color: '#A78BFA' },
     { id: 'maka', name: 'Maka Motors', color: '#60A5FA' },
     { id: 'united', name: 'United Motors', color: '#FB923C' }
 ];
 
 const initialPrograms = [
-    { id: 'P-TK-RTO', name: 'Zeeho RTO', shortName: 'Zeeho', partnerId: 'tangkas', type: 'RTO', price: 38000, grace: 7, promotions: [{ id: 'PRMO-1', title: 'Free Helmet & Jacket', type: 'gear', status: 'active' }, { id: 'PRMO-2', title: 'First Month 50% Off', type: 'discount', status: 'expired' }] },
-    { id: 'P-TK-RNT', name: 'Zeeho Rent', shortName: 'Zeeho', partnerId: 'tangkas', type: 'Rent', price: 30000, grace: 3, promotions: [] },
-    { id: 'P-MK-RTO', name: 'Maka RTO', shortName: 'Maka', partnerId: 'maka', type: 'RTO', price: 35000, grace: 7, promotions: [{ id: 'PRMO-3', title: 'Free Battery Swap 1st Month', type: 'service', status: 'active' }] },
-    { id: 'P-MK-RNT', name: 'Maka Rent', shortName: 'Maka', partnerId: 'maka', type: 'Rent', price: 28000, grace: 3, promotions: [] },
-    { id: 'P-UN-RTO', name: 'United RTO', shortName: 'Unitd', partnerId: 'united', type: 'RTO', price: 32000, grace: 7, promotions: [{ id: 'PRMO-4', title: 'Cashback Rp 50.000', type: 'cashback', status: 'active' }] },
-    { id: 'P-UN-RNT', name: 'United Rent', shortName: 'Unitd', partnerId: 'united', type: 'Rent', price: 25000, grace: 3, promotions: [] }
+    { id: 'P-TK-RTO', name: 'Zeeho RTO', shortName: 'Zeeho', partnerId: 'tangkas', type: 'RTO', price: 38000, grace: 7, commissionType: 'percentage', commissionRate: 0.10, commissionFixed: 0, eligibleModels: ['Zeeho AE8', 'Zeeho AE2'], minSalary: 4500000, promotions: [{ id: 'PRMO-1', title: 'Free Helmet & Jacket', type: 'gear', status: 'active' }, { id: 'PRMO-2', title: 'First Month 50% Off', type: 'discount', status: 'expired' }] },
+    { id: 'P-TK-RNT', name: 'Zeeho Rent', shortName: 'Zeeho', partnerId: 'tangkas', type: 'Rent', price: 30000, grace: 3, commissionType: 'fixed', commissionRate: 0.12, commissionFixed: 5000, eligibleModels: ['Zeeho AE8', 'Zeeho AE2', 'Tangkas V8'], minSalary: 0, promotions: [] },
+    { id: 'P-MK-RTO', name: 'Maka RTO', shortName: 'Maka', partnerId: 'maka', type: 'RTO', price: 35000, grace: 7, commissionType: 'percentage', commissionRate: 0.10, commissionFixed: 0, eligibleModels: ['Maka One', 'Maka Pro'], minSalary: 5000000, promotions: [{ id: 'PRMO-3', title: 'Free Battery Swap 1st Month', type: 'service', status: 'active' }] },
+    { id: 'P-MK-RNT', name: 'Maka Rent', shortName: 'Maka', partnerId: 'maka', type: 'Rent', price: 28000, grace: 3, commissionType: 'fixed', commissionRate: 0.12, commissionFixed: 3000, eligibleModels: ['Maka One'], minSalary: 0, promotions: [] },
+    { id: 'P-UN-RTO', name: 'United RTO', shortName: 'Unitd', partnerId: 'united', type: 'RTO', price: 32000, grace: 7, commissionType: 'percentage', commissionRate: 0.08, commissionFixed: 0, eligibleModels: ['United MX1200', 'United T1800', 'United TX1800'], minSalary: 4000000, promotions: [{ id: 'PRMO-4', title: 'Cashback Rp 50.000', type: 'cashback', status: 'active' }] },
+    { id: 'P-UN-RNT', name: 'United Rent', shortName: 'Unitd', partnerId: 'united', type: 'Rent', price: 25000, grace: 3, commissionType: 'fixed', commissionRate: 0.08, commissionFixed: 3000, eligibleModels: ['United MX1200'], minSalary: 0, promotions: [] }
 ];
 
-export let programs = [...initialPrograms];
+let programs = [...initialPrograms];
 
 // Seeded random for consistent demo data
 let seed = 1234;
@@ -39,10 +39,11 @@ const kecamatans = ['Kebayoran Baru', 'Setiabudi', 'Menteng', 'Tebet', 'Cilandak
 const kotas = ['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Timur', 'Jakarta Barat', 'Jakarta Utara'];
 const occupations = ['ojol', 'msme', 'private_employee', 'civil_servant', 'freelancer', 'logistics', 'student', 'other'];
 const employers = ['Gojek', 'Grab', 'Shopee Express', 'J&T', 'SiCepat', 'Tokopedia', 'PT Maju Jaya', 'CV Sentosa', 'Warung Barokah', 'PNS DKI'];
-const incomeRanges = ['< 3jt', '3–5jt', '5–10jt', '> 10jt'];
+const incomeRanges = ['< 3jt', '35jt', '510jt', '> 10jt'];
 const relationships = ['spouse', 'parent', 'sibling', 'friend', 'employer'];
 
-export const state = {
+// Initialize global state if not already present
+window.state = window.state || {
     vehicles: [],
     transactions: [],
     gpsDevices: [],
@@ -55,8 +56,10 @@ export const state = {
         program: 'all'
     }
 };
+// Alias for backward compatibility if needed, but we should prefer window.state
+const state = window.state;
 
-export const initData = () => {
+window.initData = () => {
     state.programs = [...programs];
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
@@ -198,9 +201,17 @@ export const initData = () => {
         const amount = creditDays * v.dailyRate;
         const fees = (v.programType === 'RTO' && random() < 0.2) ? 25000 : 0; // Occasional fee
 
-        // Partner share calculation (mock)
-        const partnerShare = amount * 0.9;
-        const casanShare = amount * 0.1;
+        // Partner/CASAN share calculation using program's commission type
+        const prog = programs.find(p => p.id === v.programId);
+        const commissionType = prog?.commissionType ?? 'percentage';
+        let casanShare;
+        if (commissionType === 'fixed') {
+            casanShare = (prog.commissionFixed ?? 5000) * creditDays;
+        } else {
+            const commissionRate = prog?.commissionRate ?? 0.10;
+            casanShare = amount * commissionRate;
+        }
+        const partnerShare = amount - casanShare;
 
         state.transactions.push({
             id: `TX-${randInt(10000, 99999)}`,
@@ -291,7 +302,7 @@ export const initData = () => {
             status: devStatus,
             lat: devStatus === 'Online' ? -6.2 + (random() - 0.5) * 0.3 : null,
             lng: devStatus === 'Online' ? 106.8 + (random() - 0.5) * 0.4 : null,
-            address: devStatus === 'Online' ? address : '—',
+            address: devStatus === 'Online' ? address : '',
             lastPing: lastPingDate.toISOString(),
             lastPingTime: lastPingDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
             signalStrength: devStatus === 'Online' ? randArr(['Excellent', 'Good', 'Fair']) : 'Poor',
@@ -318,22 +329,22 @@ export const initData = () => {
             firmwareUpdateRequired: true,
             sim: { number: '-', carrier: '-', dataUsedMB: 0, dataLimitMB: 500, expiry: '-', status: 'Inactive', monthlyCost: 0 },
             vehicleId: null,
-            vehiclePlate: '—',
+            vehiclePlate: '',
             installDate: null,
-            mountPosition: '—',
+            mountPosition: '',
             relayConnected: false,
             status: 'Offline',
             lastPing: null,
             signalStrength: 'None',
             uptime30d: 0,
-            immobilizationState: '—',
+            immobilizationState: '',
             purchaseCost: 350000,
             monthlyCost: 0,
             warrantyExpiry: new Date(now + 365 * oneDay).toISOString().split('T')[0],
         });
     }
 
-    // ── Generate Users (Strict 1:1 mapping) ──────────────────────────────
+    //  Generate Users (Strict 1:1 mapping) 
     const assignedVehicles = state.vehicles.filter(v => v.customer);
     const userCount = assignedVehicles.length;
     for (let u = 0; u < userCount; u++) {
@@ -378,7 +389,7 @@ export const initData = () => {
         state.users.push(user);
     }
 
-    // Link users ↔ vehicles (Strict 1:1 ownership constraint)
+    // Link users  vehicles (Strict 1:1 ownership constraint)
     assignedVehicles.forEach((v, idx) => {
         const user = state.users[idx];
         if (!user) return;
@@ -419,7 +430,7 @@ export const initData = () => {
     console.log(`Generated ${state.vehicles.length} vehicles, ${state.transactions.length} transactions, ${state.gpsDevices.length} GPS devices, ${state.users.length} users`);
 };
 
-export const getContextStats = (tab) => {
+window.getStats = (tab) => {
     const fleet = state.vehicles.filter(v => state.filter.partner === 'all' || v.partnerId === state.filter.partner);
     const now = Date.now();
 
@@ -437,7 +448,7 @@ export const getContextStats = (tab) => {
             const activeSchemes = state.programs.length;
             const rtoUnits = fleet.filter(v => v.programType === 'RTO').length;
             const maturity = fleet.length > 0 ? Math.round(fleet.reduce((acc, v) => {
-                const prog = getRtoProgress(v);
+                const prog = getRTOProgress(v);
                 return acc + (prog ? prog.percent : 0);
             }, 0) / fleet.length) : 0;
             const health = 85 + (fleet.length % 12);
@@ -492,7 +503,7 @@ export const getContextStats = (tab) => {
     }
 };
 
-export const getFilteredVehicles = () => {
+window.getFilteredVehicles = () => {
     return state.vehicles.filter(v => {
         // Partner Filter
         if (state.filter.partner !== 'all' && v.partnerId !== state.filter.partner) return false;
@@ -529,7 +540,7 @@ export const getFilteredVehicles = () => {
     });
 };
 
-export const getRtoProgress = (v) => {
+window.getRTOProgress = (v) => {
     if (v.programType !== 'RTO' || !v.startDate || !v.contractMonths) return null;
 
     const start = new Date(v.startDate).getTime();
@@ -543,42 +554,13 @@ export const getRtoProgress = (v) => {
     return { percent, daysLeft, totalDays, daysElapsed: Math.round(elapsedDays) };
 };
 
-export const getStats = () => {
-    // Calculate stats based on CURRENT filtered partner
-
-    const fleet = state.vehicles.filter(v => state.filter.partner === 'all' || v.partnerId === state.filter.partner);
-
-    const active = fleet.filter(v => v.status === 'active').length;
-    const expiring = fleet.filter(v => v.creditExpiry !== null).length;
-    const grace = fleet.filter(v => v.status === 'grace').length;
-    const immobilized = fleet.filter(v => v.status === 'immobilized').length;
-    const paused = fleet.filter(v => v.status === 'paused').length;
-    const available = fleet.filter(v => v.status === 'available').length;
-    const online = fleet.filter(v => v.isOnline).length;
-
-    // Mock Revenue Calculation
-    const revenue = fleet.length * 4500000; // rough estimate
-
-    return {
-        total: fleet.length,
-        active,
-        expiring,
-        grace,
-        immobilized,
-        paused,
-        available,
-        online,
-        revenue
-    };
-};
-
 // CRUD for Programs
-export const addProgram = (p) => {
+window.addProgram = (p) => {
     state.programs.push(p);
     programs = state.programs; // Sync deprecated export
 };
 
-export const updateProgram = (id, data) => {
+window.updateProgram = (id, data) => {
     const idx = state.programs.findIndex(p => p.id === id);
     if (idx !== -1) {
         state.programs[idx] = { ...state.programs[idx], ...data };
@@ -586,12 +568,13 @@ export const updateProgram = (id, data) => {
     }
 };
 
-export const deleteProgram = (id) => {
+window.deleteProgram = (id) => {
     state.programs = state.programs.filter(p => p.id !== id);
     programs = state.programs; // Sync deprecated export
 };
+
 // Real-time Simulation Loop
-export const simulateMovement = () => {
+window.simulateMovement = () => {
     state.vehicles.forEach(v => {
         // Only move online vehicles that aren't immobilized
         if (!v.isOnline || v.status === 'immobilized' || v.status === 'paused') {
@@ -641,3 +624,4 @@ export const simulateMovement = () => {
         }
     });
 };
+

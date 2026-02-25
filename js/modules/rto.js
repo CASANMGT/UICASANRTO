@@ -1,52 +1,53 @@
-/**
+﻿/**
  * RTO Logic extracted from casan-driver-app-v11.html
  */
 
-// ═══ CONSTANTS & DATA ═══
-export const MAIN_PROGS = [
-    { id: 'P-TK-RTO', p: 'tangkas', nm: 'Zeeho RTO', ty: 'RTO', dr: 38000, mi: 3500000, gd: 7, ic: '⚡', bg: '#f5f3ff', bc: '#7C3AED' },
-    { id: 'P-TK-RENT', p: 'tangkas', nm: 'Tangkas Rental', ty: 'Rent', dr: 28000, mi: 2000000, gd: 5, ic: '🔵', bg: '#eff6ff', bc: '#2563EB' },
-    { id: 'P-MK-RTO', p: 'maka', nm: 'Maka Cavalry RTO', ty: 'RTO', dr: 35000, mi: 3500000, gd: 7, ic: '🟢', bg: '#f0fdf4', bc: '#16A34A' },
-    { id: 'P-MK-RENT', p: 'maka', nm: 'Maka Cavalry Rent', ty: 'Rent', dr: 25000, mi: 2000000, gd: 7, ic: '💚', bg: '#f0fdf4', bc: '#16A34A' },
-    { id: 'P-UT-RTO', p: 'united', nm: 'United RTO', ty: 'RTO', dr: 32000, mi: 3500000, gd: 10, ic: '🟠', bg: '#fff7ed', bc: '#EA580C' },
-    { id: 'P-UT-RENT', p: 'united', nm: 'United Share', ty: 'Rent', dr: 22000, mi: 2000000, gd: 5, ic: '🌊', bg: '#f0f9ff', bc: '#0284C7' },
+//  CONSTANTS & DATA 
+// window.state is already defined in store.js
+const MAIN_PROGS = [
+    { id: 'P-TK-RTO', p: 'tangkas', nm: 'Zeeho RTO', ty: 'RTO', dr: 38000, mi: 4500000, gd: 7, ic: 'E', bg: '#f5f3ff', bc: '#7C3AED' },
+    { id: 'P-TK-RENT', p: 'tangkas', nm: 'Tangkas Rental', ty: 'Rent', dr: 28000, mi: 2000000, gd: 5, ic: 'B', bg: '#eff6ff', bc: '#2563EB' },
+    { id: 'P-MK-RTO', p: 'maka', nm: 'Maka Cavalry RTO', ty: 'RTO', dr: 35000, mi: 3500000, gd: 7, ic: 'G', bg: '#f0fdf4', bc: '#16A34A' },
+    { id: 'P-MK-RENT', p: 'maka', nm: 'Maka Cavalry Rent', ty: 'Rent', dr: 25000, mi: 2000000, gd: 7, ic: 'G', bg: '#f0fdf4', bc: '#16A34A' },
+    { id: 'P-UT-RTO', p: 'united', nm: 'United RTO', ty: 'RTO', dr: 32000, mi: 3500000, gd: 10, ic: 'O', bg: '#fff7ed', bc: '#EA580C' },
+    { id: 'P-UT-RENT', p: 'united', nm: 'United Share', ty: 'Rent', dr: 22000, mi: 2000000, gd: 5, ic: 'W', bg: '#f0f9ff', bc: '#0284C7' },
 ];
 
-export const PARTNERS = {
-    tangkas: { name: 'Tangkas Motors', ic: '⚡', area: 'Jakarta Pusat', c: '#7C3AED' },
-    maka: { name: 'Maka Motors', ic: '🟢', area: 'Jakarta Selatan', c: '#16A34A' },
-    united: { name: 'United Motors', ic: '🟠', area: 'Jakarta Timur', c: '#EA580C' }
+const PARTNERS = {
+    tangkas: { name: 'Tangkas Motors', ic: 'E', area: 'Jakarta Pusat', c: '#7C3AED' },
+    maka: { name: 'Maka Motors', ic: 'G', area: 'Jakarta Selatan', c: '#16A34A' },
+    united: { name: 'United Motors', ic: 'O', area: 'Jakarta Timur', c: '#EA580C' }
 };
 
-export const DEALER_LOCATIONS = {
+const DEALER_LOCATIONS = {
     tangkas: { name: 'Tangkas Motors', addr: 'Jl. Kemayoran Baru No. 22, Jakarta Pusat', lat: -6.159, lng: 106.852, hours: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'] },
     maka: { name: 'Maka Motors', addr: 'Jl. Fatmawati Raya No. 88, Jakarta Selatan', lat: -6.286, lng: 106.793, hours: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00'] },
     united: { name: 'United Motors', addr: 'Jl. Raya Bekasi KM 18, Jakarta Timur', lat: -6.218, lng: 106.902, hours: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'] },
 };
 
-export const DOCS = {
+const DOCS = {
     id: [
-        { id: 'ktp', n: 'KTP Asli', d: 'KTP aktif', tag: 'wajib', ic: '🪪', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP' },
-        { id: 'kk', n: 'Kartu Keluarga', d: 'KK terbaru', tag: 'wajib', ic: '👨‍👩‍👧', img: 'https://placehold.co/600x800/eeeeee/999999?text=Kartu+Keluarga' },
-        { id: 'sim', n: 'SIM C Aktif', d: 'SIM C motor', tag: 'wajib', ic: '🪪', img: 'https://placehold.co/600x400/eeeeee/999999?text=SIM+C' },
-        { id: 'selfie', n: 'Selfie + KTP', d: 'Foto memegang KTP', tag: 'wajib', ic: '🤳', img: 'https://placehold.co/400x600/eeeeee/999999?text=Selfie' }
+        { id: 'ktp', n: 'KTP Asli', d: 'KTP aktif', tag: 'wajib', ic: '', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP' },
+        { id: 'kk', n: 'Kartu Keluarga', d: 'KK terbaru', tag: 'wajib', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Kartu+Keluarga' },
+        { id: 'sim', n: 'SIM C Aktif', d: 'SIM C motor', tag: 'wajib', ic: '', img: 'https://placehold.co/600x400/eeeeee/999999?text=SIM+C' },
+        { id: 'selfie', n: 'Selfie + KTP', d: 'Foto memegang KTP', tag: 'wajib', ic: '', img: 'https://placehold.co/400x600/eeeeee/999999?text=Selfie' }
     ],
     work: [
-        { id: 'slip', n: 'Slip Gaji / Screenshot Income', d: '3 bulan terakhir', tag: 'wajib', ic: '💰', img: 'https://placehold.co/600x800/eeeeee/999999?text=Slip+Gaji' },
-        { id: 'rekening', n: 'Rekening Koran', d: 'Mutasi 3 bulan', tag: 'wajib', ic: '🏦', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rekening+Koran' },
-        { id: 'sktm', n: 'Surat Keterangan Kerja', d: 'Dari platform/perusahaan', tag: 'opt', ic: '📄', img: 'https://placehold.co/600x800/eeeeee/999999?text=Surat+Keterangan' },
-        { id: 'npwp', n: 'NPWP', d: 'Jika ada', tag: 'opt', ic: '📋', img: 'https://placehold.co/600x400/eeeeee/999999?text=NPWP' }
+        { id: 'slip', n: 'Slip Gaji / Screenshot Income', d: '3 bulan terakhir', tag: 'wajib', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Slip+Gaji' },
+        { id: 'rekening', n: 'Rekening Koran', d: 'Mutasi 3 bulan', tag: 'wajib', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rekening+Koran' },
+        { id: 'sktm', n: 'Surat Keterangan Kerja', d: 'Dari platform/perusahaan', tag: 'opt', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Surat+Keterangan' },
+        { id: 'npwp', n: 'NPWP', d: 'Jika ada', tag: 'opt', ic: '', img: 'https://placehold.co/600x400/eeeeee/999999?text=NPWP' }
     ],
     boost: [
-        { id: 'tabungan', n: 'Bukti Tabungan >Rp 1 Jt', d: '+4 pts', tag: 'boost', ic: '💳', img: 'https://placehold.co/600x800/eeeeee/999999?text=Tabungan' },
-        { id: 'bpjs_tk', n: 'BPJS Ketenagakerjaan', d: '+3 pts', tag: 'boost', ic: '🛡️', img: 'https://placehold.co/600x400/eeeeee/999999?text=BPJS' },
-        { id: 'ref_ojol', n: 'Screenshot Rating OJOL ≥4.5', d: '+2 pts', tag: 'boost', ic: '⭐', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rating+Ojol' },
-        { id: 'gu_ktp', n: 'KTP Penjamin', d: '+5 pts', tag: 'boost', ic: '👤', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP+Penjamin' },
-        { id: 'sertif', n: 'Sertifikat / BPKB Kendaraan', d: '+3 pts', tag: 'boost', ic: '📜', img: 'https://placehold.co/600x800/eeeeee/999999?text=BPKB' }
+        { id: 'tabungan', n: 'Bukti Tabungan >Rp 1 Jt', d: '+4 pts', tag: 'boost', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Tabungan' },
+        { id: 'bpjs_tk', n: 'BPJS Ketenagakerjaan', d: '+3 pts', tag: 'boost', ic: '', img: 'https://placehold.co/600x400/eeeeee/999999?text=BPJS' },
+        { id: 'ref_ojol', n: 'Screenshot Rating OJOL 4.5', d: '+2 pts', tag: 'boost', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=Rating+Ojol' },
+        { id: 'gu_ktp', n: 'KTP Penjamin', d: '+5 pts', tag: 'boost', ic: '', img: 'https://placehold.co/600x400/eeeeee/999999?text=KTP+Penjamin' },
+        { id: 'sertif', n: 'Sertifikat / BPKB Kendaraan', d: '+3 pts', tag: 'boost', ic: '', img: 'https://placehold.co/600x800/eeeeee/999999?text=BPKB' }
     ]
 };
 
-export const ADMIN_APPS = [
+const ADMIN_APPS = [
     { id: 'CASAN-A01', nm: 'Ahmad Rizki', ph: '+62 812-3456-7890', ptn: 'tangkas', prog: 'P-TK-RTO', area: 'Kemayoran', prof: 'OJOL', inc: 4800000, score: 78, dec: 'approved', miss: ['npwp'], submitted: '2 jam lalu', adj: 0, note: '', ovlog: '' },
     { id: 'CASAN-A02', nm: 'Budi Santoso', ph: '+62 821-9876-5432', ptn: 'maka', prog: 'P-MK-RENT', area: 'Tebet', prof: 'Wiraswasta', inc: 3200000, score: 55, dec: 'review', miss: ['rekening', 'sktm'], submitted: '4 jam lalu', adj: 0, note: '', ovlog: '' },
     { id: 'CASAN-A03', nm: 'Dewi Lestari', ph: '+62 857-1111-2222', ptn: 'united', prog: 'P-UT-RTO', area: 'Bekasi Barat', prof: 'Karyawan', inc: 6500000, score: 82, dec: 'approved', miss: [], submitted: '6 jam lalu', adj: 0, note: '', ovlog: '' },
@@ -54,34 +55,47 @@ export const ADMIN_APPS = [
     { id: 'CASAN-A05', nm: 'Fitri Handayani', ph: '+62 877-5555-6666', ptn: 'maka', prog: 'P-MK-RTO', area: 'Cakung', prof: 'OJOL', inc: 5200000, score: 71, dec: 'approved', miss: ['npwp'], submitted: '1 hari lalu', adj: 0, note: '', ovlog: '' },
     { id: 'CASAN-A06', nm: 'Gunawan Wibowo', ph: '+62 811-7777-8888', ptn: 'united', prog: 'P-UT-RENT', area: 'Serpong', prof: 'Karyawan Kontrak', inc: 2900000, score: 49, dec: 'pending', miss: ['rekening'], submitted: '1 hari lalu', adj: 0, note: '', ovlog: '' },
     { id: 'CASAN-A07', nm: 'Hendra Kusuma', ph: '+62 896-9999-0000', ptn: 'tangkas', prog: 'P-TK-RTO', area: 'Penjaringan', prof: 'PNS', inc: 7200000, score: 88, dec: 'approved', miss: [], submitted: '2 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A08', nm: 'Indra Wijaya', ph: '+62 812-1111-2222', ptn: 'maka', prog: 'P-MK-RTO', area: 'Pasar Minggu', prof: 'OJOL', inc: 4500000, score: 65, dec: 'pending', miss: ['ktp'], submitted: '2 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A09', nm: 'Joko Susilo', ph: '+62 813-2222-3333', ptn: 'united', prog: 'P-UT-RTO', area: 'Pulogadung', prof: 'Buruh', inc: 3800000, score: 52, dec: 'review', miss: ['slip'], submitted: '3 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A10', nm: 'Kartini Putri', ph: '+62 814-3333-4444', ptn: 'tangkas', prog: 'P-TK-RENT', area: 'Gambir', prof: 'Guru', inc: 5500000, score: 74, dec: 'approved', miss: [], submitted: '3 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A11', nm: 'Lukman Hakim', ph: '+62 815-4444-5555', ptn: 'maka', prog: 'P-MK-RENT', area: 'Jagakarsa', prof: 'Driver Grab', inc: 4200000, score: 61, dec: 'pending', miss: ['npwp'], submitted: '4 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A12', nm: 'Maya Sari', ph: '+62 816-5555-6666', ptn: 'united', prog: 'P-UT-RENT', area: 'Cengkareng', prof: 'Sales', inc: 3100000, score: 45, dec: 'pending_docs', miss: ['rekening', 'kk'], submitted: '4 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A13', nm: 'Nanang Kosim', ph: '+62 817-6666-7777', ptn: 'tangkas', prog: 'P-TK-RTO', area: 'Senen', prof: 'Kurir', inc: 3900000, score: 58, dec: 'review', miss: ['sktm'], submitted: '5 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A14', nm: 'Oki Pratama', ph: '+62 818-7777-8888', ptn: 'maka', prog: 'P-MK-RTO', area: 'Mampang', prof: 'OJOL', inc: 4900000, score: 72, dec: 'approved', miss: [], submitted: '5 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A15', nm: 'Puji Astuti', ph: '+62 819-8888-9999', ptn: 'united', prog: 'P-UT-RTO', area: 'Kelapa Gading', prof: 'Admin', inc: 4700000, score: 69, dec: 'approved', miss: ['npwp'], submitted: '6 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A16', nm: 'Qori Ramadhan', ph: '+62 820-9999-0000', ptn: 'tangkas', prog: 'P-TK-RENT', area: 'Tanah Abang', prof: 'Freelance', inc: 2500000, score: 38, dec: 'declined', miss: ['slip'], submitted: '6 hari lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A17', nm: 'Rian Hidayat', ph: '+62 821-0000-1111', ptn: 'maka', prog: 'P-MK-RENT', area: 'Pancoran', prof: 'Karyawan', inc: 5800000, score: 76, dec: 'approved', miss: [], submitted: '1 minggu lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A18', nm: 'Siska Amelia', ph: '+62 822-1111-2222', ptn: 'united', prog: 'P-UT-RENT', area: 'Koja', prof: 'SPG', inc: 2800000, score: 42, dec: 'pending', miss: ['kk'], submitted: '1 minggu lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A19', nm: 'Taufik Ismail', ph: '+62 823-2222-3333', ptn: 'tangkas', prog: 'P-TK-RTO', area: 'Menteng', prof: 'Security', inc: 4100000, score: 63, dec: 'pending', miss: ['ktp', 'sim'], submitted: '1 minggu lalu', adj: 0, note: '', ovlog: '' },
+    { id: 'CASAN-A20', nm: 'Umar Bakri', ph: '+62 824-3333-4444', ptn: 'maka', prog: 'P-MK-RTO', area: 'Tebet', prof: 'OJOL', inc: 5100000, score: 75, dec: 'approved', miss: [], submitted: '1 minggu lalu', adj: 0, note: '', ovlog: '' },
 ];
 
-export const WA_SCENARIOS = [
+const WA_SCENARIOS = [
     {
-        k: 'approved', ic: '🎉', nm: 'Approved — Selamat', desc: 'Pengajuan disetujui, info serah terima',
-        tmpl: `Halo {nama}! 🎉\n\nKabar baik dari tim CASAN!\n\nPengajuan motor listrik kamu telah *DISETUJUI*.\n\n📋 App ID: *{app_id}*\n🛵 Program: *{program}*\n⭐ Skor: *{score}/100*\n🏪 Dealer: *{dealer}*\n\nLangkah selanjutnya:\n1. Konfirmasi jadwal serah terima\n2. Siapkan dokumen asli (KTP, SIM C, KK)\n3. Tanda tangan kontrak RTO\n\nHubungi kami untuk informasi lebih lanjut. Selamat bergabung! 🛵⚡`
+        k: 'approved', ic: '', nm: 'Approved  Selamat', desc: 'Pengajuan disetujui, info serah terima',
+        tmpl: `Halo {nama}! \n\nKabar baik dari tim CASAN!\n\nPengajuan motor listrik kamu telah *DISETUJUI*.\n\n App ID: *{app_id}*\n Program: *{program}*\n Skor: *{score}/100*\n Dealer: *{dealer}*\n\nLangkah selanjutnya:\n1. Konfirmasi jadwal serah terima\n2. Siapkan dokumen asli (KTP, SIM C, KK)\n3. Tanda tangan kontrak RTO\n\nHubungi kami untuk informasi lebih lanjut. Selamat bergabung! `
     },
     {
-        k: 'declined', ic: '❌', nm: 'Declined — Penolakan', desc: 'Pengajuan ditolak, saran perbaikan',
-        tmpl: `Halo {nama},\n\nTerima kasih sudah mendaftar di CASAN.\n\nSayang sekali, pengajuan kamu belum bisa kami setujui saat ini.\n\n📋 App ID: *{app_id}*\n⭐ Skor: *{score}/100*\n\nAlasan utama & saran perbaikan:\n• Lengkapi dokumen wajib (KTP, SIM C, Rekening)\n• Tingkatkan skor dengan menambah penjamin\n• Pastikan DSR di bawah 70%\n\nKamu bisa mendaftar kembali dalam 30 hari setelah melengkapi persyaratan. 💪\n\nTim CASAN siap membantu: {dealer}`
+        k: 'declined', ic: '', nm: 'Declined  Penolakan', desc: 'Pengajuan ditolak, saran perbaikan',
+        tmpl: `Halo {nama},\n\nTerima kasih sudah mendaftar di CASAN.\n\nSayang sekali, pengajuan kamu belum bisa kami setujui saat ini.\n\n App ID: *{app_id}*\n Skor: *{score}/100*\n\nAlasan utama & saran perbaikan:\n Lengkapi dokumen wajib (KTP, SIM C, Rekening)\n Tingkatkan skor dengan menambah penjamin\n Pastikan DSR di bawah 70%\n\nKamu bisa mendaftar kembali dalam 30 hari setelah melengkapi persyaratan. \n\nTim CASAN siap membantu: {dealer}`
     },
     {
-        k: 'review', ic: '🔍', nm: 'Review/Pending — Proses', desc: 'Aplikasi masih dalam review manual',
-        tmpl: `Halo {nama}! 👋\n\nPengajuan motor listrik kamu sudah kami terima.\n\n📋 App ID: *{app_id}*\n🛵 Program: *{program}*\n⭐ Skor: *{score}/100*\n\nSaat ini aplikasimu sedang dalam proses *review manual* oleh tim analis kami.\n\n⏰ Estimasi: 1–3 hari kerja\n\nKamu akan kami hubungi kembali setelah proses selesai. Pastikan nomor WhatsApp aktif ya!\n\nTim CASAN — {dealer}`
+        k: 'review', ic: '', nm: 'Review/Pending  Proses', desc: 'Aplikasi masih dalam review manual',
+        tmpl: `Halo {nama}! \n\nPengajuan motor listrik kamu sudah kami terima.\n\n App ID: *{app_id}*\n Program: *{program}*\n Skor: *{score}/100*\n\nSaat ini aplikasimu sedang dalam proses *review manual* oleh tim analis kami.\n\n Estimasi: 13 hari kerja\n\nKamu akan kami hubungi kembali setelah proses selesai. Pastikan nomor WhatsApp aktif ya!\n\nTim CASAN  {dealer}`
     },
     {
-        k: 'missing_docs', ic: '📋', nm: 'Missing Docs — Reminder', desc: 'Pengingat dokumen yang masih kurang',
-        tmpl: `Halo {nama}! 📋\n\nPengajuanmu (App ID: *{app_id}*) hampir lengkap!\n\nMasih ada beberapa dokumen yang perlu dilengkapi:\n\n{missing_docs}\n\nCara kirim:\n1. Foto/scan dokumen yang jelas\n2. Kirim via WhatsApp ke nomor ini\n3. Sebutkan App ID: *{app_id}*\n\nDokumen lengkap = proses lebih cepat! 🚀\n\nTim CASAN — {dealer}`
+        k: 'missing_docs', ic: '', nm: 'Missing Docs  Reminder', desc: 'Pengingat dokumen yang masih kurang',
+        tmpl: `Halo {nama}! \n\nPengajuanmu (App ID: *{app_id}*) hampir lengkap!\n\nMasih ada beberapa dokumen yang perlu dilengkapi:\n\n{missing_docs}\n\nCara kirim:\n1. Foto/scan dokumen yang jelas\n2. Kirim via WhatsApp ke nomor ini\n3. Sebutkan App ID: *{app_id}*\n\nDokumen lengkap = proses lebih cepat! \n\nTim CASAN  {dealer}`
     },
 ];
 
-export const DIM_DEFAULTS = [
+const DIM_DEFAULTS = [
     { k: 'id', l: 'Identitas', max: 18, c: '#14B8A6' }, { k: 'inc', l: 'Penghasilan', max: 22, c: '#16A34A' },
     { k: 'job', l: 'Pekerjaan', max: 15, c: '#2563EB' }, { k: 'fam', l: 'Keluarga', max: 12, c: '#7C3AED' },
     { k: 'crd', l: 'Kredit', max: 18, c: '#D97706' }, { k: 'doc', l: 'Dokumen', max: 15, c: '#0F766E' },
 ];
 
-export const THRESH_DEFAULTS = [
+const THRESH_DEFAULTS = [
     { k: 'auto', l: 'Auto-Approve', min: 80, bg: 'var(--dg1)', c: 'var(--dg)' },
     { k: 'approve', l: 'Approved', min: 60, bg: 'var(--dac1)', c: 'var(--dac)' },
     { k: 'review', l: 'Manual Review', min: 41, bg: 'var(--dw1)', c: 'var(--dw)' },
@@ -89,48 +103,62 @@ export const THRESH_DEFAULTS = [
     { k: 'decline', l: 'Declined', min: 0, bg: 'var(--dd1)', c: 'var(--dd)' },
 ];
 
-export function fmtPickupDate(daysFromNow) {
+function fmtPickupDate(daysFromNow) {
     const d = new Date(); d.setDate(d.getDate() + daysFromNow);
     return d.toISOString().split('T')[0];
 }
 
-export const PU_ORDERS = [
-    { id: 'PU-001', appId: 'CASAN-A01', nm: 'Ahmad Rizki', ph: '+62 812-3456-7890', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho Aegis', deadline: fmtPickupDate(7), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending' },
-    { id: 'PU-002', appId: 'CASAN-A03', nm: 'Dewi Lestari', ph: '+62 857-1111-2222', ptn: 'united', prog: 'P-UT-RTO', model: 'United T3', deadline: fmtPickupDate(3), status: 'scheduled', schedDate: fmtPickupDate(2), schedTime: '10:00', hoStatus: 'pending' },
-    { id: 'PU-003', appId: 'CASAN-A05', nm: 'Fitri Handayani', ph: '+62 877-5555-6666', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(14), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending' },
-    { id: 'PU-004', appId: 'CASAN-A07', nm: 'Hendra Kusuma', ph: '+62 896-9999-0000', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho AE8', deadline: fmtPickupDate(-1), status: 'overdue', schedDate: null, schedTime: null, hoStatus: 'pending' },
+const PU_ORDERS = [
+    { id: 'PU-001', appId: 'CASAN-A01', nm: 'Ahmad Rizki', ph: '+62 812-3456-7890', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho Aegis', deadline: fmtPickupDate(7), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-001', plate: 'B 1234 ABC' },
+    { id: 'PU-002', appId: 'CASAN-A03', nm: 'Dewi Lestari', ph: '+62 857-1111-2222', ptn: 'united', prog: 'P-UT-RTO', model: 'United T3', deadline: fmtPickupDate(3), status: 'scheduled', schedDate: fmtPickupDate(2), schedTime: '10:00', hoStatus: 'pending', vehicleId: 'CSN-003', plate: 'B 5678 DEF' },
+    { id: 'PU-003', appId: 'CASAN-A05', nm: 'Fitri Handayani', ph: '+62 877-5555-6666', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(14), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-005', plate: 'B 9012 GHI' },
+    { id: 'PU-004', appId: 'CASAN-A07', nm: 'Hendra Kusuma', ph: '+62 896-9999-0000', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho AE8', deadline: fmtPickupDate(-1), status: 'overdue', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-007', plate: 'B 3456 JKL' },
+    { id: 'PU-005', appId: 'CASAN-A11', nm: 'Bagus Prakoso', ph: '+62 812-1234-5678', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho Aegis', deadline: fmtPickupDate(-2), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-008', plate: 'B 1005 XYZ' },
+    { id: 'PU-006', appId: 'CASAN-A13', nm: 'Reza Rahardian', ph: '+62 857-9876-5432', ptn: 'united', prog: 'P-UT-RTO', model: 'United T3', deadline: fmtPickupDate(5), status: 'scheduled', schedDate: fmtPickupDate(3), schedTime: '10:00', hoStatus: 'pending', vehicleId: 'CSN-009', plate: 'B 1006 XYZ' },
+    { id: 'PU-007', appId: 'CASAN-A15', nm: 'Wawan Setiawan', ph: '+62 877-1111-2222', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(8), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-010', plate: 'B 1007 XYZ' },
+    { id: 'PU-008', appId: 'CASAN-A18', nm: 'Agus Harimurti', ph: '+62 896-3333-4444', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(2), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-011', plate: 'B 1008 XYZ' },
+    { id: 'PU-009', appId: 'CASAN-A22', nm: 'Enzy Storia', ph: '+62 813-5555-6666', ptn: 'united', prog: 'P-UT-RENT', model: 'United TX8', deadline: fmtPickupDate(10), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-012', plate: 'B 1009 XYZ' },
+    { id: 'PU-010', appId: 'CASAN-A23', nm: 'Fedi Nuril', ph: '+62 858-7777-8888', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho AE8', deadline: fmtPickupDate(12), status: 'scheduled', schedDate: fmtPickupDate(10), schedTime: '10:00', hoStatus: 'pending', vehicleId: 'CSN-013', plate: 'B 1010 XYZ' },
+    { id: 'PU-011', appId: 'CASAN-A24', nm: 'Gading Marten', ph: '+62 819-9999-0000', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(-1), status: 'overdue', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-014', plate: 'B 1011 XYZ' },
+    { id: 'PU-012', appId: 'CASAN-A29', nm: 'Tulus', ph: '+62 812-4444-5555', ptn: 'tangkas', prog: 'P-TK-RTO', model: 'Zeeho Aegis', deadline: fmtPickupDate(15), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-015', plate: 'B 1012 XYZ' },
+    { id: 'PU-013', appId: 'CASAN-A30', nm: 'Vidi Aldiano', ph: '+62 857-6666-7777', ptn: 'maka', prog: 'P-MK-RTO', model: 'Maka M1 Pro', deadline: fmtPickupDate(3), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending', vehicleId: 'CSN-016', plate: 'B 1013 XYZ' }
 ];
 
 // Formatting
-export const fRp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
+const fRp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
 
-// State
-export let state = {
-    admApps: [...ADMIN_APPS],
-    puOrders: [...PU_ORDERS],
-    admFlt: 'all',
-    admQ: '',
-    selApp: null,
-    waTmpls: Object.fromEntries(WA_SCENARIOS.map(s => [s.k, s.tmpl])),
-    selScen: null,
-    puFlt: 'all',
-    selPU: null,
-    calYear: new Date().getFullYear(),
-    calMonth: new Date().getMonth(),
-    selDate: null,
-    selTime: null,
-    calMonth: new Date().getMonth(),
-    selDate: null,
-    selTime: null,
-    dimCfg: JSON.parse(JSON.stringify(DIM_DEFAULTS)),
-    threshCfg: JSON.parse(JSON.stringify(THRESH_DEFAULTS)),
-    dsrCfg: [
+//  STATE INITIALIZATION 
+// Merge RTO-specific state into the main global state
+if (window.state) {
+    window.state.admApps = window.state.admApps || [...ADMIN_APPS];
+    window.state.puOrders = window.state.puOrders || [...PU_ORDERS];
+    window.state.admFlt = window.state.admFlt || 'all';
+    window.state.admQ = window.state.admQ || '';
+    window.state.selApp = window.state.selApp || null;
+    window.state.waTmpls = window.state.waTmpls || Object.fromEntries(WA_SCENARIOS.map(s => [s.k, s.tmpl]));
+    window.state.selScen = window.state.selScen || null;
+    window.state.puFlt = window.state.puFlt || 'all';
+    window.state.puProgFlt = window.state.puProgFlt || 'all';
+    window.state.appProgFlt = window.state.appProgFlt || 'all';
+    window.state.selPU = window.state.selPU || null;
+    window.state.calYear = window.state.calYear || new Date().getFullYear();
+    window.state.calMonth = (window.state.calMonth !== undefined) ? window.state.calMonth : new Date().getMonth();
+    window.state.selDate = window.state.selDate || null;
+    window.state.selTime = window.state.selTime || null;
+    window.state.dimCfg = window.state.dimCfg || JSON.parse(JSON.stringify(DIM_DEFAULTS));
+    window.state.threshCfg = window.state.threshCfg || JSON.parse(JSON.stringify(THRESH_DEFAULTS));
+    window.state.dsrCfg = window.state.dsrCfg || [
         { l: 'Batas Sehat', v: 50, c: 'var(--dg)' },
         { l: 'Batas Waspada', v: 70, c: 'var(--dw)' },
         { l: 'Penalty Waspada', v: 85, c: '#FB923C' },
         { l: 'Penalty Berat', v: 100, c: 'var(--dd)' }
-    ]
-};
+    ];
+    window.state.admPage = window.state.admPage || 1;
+    window.state.admPageSize = window.state.admPageSize || 10;
+}
+
+// Local alias to minimize changes to existing logic
+// state is already global
 
 // Auto-load config
 try {
@@ -146,7 +174,7 @@ try {
 }
 
 // Utils
-export function getDecStyle(dec) {
+function getDecStyle(dec) {
     const m = {
         approved: { bg: 'var(--dg1)', c: 'var(--dg)', l: 'ACCEPTED' },
         auto: { bg: 'var(--dac1)', c: 'var(--dac)', l: 'AUTO-APP' },
@@ -158,7 +186,7 @@ export function getDecStyle(dec) {
     return m[dec] || { bg: 'var(--ds3)', c: 'var(--dt2)', l: dec.toUpperCase() };
 }
 
-export function getScoreColor(s) {
+function getScoreColor(s) {
     if (s >= 80) return 'var(--dg)';
     if (s >= 60) return 'var(--dac)';
     if (s >= 41) return 'var(--dw)';
@@ -167,12 +195,12 @@ export function getScoreColor(s) {
 }
 
 
-export function daysLeft(dateStr) {
+function daysLeft(dateStr) {
     return Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
 }
 
 // Admin Functions
-export function admV(view, elId) {
+function admV(view, elId) {
     document.querySelectorAll('.av').forEach(v => v.classList.remove('on'));
     document.getElementById('adm-' + view).classList.add('on');
     document.querySelectorAll('.adm-ni').forEach(n => n.classList.remove('on'));
@@ -195,42 +223,75 @@ export function admV(view, elId) {
     }
 }
 
-export function setAdmFlt(f, el) {
+function setAdmFlt(f, el) {
     state.admFlt = f;
     document.querySelectorAll('.afb').forEach(b => b.classList.remove('on'));
     if (el) el.classList.add('on');
     admRTbl();
 }
 
-export function admSrch(q) {
+function setAdmProgFlt(val) {
+    state.appProgFlt = val;
+    admRTbl();
+}
+
+function admSrch(q) {
     state.admQ = q.toLowerCase();
     admRTbl();
 }
 
-export function admRTbl() {
-    let apps = state.admApps.filter(a => {
-        if (state.admFlt !== 'all' && a.dec !== state.admFlt) return false;
-        if (state.admQ && !a.nm.toLowerCase().includes(state.admQ) && !a.id.toLowerCase().includes(state.admQ) && !a.area.toLowerCase().includes(state.admQ)) return false;
+function admRTbl() {
+    // 1. Initial Program/Partner Filtering (Base List for this context)
+    let partnerApps = state.admApps.filter(a => {
+        if (state.filter && state.filter.partner && state.filter.partner !== 'all') {
+            if (a.ptn.toLowerCase() !== state.filter.partner.toLowerCase()) return false;
+        }
+        if (state.appProgFlt && state.appProgFlt !== 'all') {
+            if (a.prog !== state.appProgFlt) return false;
+        }
         return true;
     });
 
-    const tot = state.admApps.length;
-    const pnd = state.admApps.filter(a => a.dec === 'pending' || a.dec === 'pending_docs').length;
-    const apr = state.admApps.filter(a => a.dec === 'approved').length;
-    const dec = state.admApps.filter(a => a.dec === 'declined').length;
-    const rev = state.admApps.filter(a => a.dec === 'review').length;
-    const avg = Math.round(state.admApps.reduce((s, a) => s + a.score, 0) / state.admApps.length) || 0;
+    // Populate Program Filter Options dynamically based on selected partner
+    const progSel = document.getElementById('app-prog-filter');
+    if (progSel) {
+        let progsToKeep = MAIN_PROGS;
+        if (state.filter && state.filter.partner && state.filter.partner !== 'all') {
+            progsToKeep = MAIN_PROGS.filter(p => p.p.toLowerCase() === state.filter.partner.toLowerCase());
+        }
 
-    const elTot = document.getElementById('kpi-tot');
-    if (elTot) elTot.textContent = tot;
-    const elPnd = document.getElementById('kpi-pnd');
-    if (elPnd) elPnd.textContent = pnd;
-    const elApr = document.getElementById('kpi-apr');
-    if (elApr) elApr.textContent = apr;
-    const elDec = document.getElementById('kpi-dec');
-    if (elDec) elDec.textContent = dec;
-    const elAvg = document.getElementById('kpi-avg');
-    if (elAvg) elAvg.textContent = avg;
+        let opts = `<option value="all">🌐 All Programs</option>`;
+        progsToKeep.forEach(p => {
+            opts += `<option value="${p.id}" ${state.appProgFlt === p.id ? 'selected' : ''}>[${p.p.toUpperCase()}] ${p.nm}</option>`;
+        });
+
+        if (progSel.innerHTML !== opts) {
+            progSel.innerHTML = opts;
+            if (state.appProgFlt !== 'all' && !progsToKeep.find(p => p.id === state.appProgFlt)) {
+                state.appProgFlt = 'all';
+                progSel.value = 'all';
+            }
+        }
+    }
+
+    // 2. Generate KPIs BEFORE applying the Status/Search filters, 
+    // so badges show total possible matches in this Partner/Program context
+    const tot = partnerApps.length;
+    let pnd = 0; let apr = 0; let dec = 0; let rev = 0;
+
+    partnerApps.forEach(a => {
+        if (a.dec === 'pending' || a.dec === 'pending_docs') pnd++;
+        else if (a.dec === 'approved') apr++;
+        else if (a.dec === 'declined') dec++;
+        else if (a.dec === 'review') rev++;
+    });
+    const avg = Math.round(partnerApps.reduce((s, a) => s + a.score, 0) / (partnerApps.length || 1)) || 0;
+
+    const elTot = document.getElementById('kpi-tot'); if (elTot) elTot.textContent = tot;
+    const elPnd = document.getElementById('kpi-pnd'); if (elPnd) elPnd.textContent = pnd;
+    const elApr = document.getElementById('kpi-apr'); if (elApr) elApr.textContent = apr;
+    const elDec = document.getElementById('kpi-dec'); if (elDec) elDec.textContent = dec;
+    const elAvg = document.getElementById('kpi-avg'); if (elAvg) elAvg.textContent = avg;
 
     // Filter badges
     const bAll = document.getElementById('cnt-all'); if (bAll) bAll.textContent = tot;
@@ -242,6 +303,19 @@ export function admRTbl() {
     const pendBadge = document.getElementById('pend-badge');
     if (pendBadge) pendBadge.textContent = pnd;
 
+    // 3. Apply Deep Filters (Status & Search) for rendering
+    let displayApps = partnerApps.filter(a => {
+        if (state.admFlt !== 'all') {
+            if (state.admFlt === 'pending') {
+                if (a.dec !== 'pending' && a.dec !== 'pending_docs') return false;
+            } else {
+                if (a.dec !== state.admFlt) return false;
+            }
+        }
+        if (state.admQ && !a.nm.toLowerCase().includes(state.admQ) && !a.id.toLowerCase().includes(state.admQ) && !a.area.toLowerCase().includes(state.admQ)) return false;
+        return true;
+    });
+
     // Sidebar Notification Dots
     const sideApps = document.getElementById('side-cnt-apps');
     if (sideApps) {
@@ -249,149 +323,293 @@ export function admRTbl() {
         sideApps.style.display = pnd > 0 ? 'flex' : 'none';
     }
 
-    const puCount = state.puApps ? state.puApps.filter(a => a.s === 'waiting').length : 0;
+    const puCount = (state.puOrders || []).filter(a => a.status === 'waiting').length;
     const sidePU = document.getElementById('side-cnt-pickup');
     if (sidePU) {
         sidePU.textContent = puCount;
         sidePU.style.display = puCount > 0 ? 'flex' : 'none';
     }
 
-    const tbody = document.getElementById('adm-tbody');
-    if (!tbody) return;
+    const totalFiltered = displayApps.length;
+    const totalPages = Math.ceil(totalFiltered / state.admPageSize) || 1;
+    if (state.admPage > totalPages) state.admPage = totalPages;
+    if (state.admPage < 1) state.admPage = 1;
 
-    tbody.innerHTML = apps.map((a) => {
-        const ptn = PARTNERS[a.ptn] || { name: a.ptn, ic: '🏢', c: '#999' };
-        const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, ty: '—' };
+    const startIdx = (state.admPage - 1) * state.admPageSize;
+    const paginatedApps = displayApps.slice(startIdx, startIdx + state.admPageSize);
+
+    const cardList = document.getElementById('adm-card-list');
+    if (!cardList) return;
+
+    cardList.innerHTML = paginatedApps.map((a) => {
+        const ptn = PARTNERS[a.ptn] || { name: a.ptn, ic: '', c: '#999' };
+        const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, ty: '' };
         const ds = getDecStyle(a.dec);
-        const sc = getScoreColor(a.score + (a.adj || 0));
-        return `<tr class="${state.selApp === a.id ? 'sel-r' : ''}" onclick="window.rto.admSel('${a.id}')">
-          <td><span style="font-size: var(--text-base);font-weight:800;color:var(--dt1);font-family:'IBM Plex Mono',monospace">${a.id}</span></td>
-          <td><div style="font-size: var(--text-lg);font-weight:700;color:var(--dt1)">${a.nm}</div><div style="font-size: var(--text-sm);color:var(--dt3)">${a.ph}</div></td>
-          <td><span style="color:${ptn.c};font-weight:600;font-size: var(--text-base)">${ptn.name}</span></td>
-          <td><span style="font-size: var(--text-sm)">${pr.nm}</span></td>
-          <td style="font-size: var(--text-base)">${a.prof}</td>
-          <td class="mono" style="font-size: var(--text-base)">${fRp(a.inc)}</td>
-          <td><span class="sc-chip" style="background:${sc}20;color:${sc};font-size: var(--text-lg);font-weight:700">${a.score + (a.adj || 0)}</span></td>
-          <td><span class="dec-chip" style="background:${ds.bg};color:${ds.c};font-size: var(--text-sm);font-weight:800">${ds.l}</span></td>
-          <td style="font-size: var(--text-base);color:${a.miss && a.miss.length ? 'var(--dw)' : 'var(--dt3)'}">${a.miss && a.miss.length ? a.miss.length + ' docs' : '—'}</td>
-          <td style="font-size: var(--text-sm);color:var(--dt3)">${a.submitted}</td>
-          <td>
-            <button class="act-btn" style="border-color:var(--db1);color:var(--dt2)" onclick="event.stopPropagation();window.rto.quickWA('${a.id}')">📱</button>
-            <button class="act-btn" style="border-color:rgba(52,211,153,.25);color:var(--dg)" onclick="event.stopPropagation();window.rto.quickDec('${a.id}','approved')">✅</button>
-            <button class="act-btn" style="border-color:rgba(248,113,113,.25);color:var(--dd)" onclick="event.stopPropagation();window.rto.quickDec('${a.id}','declined')">❌</button>
-          </td>
-        </tr>`;
-    }).join('') || '<tr><td colspan="11" style="padding:24px;text-align:center;color:var(--dt3);font-size: var(--text-base)">No applications found</td></tr>';
+        const sc = a.score + (a.adj || 0);
+        const scColor = getScoreColor(sc);
+        const isSelected = state.selApp === a.id;
+        const puOrder = (state.puOrders || []).find(o => o.appId === a.id);
+        const assetPlate = a.dec === 'approved' && puOrder && puOrder.plate ? puOrder.plate : null;
+
+        return `<div onclick="window.rto.admSel('${a.id}')" style="
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--db1);
+            cursor: pointer;
+            background: ${isSelected ? 'rgba(0,229,195,0.08)' : 'transparent'};
+            border-left: 3px solid ${isSelected ? 'var(--dac)' : 'transparent'};
+            transition: background 0.15s;
+        ">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <!-- Score Ring -->
+                <div style="width:40px;height:40px;border-radius:50%;border:2.5px solid ${scColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${scColor}18">
+                    <span style="font-size:11px;font-weight:900;color:${scColor}">${sc}</span>
+                </div>
+                <!-- Info -->
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                        <div style="font-weight:700;font-size:var(--text-sm);color:var(--dt1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.nm}</div>
+                        <span style="background:${ds.bg};color:${ds.c};font-size:9px;font-weight:800;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0">${ds.l}</span>
+                    </div>
+                    <div style="font-size:10px;color:var(--dt3);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <span style="color:${ptn.c};font-weight:600">${pr.nm}</span>
+                        <span style="color:var(--db1)">·</span>
+                        <span>${a.prof}</span>
+                        ${assetPlate ? `<span style="background:var(--dac1);color:var(--dac);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:800;padding:1px 6px;border-radius:4px">${assetPlate}</span>` : ''}
+                        ${a.miss && a.miss.length ? `<span style="color:var(--dw);font-weight:700">${a.miss.length} docs</span>` : ''}
+                    </div>
+                    <div style="font-size:9px;color:var(--dt3);margin-top:3px">${a.id} · ${a.submitted}</div>
+                </div>
+            </div>
+        </div>`;
+    }).join('') || `<div style="padding:40px;text-align:center;color:var(--dt3)"><div style="font-size:32px;margin-bottom:8px">📭</div><div>No applications found</div></div>`;
+
+
+    const pg = document.getElementById('adm-pagination');
+    if (pg) {
+        pg.innerHTML = `
+            <div style="font-size:var(--text-xs); color:var(--dt3); font-weight:600">
+                Showing ${totalFiltered === 0 ? 0 : startIdx + 1} to ${Math.min(startIdx + state.admPageSize, totalFiltered)} of ${totalFiltered} entries
+            </div>
+            <div style="display:flex; gap:8px; align-items:center">
+                <button class="btn" style="padding:6px 12px; font-size:var(--text-xs)" 
+                        ${state.admPage === 1 ? 'disabled' : ''} 
+                        onclick="window.rto.goToAdmPage(${state.admPage - 1})">Prev</button>
+                <div style="display:flex; align-items:center; gap:4px; margin:0 4px">
+                    ${Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
+                        <button class="btn ${state.admPage === p ? 'btn-primary' : ''}" 
+                                style="width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; font-size:var(--text-xs); ${state.admPage === p ? 'background:var(--dac); color:#000; border:none;' : ''}"
+                                onclick="window.rto.goToAdmPage(${p})">${p}</button>
+                    `).join('')}
+                </div>
+                <button class="btn" style="padding:6px 12px; font-size:var(--text-xs)" 
+                        ${state.admPage === totalPages ? 'disabled' : ''} 
+                        onclick="window.rto.goToAdmPage(${state.admPage + 1})">Next</button>
+            </div>
+        `;
+    }
 }
 
-export function admSel(id) {
+function goToAdmPage(n) {
+    state.admPage = n;
+    admRTbl();
+}
+
+function admSel(id) {
     state.selApp = id;
     admRTbl();
     const a = state.admApps.find(x => x.id === id);
     if (!a) return;
     const ptn = PARTNERS[a.ptn] || { name: a.ptn, c: '#999' };
-    const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, ty: '—' };
+    const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, ty: '' };
     const ds = getDecStyle(a.dec);
     const sc = a.score + (a.adj || 0);
 
     // Ensure document state object exists
     if (!a.docStatus) a.docStatus = {};
 
+    // Build document list (for Docs tab)
     const docsList = [...DOCS.id, ...DOCS.work, ...DOCS.boost].map(d => {
         const isMissing = (a.miss || []).includes(d.id);
-        let st = 'verified'; // Default to verified
+        let st = 'verified';
         if (isMissing) st = 'missing';
         if (a.docStatus && a.docStatus[d.id]) {
             st = a.docStatus[d.id];
-            if (st === 'pending') st = 'verified'; // treat explicitly pending as verified since default is verified
+            if (st === 'pending') st = 'verified';
         }
 
-        let thumbHtml = '';
-        if (st !== 'missing' && d.img) {
-            thumbHtml = `<img src="${d.img}" class="doc-thumb" onclick="window.rto.previewImg('${d.img}')" alt="${d.n}">`;
-        } else {
-            thumbHtml = `<div class="doc-thumb" style="display:flex;align-items:center;justify-content:center;font-size:var(--text-xl);color:var(--dt3)">📄</div>`;
-        }
+        let thumbHtml = st !== 'missing' && d.img
+            ? `<img src="${d.img}" class="doc-thumb" onclick="window.rto.previewImg('${d.img}')" alt="${d.n}">`
+            : `<div class="doc-thumb" style="display:flex;align-items:center;justify-content:center;font-size:var(--text-xl);color:var(--dt3)"></div>`;
 
-        let statusHtml = '';
-        let actionsHtml = '';
-
+        let statusHtml = '', actionsHtml = '';
         if (st === 'missing') {
-            statusHtml = `<span style="color:var(--dd); font-size:var(--text-xs); font-weight:700">✕ Missing</span>`;
-            actionsHtml = `<button class="btn" style="padding:2px 8px; font-size:var(--text-3xs); background:var(--dw1); border:1px solid rgba(251,191,36,.25); color:var(--dw)" onclick="window.rto.uploadDoc('${a.id}', '${d.id}')">📤 Upload</button>`;
+            statusHtml = `<span style="color:var(--dd);font-size:var(--text-xs);font-weight:700"> Missing</span>`;
+            actionsHtml = `<button class="btn" style="padding:2px 8px;font-size:var(--text-3xs);background:var(--dw1);border:1px solid rgba(251,191,36,.25);color:var(--dw)" onclick="window.rto.uploadDoc('${a.id}','${d.id}')"> Upload</button>`;
         } else if (st === 'rejected') {
             const reason = a.docReasons?.[d.id] || 'Dokumen belum sesuai standar';
-            statusHtml = `<span style="color:var(--dd); font-size:var(--text-xs); font-weight:700">❌ Rejected</span><div style="font-size:var(--text-3xs); color:var(--dt3); max-width:140px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap" title="${reason}">${reason}</div>`;
-            actionsHtml = `<button class="btn" style="padding:2px 8px; font-size:var(--text-3xs)" onclick="window.rto.resubmitDoc('${a.id}', '${d.id}')">Mock Resubmit</button>`;
+            statusHtml = `<span style="color:var(--dd);font-size:var(--text-xs);font-weight:700"> Rejected</span><div style="font-size:var(--text-3xs);color:var(--dt3);max-width:140px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap" title="${reason}">${reason}</div>`;
+            actionsHtml = `<button class="btn" style="padding:2px 8px;font-size:var(--text-3xs)" onclick="window.rto.resubmitDoc('${a.id}','${d.id}')">Mock Resubmit</button>`;
         } else {
-            statusHtml = `<span style="color:var(--dg); font-size:var(--text-xs); font-weight:700">✅ Verified</span>`;
-            actionsHtml = `
-                <button class="btn btn-danger" style="padding:2px 8px; font-size:var(--text-3xs)" onclick="window.rto.verifyDoc('${a.id}', '${d.id}', 'rejected')">Reject</button>
-            `;
+            statusHtml = `<span style="color:var(--dg);font-size:var(--text-xs);font-weight:700"> Verified</span>`;
+            actionsHtml = `<button class="btn btn-danger" style="padding:2px 8px;font-size:var(--text-3xs)" onclick="window.rto.verifyDoc('${a.id}','${d.id}','rejected')">Reject</button>`;
         }
 
-        return `<div style="display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom:1px solid var(--db1)">
-            <div style="display:flex; gap:12px; align-items:center">
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--db1)">
+            <div style="display:flex;gap:12px;align-items:center">
                 ${thumbHtml}
-                <div style="font-size:var(--text-sm); color:var(--dt1); font-weight:600">${d.n}</div>
+                <div style="font-size:var(--text-sm);color:var(--dt1);font-weight:600">${d.n}</div>
             </div>
-            <div style="display:flex; gap:8px; align-items:center">
-                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px">
-                    ${statusHtml}
-                </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${statusHtml}</div>
                 ${actionsHtml}
             </div>
         </div>`;
     }).join('');
 
-    // Highlight Score layout
+    // === RENDER HEADER ===
     document.getElementById('dp-t').innerHTML = `
-        <div style="display:flex; align-items:center; gap:20px; width:100%">
-            <div style="width: 70px; height: 70px; border-radius: 50%; border: 4px solid ${getScoreColor(sc)}; display:flex; align-items:center; justify-content:center; flex-direction:column; background: ${getScoreColor(sc)}11;">
-                <span style="font-size: var(--text-2xl); font-weight:900; color:${getScoreColor(sc)}">${sc}</span>
-                <span style="font-size: var(--text-3xs); color:var(--dt3); margin-top:-2px">SCORE</span>
+        <div style="display:flex;align-items:center;gap:16px;width:100%">
+            <div style="width:60px;height:60px;border-radius:50%;border:4px solid ${getScoreColor(sc)};display:flex;align-items:center;justify-content:center;flex-direction:column;background:${getScoreColor(sc)}11;flex-shrink:0">
+                <span style="font-size:var(--text-2xl);font-weight:900;color:${getScoreColor(sc)}">${sc}</span>
+                <span style="font-size:var(--text-3xs);color:var(--dt3);margin-top:-2px">SCORE</span>
             </div>
-            <div style="flex:1">
-                <div style="font-size: var(--text-2xl); font-weight:800; color:var(--dt1)">${a.nm}</div>
-                <div style="font-size: var(--text-sm); color:var(--dt3)">${a.id} • ${a.prof} • Rp ${a.inc.toLocaleString('id-ID')}</div>
-                <div style="margin-top:4px"><span class="dec-chip" style="background:${ds.bg};color:${ds.c};font-size: var(--text-2xs);font-weight:800">${ds.l}</span></div>
+            <div style="flex:1;min-width:0">
+                <div style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.nm}</div>
+                <div style="font-size:var(--text-sm);color:var(--dt3)">${a.id} · ${a.prof}</div>
+                <div style="margin-top:3px"><span class="dec-chip" style="background:${ds.bg};color:${ds.c};font-size:var(--text-2xs);font-weight:800">${ds.l}</span></div>
             </div>
-            <div>
-                <button class="btn btn-secondary" onclick="window.rto.admWA()" style="font-size: var(--text-xs)">📱 WA Driver</button>
-            </div>
+            <button class="btn btn-secondary" onclick="window.rto.admWA()" style="font-size:var(--text-xs);flex-shrink:0"> WA</button>
         </div>
     `;
 
-    document.getElementById('dp-grid').innerHTML = `
-      <div class="dp-col"><div class="dp-sl">Applicant Details</div>${[['Phone', a.ph], ['Area', a.area], ['Partner', ptn.name], ['Program', pr.nm], ['Submitted', a.submitted]].map(r => `<div class="dp-row" style="font-size:var(--text-base)"><div class="dp-k">${r[0]}</div><div class="dp-v" style="font-size:var(--text-lg)">${r[1]}</div></div>`).join('')}</div>
-      <div class="dp-col" style="grid-column: span 2"><div class="dp-sl">Document Verification</div>${docsList}</div>`;
+    // === OVERVIEW TAB ===
+    const overviewEl = document.getElementById('dp-overview-content');
+    if (overviewEl) {
+        overviewEl.innerHTML = `
+            <div class="dp-col"><div class="dp-sl">Applicant Details</div>
+              ${[['Phone', a.ph], ['Area', a.area], ['Partner', ptn.name], ['Program', pr.nm], ['Income', 'Rp ' + a.inc.toLocaleString('id-ID')], ['Submitted', a.submitted]]
+                .map(r => `<div class="dp-row" style="font-size:var(--text-base)"><div class="dp-k">${r[0]}</div><div class="dp-v" style="font-size:var(--text-lg)">${r[1]}</div></div>`)
+                .join('')}
+            </div>`;
+    }
 
+    // === DOCS TAB ===
+    const docsEl = document.getElementById('dp-docs-content');
+    if (docsEl) {
+        docsEl.innerHTML = `<div class="dp-sl">Document Verification</div>${docsList}`;
+    }
 
+    // === SCORE TAB ===
     const dimKeys = ['id', 'inc', 'job', 'fam', 'crd', 'doc'];
     const dimLabels = ['Identitas', 'Penghasilan', 'Pekerjaan', 'Keluarga', 'Kredit', 'Dokumen'];
     const dimCols = ['var(--dac)', 'var(--dg)', 'var(--dbl)', 'var(--dp)', 'var(--dw)', '#14B8A6'];
     const dimMax = [18, 22, 15, 12, 18, 15];
-    const baseScore = sc;
 
-    document.getElementById('sp-grid').innerHTML = dimKeys.map((k, i) => {
-        const v = Math.min(dimMax[i], Math.round(baseScore * dimMax[i] / 100));
-        return `<div class="sp-d"><div class="sp-dl" style="font-size:var(--text-xs)">${dimLabels[i]}</div><div class="sp-bw"><div class="sp-bf" style="width:${v / dimMax[i] * 100}%;background:${dimCols[i]}"></div></div><div class="sp-vs"><div class="sp-v" style="color:${dimCols[i]}; font-size:var(--text-lg)">${v}</div><div class="sp-m" style="font-size:var(--text-sm)">/${dimMax[i]}</div></div></div>`;
-    }).join('');
-
-    if (a.miss && a.miss.length) {
-        document.getElementById('dp-miss-sec').style.display = 'block';
-        document.getElementById('dp-miss-items').innerHTML = a.miss.map(m => `<span style="padding:4px 10px;border-radius:6px;background:var(--dw1);border:1px solid rgba(251,191,36,.15);font-size: var(--text-sm);color:var(--dw);font-weight:600;font-family:'IBM Plex Mono',monospace">${m}</span>`).join('');
-    } else {
-        document.getElementById('dp-miss-sec').style.display = 'none';
+    const spGrid = document.getElementById('sp-grid');
+    if (spGrid) {
+        spGrid.innerHTML = dimKeys.map((k, i) => {
+            const v = Math.min(dimMax[i], Math.round(sc * dimMax[i] / 100));
+            return `<div class="sp-d"><div class="sp-dl" style="font-size:var(--text-xs)">${dimLabels[i]}</div><div class="sp-bw"><div class="sp-bf" style="width:${v / dimMax[i] * 100}%;background:${dimCols[i]}"></div></div><div class="sp-vs"><div class="sp-v" style="color:${dimCols[i]};font-size:var(--text-lg)">${v}</div><div class="sp-m" style="font-size:var(--text-sm)">/${dimMax[i]}</div></div></div>`;
+        }).join('');
     }
 
-    document.getElementById('ov-note').value = a.note || '';
-    document.getElementById('ov-adj').value = a.adj || 0;
-    document.getElementById('ov-log').textContent = a.ovlog || '';
+    // === MISSING DOCS SECTION (in Overview tab) ===
+    const missSec = document.getElementById('dp-miss-sec');
+    if (missSec) {
+        if (a.miss && a.miss.length) {
+            missSec.style.display = 'block';
+            document.getElementById('dp-miss-items').innerHTML = a.miss.map(m =>
+                `<span style="padding:4px 10px;border-radius:6px;background:var(--dw1);border:1px solid rgba(251,191,36,.15);font-size:var(--text-sm);color:var(--dw);font-weight:600;font-family:'IBM Plex Mono',monospace">${m}</span>`
+            ).join('');
+        } else {
+            missSec.style.display = 'none';
+        }
+    }
+
+    // === MANUAL OVERRIDE FIELDS ===
+    const elNote = document.getElementById('ov-note');
+    const elAdj = document.getElementById('ov-adj');
+    const elLog = document.getElementById('ov-log');
+    if (elNote) elNote.value = a.note || '';
+    if (elAdj) elAdj.value = a.adj || '0';
+    if (elLog) elLog.textContent = a.ovlog || '';
+
+    // === DECISION AREA ===
+    const decArea = document.getElementById('dp-decision-area');
+    if (decArea) {
+        // Find assigned asset from pickup orders
+        const puOrder = (state.puOrders || []).find(o => o.appId === id);
+        const assignedPlate = puOrder ? puOrder.plate : null;
+
+        // Asset info card — only for approved apps
+        let assetCardHtml = '';
+        if (a.dec === 'approved') {
+            assetCardHtml = assignedPlate
+                ? `<div style="background:var(--dg1);border:1px solid var(--dg);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+                    <div>
+                        <div style="font-size:var(--text-2xs);font-weight:700;color:var(--dg);text-transform:uppercase;letter-spacing:.5px"> Assigned Vehicle</div>
+                        <div style="font-weight:800;color:var(--dt1);font-family:'IBM Plex Mono',monospace;font-size:var(--text-base)">${assignedPlate}</div>
+                    </div>
+                    <button class="btn" style="font-size:var(--text-xs);padding:4px 10px" onclick="window.rto.openAssetAssignment('${id}')">🔄 Change</button>
+                   </div>`
+                : `<div style="background:var(--dac1);border:1px dashed var(--dac);border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+                    <div style="font-size:var(--text-sm);color:var(--dt2);font-weight:600"> No vehicle assigned yet</div>
+                    <button class="btn btn-primary" style="font-size:var(--text-xs);padding:4px 12px" onclick="window.rto.openAssetAssignment('${id}')"> Assign Vehicle</button>
+                   </div>`;
+        }
+
+        decArea.innerHTML = `
+            ${assetCardHtml ? assetCardHtml + '<div style="border-top:1px solid var(--db1);margin:0 -16px"></div>' : ''}
+            <div style="font-size:var(--text-xs);color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px">
+                <span></span> Final Decision
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dg)';this.style.background='var(--dg1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
+                     onclick="window.rto.openApprovalConfirmation('${id}')">
+                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-weight:800;color:var(--dg);font-size:var(--text-xs)">ACCEPT</div>
+                </div>
+                <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dd)';this.style.background='var(--dd1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
+                     onclick="window.rto.confirmReject('${id}')">
+                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-weight:800;color:var(--dd);font-size:var(--text-xs)">REJECT</div>
+                </div>
+                <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dw)';this.style.background='var(--dw1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
+                     onclick="window.rto.confirmDocs('${id}')">
+                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-weight:800;color:var(--dw);font-size:var(--text-xs)">DOCS REQ.</div>
+                </div>
+                <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dp)';this.style.background='var(--dp1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
+                     onclick="window.rto.confirmReview('${id}')">
+                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-weight:800;color:var(--dp);font-size:var(--text-xs)">REVIEW</div>
+                </div>
+            </div>
+            <button class="btn btn-secondary" style="width:100%;font-size:var(--text-xs);background:var(--ds2)" onclick="window.rto.admWA()"> Contact via WhatsApp</button>
+        `;
+    }
+
+    // Reset to Overview tab on each selection
+    switchDpTab('overview');
     document.getElementById('detail-panel').classList.add('show');
 }
 
-export function saveOv() {
+// Tab switcher for detail panel
+function switchDpTab(tab) {
+    const tabs = ['overview', 'docs', 'score'];
+    tabs.forEach(t => {
+        const btn = document.getElementById('dpt-' + t);
+        const body = document.getElementById('dp-tab-' + t);
+        if (btn) btn.classList.toggle('on', t === tab);
+        if (body) body.style.display = t === tab ? 'block' : 'none';
+    });
+}
+
+function saveOv() {
     const a = state.admApps.find(x => x.id === state.selApp);
     if (!a) return;
     a.note = document.getElementById('ov-note').value;
@@ -399,45 +617,20 @@ export function saveOv() {
     a.ovlog = '[' + new Date().toLocaleTimeString('id-ID') + '] ' + document.getElementById('ov-note').value + ' (adj: ' + (a.adj > 0 ? '+' : '') + a.adj + ')';
     document.getElementById('ov-log').textContent = a.ovlog;
     admRTbl();
-    admT('✅ Override saved');
+    admT(' Override saved');
 }
 
-export function admDec(dec) {
-    const a = state.admApps.find(x => x.id === state.selApp);
-    if (!a) return;
-    const newDec = dec === 'auto' ? 'approved' : dec;
-    a.dec = newDec;
-    admRTbl();
-    admSel(state.selApp);
-    admT('Decision → ' + dec.toUpperCase());
+// Redundant decision functions removed - use granular flows (confirmReject, etc) instead
 
-    if ((dec === 'approved' || dec === 'auto') && !state.puOrders.find(p => p.appId === a.id)) {
-        const pr = MAIN_PROGS.find(p => p.id === a.prog);
-        addToPickupQueue(a.id, a.nm, a.ph, a.ptn, a.prog, pr ? pr.nm : 'Motor Listrik');
-        admT('✅ Approved → ditambahkan ke Pickup Queue!');
-    }
-}
 
-export function quickDec(id, dec) {
-    const a = state.admApps.find(x => x.id === id);
-    if (!a) return;
-    a.dec = dec;
-    admRTbl();
-    admT(id + ' → ' + dec.toUpperCase());
-    if (dec === 'approved' && !state.puOrders.find(p => p.appId === a.id)) {
-        const pr = MAIN_PROGS.find(p => p.id === a.prog);
-        addToPickupQueue(a.id, a.nm, a.ph, a.ptn, a.prog, pr ? pr.nm : 'Motor Listrik');
-    }
-}
-
-export function quickWA(id) {
+function quickWA(id) {
     const oldSel = state.selApp;
     state.selApp = id;
     admWA();
     state.selApp = oldSel;
 }
 
-export function verifyDoc(appId, docId, status) {
+function verifyDoc(appId, docId, status) {
     const a = state.admApps.find(x => x.id === appId);
     if (!a) return;
 
@@ -460,10 +653,10 @@ export function verifyDoc(appId, docId, status) {
     }
 
     admSel(appId);
-    admT(`Doc ${status === 'verified' ? 'Verified ✅' : 'Rejected ❌'}`);
+    admT(`Doc ${status === 'verified' ? 'Verified ' : 'Rejected '}`);
 }
 
-export function resubmitDoc(appId, docId) {
+function resubmitDoc(appId, docId) {
     const a = state.admApps.find(x => x.id === appId);
     if (!a) return;
     if (!a.docStatus) a.docStatus = {};
@@ -471,13 +664,13 @@ export function resubmitDoc(appId, docId) {
     a.miss = a.miss.filter(m => m !== docId);
 
     admSel(appId);
-    admT('User resubmitted document 🔄');
+    admT('User resubmitted document ');
 }
 
-export function addToPickupQueue(appId, nm, ph, ptn, prog, model) {
+function addToPickupQueue(appId, nm, ph, ptn, prog, model, vehicleId, plate) {
     state.puOrders.push({
         id: 'PU-' + String(state.puOrders.length + 1).padStart(3, '0'),
-        appId, nm, ph, ptn, prog, model,
+        appId, nm, ph, ptn, prog, model, vehicleId, plate,
         deadline: fmtPickupDate(14), status: 'waiting', schedDate: null, schedTime: null, hoStatus: 'pending'
     });
     const puBadge = document.getElementById('pickup-badge');
@@ -486,7 +679,7 @@ export function addToPickupQueue(appId, nm, ph, ptn, prog, model) {
     }
 }
 
-export function admT(msg) {
+function admT(msg) {
     const t = document.getElementById('adm-toast');
     if (!t) return;
     t.textContent = msg;
@@ -494,19 +687,25 @@ export function admT(msg) {
     setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-export function switchRtoTab(tab, el) {
+function switchRtoTab(tab, el) {
     // Hide all views inside the RTO dashboard
     document.querySelectorAll('.adm-main .av').forEach(v => v.classList.remove('on'));
-    // Deselect all sidebar items
-    document.querySelectorAll('.adm-side .adm-ni').forEach(i => i.classList.remove('on'));
+    // Deselect all sidebar items (targeting the horizontal nav in index.html)
+    document.querySelectorAll('.adm-nav .adm-ni').forEach(i => i.classList.remove('on'));
 
-    // Show target view
-    const viewId = 'adm-' + tab;
-    const targetView = document.getElementById(viewId);
+    // Show target view mapping to new IDs in index.html
+    const viewMap = {
+        'apps': 'rto-applicationsView',
+        'pickup': 'rto-pickupView',
+        'score': 'rto-scoreView',
+        'wa': 'rto-waView'
+    };
+    const targetView = document.getElementById(viewMap[tab] || ('adm-' + tab));
     if (targetView) targetView.classList.add('on');
 
-    // Highlight sidebar item
-    if (el) el.classList.add('on');
+    // Highlight sidebar item (handle case where el is not provided, e.g. from app.js)
+    const targetEl = el || document.getElementById('adm-ni-' + tab);
+    if (targetEl) targetEl.classList.add('on');
 
     // Trigger specific renders based on tab
     if (tab === 'apps') admRTbl();
@@ -518,15 +717,14 @@ export function switchRtoTab(tab, el) {
     if (tab === 'score') renderScoreCfg();
     if (tab === 'wa') {
         renderWAScens();
-        if (!state.selScen && window.rtoLogic && window.rtoLogic.WA_SCENARIOS.length) {
-            selWAScen(window.rtoLogic.WA_SCENARIOS[0].k);
-        } else if (!state.selScen && WA_SCENARIOS.length) {
-            selWAScen(WA_SCENARIOS[0].k);
+        const scens = window.rtoLogic ? window.rtoLogic.WA_SCENARIOS : WA_SCENARIOS;
+        if (!state.selScen && scens && scens.length) {
+            selWAScen(scens[0].k);
         }
     }
 }
 
-export function previewImg(url) {
+function previewImg(url) {
     const modal = document.getElementById('img-modal');
     const img = document.getElementById('img-preview-src');
     if (modal && img) {
@@ -535,12 +733,12 @@ export function previewImg(url) {
     }
 }
 
-export function closePreview() {
+function closePreview() {
     const modal = document.getElementById('img-modal');
     if (modal) modal.style.display = 'none';
 }
 
-export function uploadDoc(appId, docId) {
+function uploadDoc(appId, docId) {
     const a = state.admApps.find(x => x.id === appId);
     if (!a) return;
     a.miss = a.miss.filter(m => m !== docId);
@@ -548,10 +746,10 @@ export function uploadDoc(appId, docId) {
     a.docStatus[docId] = 'verified';
     if (a.docReasons) delete a.docReasons[docId];
     admSel(appId);
-    admT('Doc Uploaded & Verified 📤✅');
+    admT('Doc Uploaded & Verified ');
 }
 
-export function waContext(ctx) {
+function waContext(ctx) {
     if (!state.selApp) {
         admT('Pilih aplikasi terlebih dahulu!');
         return;
@@ -566,10 +764,42 @@ export function waContext(ctx) {
     }
 }
 
-export function admWA() {
+function buildWAMsg(a, scenKey) {
+    const scen = WA_SCENARIOS.find(s => s.k === scenKey);
+    const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, dr: 0 };
+    const ptn = PARTNERS[a.ptn] || { name: a.ptn };
+    const dealer = DEALER_LOCATIONS[a.ptn] || { name: ptn.name };
+
+    let tmpl = state.waTmpls[scenKey] || scen?.tmpl || 'Halo {nama}, terkait aplikasi {app_id} kami sedang meninjaunya.';
+
+    // Legacy localStorage check if state.waTmpls is somehow not preferred
+    try {
+        const stored = localStorage.getItem('csn_wa_cfg');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed[scenKey]) tmpl = parsed[scenKey];
+        }
+    } catch (e) { }
+
+    const sc = a.score + (a.adj || 0);
+    const missStr = a.miss && a.miss.length ? a.miss.map(m => ' ' + m.toUpperCase()).join('\n') : '';
+
+    return tmpl
+        .replace(/{nama}/g, a.nm || '')
+        .replace(/{app_id}/g, a.id)
+        .replace(/{program}/g, pr.nm || '')
+        .replace(/{score}/g, sc)
+        .replace(/{dealer}/g, dealer.name)
+        .replace(/{amount}/g, pr.dr ? 'Rp ' + (pr.dr * 7).toLocaleString('id-ID') : '')
+        .replace(/{credits}/g, '3')
+        .replace(/{grace_days}/g, '7')
+        .replace(/{missing_docs}/g, missStr);
+}
+
+function admWA() {
     const a = state.admApps.find(x => x.id === state.selApp);
     if (!a) {
-        admT('⚠ Pilih aplikasi terlebih dahulu');
+        admT(' Pilih aplikasi terlebih dahulu');
         return;
     }
 
@@ -580,46 +810,19 @@ export function admWA() {
     else if (a.miss && a.miss.length > 0) waScenKey = 'missing_docs';
     else waScenKey = 'review';
 
-    const scen = WA_SCENARIOS.find(s => s.k === waScenKey);
-    let tmpl = scen ? scen.tmpl : 'Halo {nama}, terkait aplikasi {app_id} kami sedang meninjaunya.';
-
-    // Try to load user custom template if exists
-    try {
-        const stored = localStorage.getItem('csn_wa_cfg');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed[waScenKey]) tmpl = parsed[waScenKey];
-        }
-    } catch (e) { }
-
-    // Parse variables
-    const pr = MAIN_PROGS.find(p => p.id === a.prog);
-    const ptn = PARTNERS[a.ptn] || { name: a.ptn };
-    const sc = a.score + (a.adj || 0);
-
-    let txt = tmpl
-        .replace(/{nama}/g, a.nm)
-        .replace(/{app_id}/g, a.id)
-        .replace(/{program}/g, pr ? pr.nm : a.prog)
-        .replace(/{score}/g, sc)
-        .replace(/{dealer}/g, ptn.name);
-
-    if (a.miss && a.miss.length > 0) {
-        txt = txt.replace(/{missing_docs}/g, '\\n- ' + a.miss.join('\\n- '));
-    } else {
-        txt = txt.replace(/{missing_docs}/g, '');
-    }
-
-    // Process phone number formatting for wa.me
-    const cleanPhone = a.ph.replace(/\\D/g, '');
+    const msg = buildWAMsg(a, waScenKey);
+    const cleanPhone = a.ph.replace(/\D/g, '');
     let finalPhone = cleanPhone;
     if (finalPhone.startsWith('0')) finalPhone = '62' + finalPhone.substring(1);
 
-    // Instead of opening directly, show a preview
-    showWAPreviewModal(finalPhone, txt, a.nm);
+    const waUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+    admT(' WhatsApp Diverted!');
 }
 
-export function showWAPreviewModal(phone, text, name) {
+
+
+function showWAPreviewModal(phone, text, name) {
     let m = document.getElementById('wa-preview-mod');
     if (!m) {
         m = document.createElement('div');
@@ -627,10 +830,10 @@ export function showWAPreviewModal(phone, text, name) {
         m.className = 'modal-overlay';
         m.innerHTML = `
             <div class="modal" style="max-width:400px; padding:20px;">
-                <div style="font-size: var(--text-xl); font-weight:800; color:var(--dt1); margin-bottom:12px;">📱 Kirim WhatsApp ke <span id="wa-mod-nm" style="color:var(--dac)"></span></div>
+                <div style="font-size: var(--text-xl); font-weight:800; color:var(--dt1); margin-bottom:12px;"> Kirim WhatsApp ke <span id="wa-mod-nm" style="color:var(--dac)"></span></div>
                 <textarea id="wa-mod-txt" class="ov-in" style="width:100%; height:200px; resize:vertical; font-family:'IBM Plex Mono',monospace; font-size: var(--text-md); margin-bottom:12px; padding:10px;"></textarea>
                 <div style="display:flex; gap:8px;">
-                    <button class="ov-btn" style="flex:1; background:var(--dg1); color:var(--dg); border-color:var(--dg)" onclick="window.rto.sendWAModal()">🚀 Kirim WA</button>
+                    <button class="ov-btn" style="flex:1; background:var(--dg1); color:var(--dg); border-color:var(--dg)" onclick="window.rto.sendWAModal()"> Kirim WA</button>
                     <button class="ov-btn" style="flex:1" onclick="document.getElementById('wa-preview-mod').classList.remove('active')">Batal</button>
                 </div>
             </div>
@@ -644,7 +847,7 @@ export function showWAPreviewModal(phone, text, name) {
     m.classList.add('active');
 }
 
-export function sendWAModal() {
+function sendWAModal() {
     const m = document.getElementById('wa-preview-mod');
     if (!m) return;
     const phone = m.getAttribute('data-phone');
@@ -661,7 +864,7 @@ const ANLY_DATA = {
     'all-all': {
         avg: 68.4, apr: 70, auto: 34, inc: '4.8Jt', doc: 73,
         score: [[80, 100, 34, 'var(--dg)'], [60, 79, 55, 'var(--dac)'], [41, 59, 23, 'var(--dw)'], [21, 40, 9, '#FB923C'], [0, 20, 6, 'var(--dd)']],
-        income: [['≥7Jt', 15, 'var(--dg)'], ['5–7Jt', 29, 'var(--dac)'], ['3.5–5Jt', 48, 'var(--dbl)'], ['2–3.5Jt', 25, 'var(--dw)'], ['<2Jt', 10, 'var(--dd)']],
+        income: [['7Jt', 15, 'var(--dg)'], ['57Jt', 29, 'var(--dac)'], ['3.55Jt', 48, 'var(--dbl)'], ['23.5Jt', 25, 'var(--dw)'], ['<2Jt', 10, 'var(--dd)']],
         prof: [['OJOL', 66, 'var(--dg)'], ['Karyawan', 28, 'var(--dbl)'], ['Wiraswasta', 18, 'var(--dw)'], ['PNS/TNI', 9, 'var(--dp)'], ['Lainnya', 6, 'var(--dt2)']],
         miss: [['Rekening Koran', 77, 'var(--dd)'], ['NPWP', 56, 'var(--dw)'], ['Surat Kerja', 48, 'var(--dw)'], ['BPJS TK', 39, 'var(--dbl)'], ['Selfie KTP', 28, '#FB923C']],
         total: 127
@@ -669,7 +872,7 @@ const ANLY_DATA = {
     'tangkas-all': {
         avg: 74, apr: 75, auto: 18, inc: '5.2Jt', doc: 80,
         score: [[80, 100, 18, 'var(--dg)'], [60, 79, 22, 'var(--dac)'], [41, 59, 6, 'var(--dw)'], [21, 40, 3, '#FB923C'], [0, 20, 1, 'var(--dd)']],
-        income: [['≥7Jt', 8, 'var(--dg)'], ['5–7Jt', 14, 'var(--dac)'], ['3.5–5Jt', 18, 'var(--dbl)'], ['2–3.5Jt', 9, 'var(--dw)'], ['<2Jt', 1, 'var(--dd)']],
+        income: [['7Jt', 8, 'var(--dg)'], ['57Jt', 14, 'var(--dac)'], ['3.55Jt', 18, 'var(--dbl)'], ['23.5Jt', 9, 'var(--dw)'], ['<2Jt', 1, 'var(--dd)']],
         prof: [['OJOL', 29, 'var(--dg)'], ['Karyawan', 10, 'var(--dbl)'], ['Wiraswasta', 8, 'var(--dw)'], ['PNS/TNI', 2, 'var(--dp)'], ['Lainnya', 1, 'var(--dt2)']],
         miss: [['NPWP', 28, 'var(--dw)'], ['Rekening Koran', 24, 'var(--dd)'], ['Surat Kerja', 18, 'var(--dw)'], ['BPJS TK', 12, 'var(--dbl)'], ['Selfie KTP', 9, '#FB923C']],
         total: 50
@@ -681,7 +884,7 @@ const ANLY_PROG = {
     'P-TK-RENT': { avg: 70, apr: 68, auto: 6, inc: '4.8Jt', total: 22 },
 };
 
-export function renderAnalytics() {
+function renderAnalytics() {
     const ptnEl = document.getElementById('anly-ptn');
     const ptn = ptnEl ? ptnEl.value : 'all';
     const progEl = document.getElementById('anly-prog');
@@ -692,16 +895,20 @@ export function renderAnalytics() {
     const pd = prog !== 'all' ? ANLY_PROG[prog] : null;
     const total = pd ? pd.total : d.total;
 
-    document.getElementById('anly-count').textContent = total + ' aplikasi';
+    const elCount = document.getElementById('anly-count');
+    if (elCount) elCount.textContent = total + ' aplikasi';
 
     // KPI cards
-    document.getElementById('anly-kpi').innerHTML = [
-        { l: 'Avg Score', v: pd ? pd.avg : d.avg, c: 'var(--dac)', s: 'dari 100' },
-        { l: 'Approval Rate', v: (pd ? pd.apr : d.apr) + '%', c: 'var(--dg)', s: 'Target 65%' },
-        { l: 'Auto-Approved', v: pd ? pd.auto : d.auto, c: 'var(--dp)', s: 'Score ≥80' },
-        { l: 'Avg Income', v: pd ? pd.inc : d.inc, c: 'var(--dt1)', s: '/bulan', sm: 1 },
-        { l: 'Doc Complete', v: d.doc + '%', c: 'var(--dw)', s: 'Required' },
-    ].map(k => `<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v" style="color:${k.c};${k.sm ? 'font-size: var(--text-xl)' : ''}">${k.v}</div><div class="kpi-d" style="color:var(--dt3)">${k.s}</div></div>`).join('');
+    const elKpi = document.getElementById('anly-kpi');
+    if (elKpi) {
+        elKpi.innerHTML = [
+            { l: 'Avg Score', v: pd ? pd.avg : d.avg, c: 'var(--dac)', s: 'dari 100' },
+            { l: 'Approval Rate', v: (pd ? pd.apr : d.apr) + '%', c: 'var(--dg)', s: 'Target 65%' },
+            { l: 'Auto-Approved', v: pd ? pd.auto : d.auto, c: 'var(--dp)', s: 'Score 80' },
+            { l: 'Avg Income', v: pd ? pd.inc : d.inc, c: 'var(--dt1)', s: '/bulan', sm: 1 },
+            { l: 'Doc Complete', v: d.doc + '%', c: 'var(--dw)', s: 'Required' },
+        ].map(k => `<div class="kpi"><div class="kpi-l">${k.l}</div><div class="kpi-v" style="color:${k.c};${k.sm ? 'font-size: var(--text-xl)' : ''}">${k.v}</div><div class="kpi-d" style="color:var(--dt3)">${k.s}</div></div>`).join('');
+    }
 
     const bcRow = (items, max) => items.map(([l, n, col]) => {
         const w = Math.round(n / max * 100);
@@ -709,16 +916,19 @@ export function renderAnalytics() {
     }).join('');
 
     const dimStyle = pd ? 'opacity:.45;pointer-events:none' : '';
-    document.getElementById('anly-charts').innerHTML = `
-      <div class="ch-c"><div class="ch-t">Score Distribution</div>${bcRow(d.score.map(([a, b, n, c]) => [`${a}-${b}`, n, c]), d.score.reduce((m, r) => Math.max(m, r[2]), 0))}</div>
-      <div class="ch-c"><div class="ch-t">Income Distribution</div>${bcRow(d.income, d.income.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
-      <div class="ch-c" ${dimStyle ? 'style="' + dimStyle + '"' : ''}><div class="ch-t">Profession Breakdown</div>${bcRow(d.prof, d.prof.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
-      <div class="ch-c" ${dimStyle ? 'style="' + dimStyle + '"' : ''}><div class="ch-t">Top Missing Documents</div>${bcRow(d.miss, d.miss.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
-    `;
+    const elCharts = document.getElementById('anly-charts');
+    if (elCharts) {
+        elCharts.innerHTML = `
+          <div class="ch-c"><div class="ch-t">Score Distribution</div>${bcRow(d.score.map(([a, b, n, c]) => [`${a}-${b}`, n, c]), d.score.reduce((m, r) => Math.max(m, r[2]), 0))}</div>
+          <div class="ch-c"><div class="ch-t">Income Distribution</div>${bcRow(d.income, d.income.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
+          <div class="ch-c" ${dimStyle ? 'style="' + dimStyle + '"' : ''}><div class="ch-t">Profession Breakdown</div>${bcRow(d.prof, d.prof.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
+          <div class="ch-c" ${dimStyle ? 'style="' + dimStyle + '"' : ''}><div class="ch-t">Top Missing Documents</div>${bcRow(d.miss, d.miss.reduce((m, r) => Math.max(m, r[1]), 0))}</div>
+        `;
+    }
 }
 
-// ═══ SCORE CONFIG ═══
-export function renderScoreCfg() {
+//  SCORE CONFIG 
+function renderScoreCfg() {
     const total = state.dimCfg.reduce((s, d) => s + d.max, 0);
     const elTot = document.getElementById('sc-total-disp');
     if (elTot) {
@@ -742,7 +952,7 @@ export function renderScoreCfg() {
         scThresh.innerHTML = state.threshCfg.map((t, i) => `
         <div class="sc-thresh-row">
           <span class="sc-thresh-chip" style="background:${t.bg};color:${t.c}">${t.l}</span>
-          <span style="font-size: var(--text-xs);color:var(--dt3);min-width:28px">≥</span>
+          <span style="font-size: var(--text-xs);color:var(--dt3);min-width:28px"></span>
           <input class="sc-thresh-inp" type="number" min="0" max="100" value="${t.min}" onchange="window.rto.updThreshCfg(${i}, this.value)">
           <span style="font-size: var(--text-xs);color:var(--dt3)">poin</span>
         </div>`).join('');
@@ -752,7 +962,7 @@ export function renderScoreCfg() {
     renderDSR();
 }
 
-export function renderProgCfg() {
+function renderProgCfg() {
     const scProg = document.getElementById('sc-prog-cfg');
     if (!scProg) return;
 
@@ -766,36 +976,36 @@ export function renderProgCfg() {
     </div>`).join('');
 }
 
-export function renderDSR() {
+function renderDSR() {
     const el = document.getElementById('sc-dsr-cfg');
     if (!el) return;
     el.innerHTML = state.dsrCfg.map((d, i) => `
     <div class="sc-dsr-row">
         <span class="sc-dsr-lbl">${d.l}</span>
-        <span style="font-size:var(--text-xs);color:var(--dt3)">≤</span>
+        <span style="font-size:var(--text-xs);color:var(--dt3)"></span>
         <input class="sc-thresh-inp" type="number" value="${d.v}" onchange="window.rto.updDSR(${i}, this.value)">
         <span style="font-size:var(--text-xs);color:var(--dt3)">%</span>
         <div style="width:10px;height:10px;border-radius:50%;background:${d.c};margin-left:auto"></div>
     </div>`).join('');
 }
 
-export function updDSR(i, v) {
+function updDSR(i, v) {
     state.dsrCfg[i].v = parseInt(v) || 0;
 }
 
-export function updDimCfg(idx, val) {
+function updDimCfg(idx, val) {
     state.dimCfg[idx].max = parseInt(val) || 0;
     renderScoreCfg();
 }
 
-export function updThreshCfg(idx, val) {
+function updThreshCfg(idx, val) {
     state.threshCfg[idx].min = parseInt(val) || 0;
 }
 
-export function saveCfg() {
+function saveCfg() {
     const total = state.dimCfg.reduce((s, d) => s + d.max, 0);
     if (total !== 100) {
-        alert('⚠ Total bobot harus 100 poin (sekarang ' + total + ')');
+        alert(' Total bobot harus 100 poin (sekarang ' + total + ')');
         return;
     }
     localStorage.setItem('casan_rto_cfg', JSON.stringify({
@@ -803,10 +1013,10 @@ export function saveCfg() {
         threshCfg: state.threshCfg,
         dsrCfg: state.dsrCfg
     }));
-    alert('✅ Konfigurasi skor & DSR berhasil disimpan!');
+    alert(' Konfigurasi skor & DSR berhasil disimpan!');
 }
 
-export function resetCfg() {
+function resetCfg() {
     if (confirm('Yakin ingin reset semua konfigurasi ke default?')) {
         state.dimCfg = JSON.parse(JSON.stringify(DIM_DEFAULTS));
         state.threshCfg = JSON.parse(JSON.stringify(THRESH_DEFAULTS));
@@ -818,12 +1028,12 @@ export function resetCfg() {
         ];
         renderScoreCfg();
         localStorage.removeItem('casan_rto_cfg');
-        alert('↺ Konfigurasi direset ke default');
+        alert(' Konfigurasi direset ke default');
     }
 }
 
-// ═══ WA TEMPLATES ═══
-export function renderWAScens() {
+//  WA TEMPLATES 
+function renderWAScens() {
     const el = document.getElementById('wa-scen-list');
     if (!el) return;
     el.innerHTML = WA_SCENARIOS.map(s => `
@@ -834,7 +1044,7 @@ export function renderWAScens() {
     </div>`).join('');
 }
 
-export function selWAScen(k) {
+function selWAScen(k) {
     state.selScen = k;
     renderWAScens();
     const s = WA_SCENARIOS.find(x => x.k === k);
@@ -849,13 +1059,13 @@ export function selWAScen(k) {
     if (preview) preview.style.display = 'none';
 }
 
-export function saveWA() {
+function saveWA() {
     if (!state.selScen) { admT('Pilih skenario terlebih dahulu'); return; }
     state.waTmpls[state.selScen] = document.getElementById('wa-tmpl-txt').value;
-    admT('✅ Template tersimpan!');
+    admT(' Template tersimpan!');
 }
 
-export function previewWA() {
+function previewWA() {
     if (!state.selScen) return;
     const tmpl = document.getElementById('wa-tmpl-txt').value;
     const preview = tmpl
@@ -867,80 +1077,101 @@ export function previewWA() {
         .replace(/{amount}/g, 'Rp 266.000')
         .replace(/{credits}/g, '3')
         .replace(/{grace_days}/g, '7')
-        .replace(/{missing_docs}/g, '• KTP Asli\n• Rekening Koran\n• Slip Gaji');
+        .replace(/{missing_docs}/g, ' KTP Asli\n Rekening Koran\n Slip Gaji');
     document.getElementById('wa-preview-txt').textContent = preview;
     document.getElementById('wa-preview').style.display = 'block';
 }
 
-export function resetWA() {
+function resetWA() {
     if (!state.selScen) return;
     const s = WA_SCENARIOS.find(x => x.k === state.selScen);
     state.waTmpls[state.selScen] = s.tmpl;
     document.getElementById('wa-tmpl-txt').value = s.tmpl;
     document.getElementById('wa-preview').style.display = 'none';
-    admT('↺ Template direset ke default');
+    admT(' Template direset ke default');
 }
 
-export function buildWAMsg(a, scenKey) {
-    const ptn = PARTNERS[a.ptn] || { name: a.ptn };
-    const pr = MAIN_PROGS.find(p => p.id === a.prog) || { nm: a.prog, dr: 0 };
-    const tmpl = state.waTmpls[scenKey] || (WA_SCENARIOS.find(s => s.k === scenKey) || {}).tmpl || '';
-    const missStr = a.miss && a.miss.length ? a.miss.map(m => '• ' + m).join('\n') : '(tidak ada)';
-    return tmpl
-        .replace(/{nama}/g, a.nm || '—')
-        .replace(/{app_id}/g, a.id)
-        .replace(/{program}/g, pr.nm || '—')
-        .replace(/{score}/g, (a.score + (a.adj || 0)))
-        .replace(/{dealer}/g, ptn.name)
-        .replace(/{amount}/g, pr.dr ? 'Rp ' + (pr.dr * 7).toLocaleString('id-ID') : '—')
-        .replace(/{credits}/g, '3')
-        .replace(/{grace_days}/g, '7')
-        .replace(/{missing_docs}/g, missStr);
-}
 
-export function copyWAMsg() {
+
+function copyWAMsg() {
     const txt = document.getElementById('wa-msg-txt')?.value;
     if (!txt) return;
-    navigator.clipboard.writeText(txt).then(() => admT('📋 Pesan disalin!')).catch(() => admT('Gagal menyalin'));
+    navigator.clipboard.writeText(txt).then(() => admT(' Pesan disalin!')).catch(() => admT('Gagal menyalin'));
 }
 
-export function openWALink(ph) {
+function openWALink(ph) {
     const msg = document.getElementById('wa-msg-txt')?.value || '';
     const clean = ph.replace(/[^0-9+]/g, '').replace(/^0/, '62').replace(/^\+/, '');
     const url = 'https://wa.me/' + clean + '?text=' + encodeURIComponent(msg);
     window.open(url, '_blank');
-    admT('📱 WhatsApp dibuka!');
+    admT(' WhatsApp dibuka!');
 }
 
 
-// ═══ PICKUP SCHEDULE (ADMIN) ═══
-export function setPUF(f, btnId) {
+//  PICKUP SCHEDULE (ADMIN) 
+function setPUF(f, btnId) {
     state.puFlt = f;
     document.querySelectorAll('[id^="puf-"]').forEach(b => b.classList.remove('on'));
     if (btnId) document.getElementById(btnId).classList.add('on');
     renderPUList();
 }
 
-export function renderPUList() {
+function setPUProgFlt(val) {
+    state.puProgFlt = val;
+    renderPUList();
+}
+
+function renderPUList() {
     const el = document.getElementById('pu-list');
     if (!el) return;
-    const filtered = state.puOrders.filter(p => state.puFlt === 'all' || p.status === state.puFlt);
+    const filtered = state.puOrders.filter(p => {
+        if (state.puFlt !== 'all' && p.status !== state.puFlt) return false;
+        if (state.filter && state.filter.partner && state.filter.partner !== 'all') {
+            if (p.ptn.toLowerCase() !== state.filter.partner.toLowerCase()) return false;
+        }
+        if (state.puProgFlt && state.puProgFlt !== 'all') {
+            if (p.prog !== state.puProgFlt) return false;
+        }
+        return true;
+    });
+
+    // Populate Program Filter Options dynamically for Pickup Schedule based on selected partner
+    const puProgSel = document.getElementById('pu-prog-filter');
+    if (puProgSel) {
+        let progsToKeep = MAIN_PROGS;
+        if (state.filter && state.filter.partner && state.filter.partner !== 'all') {
+            progsToKeep = MAIN_PROGS.filter(p => p.p.toLowerCase() === state.filter.partner.toLowerCase());
+        }
+
+        let opts = `<option value="all">🌐 All Programs</option>`;
+        progsToKeep.forEach(p => {
+            opts += `<option value="${p.id}" ${state.puProgFlt === p.id ? 'selected' : ''}>[${p.p.toUpperCase()}] ${p.nm}</option>`;
+        });
+
+        if (puProgSel.innerHTML !== opts) {
+            puProgSel.innerHTML = opts;
+            if (state.puProgFlt !== 'all' && !progsToKeep.find(p => p.id === state.puProgFlt)) {
+                state.puProgFlt = 'all';
+                puProgSel.value = 'all';
+            }
+        }
+    }
     el.innerHTML = filtered.map(p => {
         const dl = daysLeft(p.deadline);
-        const stMap = { waiting: { cls: 'pu-st-wait', l: '⏳ Menunggu' }, scheduled: { cls: 'pu-st-sched', l: '📅 Terjadwal' }, done: { cls: 'pu-st-done', l: '✅ Selesai' }, overdue: { cls: 'pu-st-overdue', l: '🔴 Terlambat' } };
+        const stMap = { waiting: { cls: 'pu-st-wait', l: ' Menunggu' }, scheduled: { cls: 'pu-st-sched', l: ' Terjadwal' }, done: { cls: 'pu-st-done', l: ' Selesai' }, overdue: { cls: 'pu-st-overdue', l: ' Terlambat' } };
         const st = stMap[p.status] || { cls: '', l: p.status };
         const loc = DEALER_LOCATIONS[p.ptn];
         return `<div class="pu-card ${state.selPU === p.id ? 'sel' : ''}" onclick="window.rto.selPUOrder('${p.id}')">
         <div class="pu-card-top">
-          <div><div class="pu-name">${p.nm}</div><div class="pu-id">${p.appId} · ${p.model}</div></div>
+          <div><div class="pu-name">${p.nm}</div><div class="pu-id">${p.appId}  ${p.model}</div></div>
           <span class="pu-st ${st.cls}">${st.l}</span>
         </div>
         <div class="pu-info">
-          <span>🏪 ${loc ? loc.name : p.ptn}</span>
-          ${p.schedDate ? `<span>📅 ${p.schedDate} ${p.schedTime || ''}</span>` : ''}
+          <span> ${loc ? loc.name : p.ptn}</span>
+          ${p.schedDate ? `<span> ${p.schedDate} ${p.schedTime || ''}</span>` : ''}
         </div>
         <div class="pu-deadline" style="color:${dl < 0 ? 'var(--dd)' : dl <= 3 ? 'var(--dw)' : 'var(--dt3)'}">
-          ${dl < 0 ? '⚠ Melewati deadline' : dl === 0 ? '⚠ Deadline HARI INI' : p.status === 'done' ? '✅ Selesai' : '📅 Deadline: ' + p.deadline + ' (' + dl + 'h lagi)'}
+          ${dl < 0 ? ' Melewati deadline' : dl === 0 ? ' Deadline HARI INI' : p.status === 'done' ? ' Selesai' : ' Deadline: ' + p.deadline + ' (' + dl + 'h lagi)'}
         </div>
       </div>`;
     }).join('') || '<div style="padding:20px;text-align:center;color:var(--dt3);font-size: var(--text-sm)">Tidak ada pickup</div>';
@@ -952,13 +1183,13 @@ export function renderPUList() {
     }
 }
 
-export function selPUOrder(id) {
-    state.selPU = id;
+function selPUOrder(id) {
+    window.state.selPU = id;
     renderPUList();
     renderPUDetail();
 }
 
-export function renderPUDetail() {
+function renderPUDetail() {
     const p = state.puOrders.find(x => x.id === state.selPU);
     if (!p) return;
     const loc = DEALER_LOCATIONS[p.ptn];
@@ -975,46 +1206,55 @@ export function renderPUDetail() {
 
     el.innerHTML = `
       <div class="pu-dh">
-        <div class="pu-dt">${p.nm} <span style="font-size: var(--text-sm);color:var(--dt3)">· ${p.model}</span></div>
+        <div class="pu-dt">${p.nm} <span style="font-size: var(--text-sm);color:var(--dt3)"> ${p.model}</span></div>
         <div class="pu-ds">${p.appId} · Deadline: <b style="color:${dl < 0 ? 'var(--dd)' : dl <= 3 ? 'var(--dw)' : 'var(--dac)'}">${p.deadline}</b></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <div style="background:var(--ds2);border:1px solid var(--db1);border-radius:8px;padding:8px 12px;font-size:var(--text-xs)">
+                <div style="color:var(--dt3);font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Asset</div>
+                <div style="font-weight:800;color:var(--dt1);font-family:'IBM Plex Mono',monospace">${p.plate || '—'}</div>
+                <div style="color:var(--dt3);font-size:10px">${p.vehicleId || '—'}</div>
+            </div>
+            ${p.status !== 'done' ? `<button class="btn" style="align-self:flex-end;font-size:var(--text-xs);padding:6px 14px;background:var(--ds2)" 
+                onclick="window.rto.openAssetAssignment('${p.appId}')">🔄 Change Asset</button>` : ''}
+        </div>
       </div>
   
       <!--Location -->
       <div class="pu-loc-card">
-        <div class="pu-loc-t">📍 Lokasi Pickup Motor</div>
+        <div class="pu-loc-t"> Lokasi Pickup Motor</div>
         <div class="pu-loc-addr">${loc ? loc.name : 'Dealer'}</div>
         <div class="pu-loc-sub">${loc ? loc.addr : ''}</div>
-        <div class="pu-loc-map">🗺️ ${loc ? loc.addr : 'Peta lokasi'}</div>
+        <div class="pu-loc-map"> ${loc ? loc.addr : 'Peta lokasi'}</div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button onclick="window.rto.admT('📍 Alamat disalin!')" class="ov-btn" style="flex:1;font-size: var(--text-xs)">📋 Salin Alamat</button>
-          <button onclick="window.rto.admT('🔗 Membuka Google Maps...')" class="ov-btn" style="flex:1;font-size: var(--text-xs)">🗺️ Google Maps</button>
+          <button onclick="window.rto.admT(' Alamat disalin!')" class="ov-btn" style="flex:1;font-size: var(--text-xs)"> Salin Alamat</button>
+          <button onclick="window.rto.admT(' Membuka Google Maps...')" class="ov-btn" style="flex:1;font-size: var(--text-xs)"> Google Maps</button>
         </div>
       </div>
   
       <!--WA Notification to driver-->
     ${p.status === 'waiting' || p.status === 'overdue' ? `
       <div style="margin:0 16px 12px;padding:10px 12px;background:rgba(34,197,94,.06);border-radius:8px;border:1px solid rgba(34,197,94,.15)">
-        <div style="font-size: var(--text-xs);font-weight:800;color:var(--dg);margin-bottom:6px">📱 Kirim Notifikasi ke Driver</div>
+        <div style="font-size: var(--text-xs);font-weight:800;color:var(--dg);margin-bottom:6px"> Kirim Notifikasi ke Driver</div>
         <div style="font-size: var(--text-xs);color:var(--dt2);line-height:1.5;margin-bottom:8px">Minta driver untuk menjadwalkan pickup dalam <b>${dl > 0 ? dl + ' hari' : 'waktu segera'}</b></div>
         <button onclick="window.rto.sendPickupWA('${p.id}')" style="width:100%;padding:7px;background:linear-gradient(135deg,#16A34A,#15803D);color:#fff;border:none;border-radius:6px;font-size: var(--text-sm);font-weight:700;cursor:pointer">
-          📱 Kirim WA ke ${p.nm}
+           Kirim WA ke ${p.nm}
         </button>
       </div>` : ''
         }
 
       <!--Calendar(driver scheduling) -->
       <div class="cal-wrap">
-        <div class="cal-t">📅 Jadwal Pickup — Pilih Tanggal & Waktu</div>
+        <div class="cal-t"> Jadwal Pickup  Pilih Tanggal & Waktu</div>
         <div id="pu-cal"></div>
-        <div style="font-size: var(--text-xs);font-weight:700;color:var(--dt2);margin-bottom:6px">⏰ Slot Tersedia</div>
+        <div style="font-size: var(--text-xs);font-weight:700;color:var(--dt2);margin-bottom:6px"> Slot Tersedia</div>
         <div class="time-slots" id="pu-slots"></div>
         <button class="pu-confirm-btn" id="pu-confirm-btn" onclick="window.rto.confirmPickup('${p.id}')" ${state.selDate && state.selTime ? '' : 'disabled'}>
-          ${state.selDate && state.selTime ? `✅ Konfirmasi: ${state.selDate} · ${state.selTime}` : '← Pilih tanggal & waktu dulu'}
+          ${state.selDate && state.selTime ? ` Konfirmasi: ${state.selDate}  ${state.selTime}` : ' Pilih tanggal & waktu dulu'}
         </button>
       </div>
   
       <!--Handover Timeline-->
-      <div style="margin:0 16px;font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:8px">📋 Status Handover</div>
+      <div style="margin:0 16px;font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:8px"> Status Handover</div>
       <div class="handover-timeline">
         ${renderHOTimeline(p)}
       </div>
@@ -1022,69 +1262,82 @@ export function renderPUDetail() {
       ${p.hoStatus === 'dealer_confirmed' ? `
         <div style="margin: 16px; padding: 16px; background: var(--ds2); border: 1px solid var(--db1); border-radius: 8px;">
             <div style="font-size: var(--text-base); font-weight: 800; color: var(--dw); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                ⚠️ Verifikasi & Bukti Serah Terima Kendaraan
+                 Verifikasi & Bukti Serah Terima Kendaraan
             </div>
             
-            <!-- SECTION 1: Checkboxes -->
-            <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">1. Verifikasi Fisik & Kelengkapan</div>
-            <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--dt2); margin-bottom: 20px; padding-left: 8pxborder-left: 2px solid var(--db1);" id="ho-checklist-container">
-                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
-                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Fisik kendaraan mulus tanpa baret/kerusakan.
-                </label>
-                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
-                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Baterai terisi penuh (100%).
-                </label>
-                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
-                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Kunci Utama & Kunci Cadangan lengkap.
-                </label>
-                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
-                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> STNK Mobil/Motor tersedia.
-                </label>
-                <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
-                    <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOChecklist()"> Charger & Helm diserahkan ke Driver.
-                </label>
-            </div>
-
-            <!-- SECTION 2: Photos -->
-            <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">2. Bukti Serah Terima (Foto)</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;" id="ho-photos-container">
-                
-                <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-1" onclick="window.rto.mockHOUpload('ho-photo-1', 'Foto Serah Terima Kendaraan')">
-                    <div style="font-size: 24px; margin-bottom: 4px;">📸</div>
-                    <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto Serah Terima Kendaraan</div>
-                    <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- SECTION 1: Checkboxes -->
+                <div>
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">1. Fisik & Kelengkapan</div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--dt2); padding-left: 8px; border-left: 2px solid var(--db1);" id="ho-checklist-container">
+                        <div style="background:var(--ds1); padding:10px; border-radius:8px; margin-bottom:4px; border:1px solid var(--db1); position:relative">
+                            <div style="font-weight:800; color:var(--dw); margin-bottom:4px; font-size:var(--text-xs)">ASSET CONFIRMATION</div>
+                            <div style="font-family:'IBM Plex Mono'; font-size: var(--text-sm); color:var(--dt1); font-weight:700">${p.plate}</div>
+                            <div style="font-size: var(--text-xs); color:var(--dt3)">ID: ${p.vehicleId}</div>
+                            ${p.status !== 'done' ? `<button class="btn" style="position:absolute; top:10px; right:10px; font-size:var(--text-xs); padding:4px 8px; background:var(--ds2); border:1px solid var(--db1); color:var(--dt1)" onclick="window.rto.openAssetAssignment('${p.appId}')">🔄 Change</button>` : ''}
+                            <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start; margin-top:8px; color:var(--dt1); font-weight:700; background:rgba(0,229,195,0.05); padding:6px; border-radius:6px">
+                                <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOPrepChecklist()"> Nopol/STNK Sesuai.
+                            </label>
+                        </div>
+                        <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                            <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOPrepChecklist()"> Fisik kendaraan mulus.
+                        </label>
+                        <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                            <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOPrepChecklist()"> Baterai penuh (100%).
+                        </label>
+                        <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                            <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOPrepChecklist()"> Kunci Utama & Cadangan.
+                        </label>
+                        <label style="display: flex; gap: 10px; cursor: pointer; align-items: flex-start;">
+                            <input type="checkbox" style="margin-top:2px" onchange="window.rto.evalHOPrepChecklist()"> Charger & Helm diserahkan.
+                        </label>
+                    </div>
                 </div>
 
-                <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-2" onclick="window.rto.mockHOUpload('ho-photo-2', 'Foto KTP & Driver dengan Motor')">
-                    <div style="font-size: 24px; margin-bottom: 4px;">📸</div>
-                    <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto KTP & Driver dengan Motor</div>
-                    <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
-                </div>
+                <!-- SECTION 2: Photos -->
+                <div>
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--dt1); margin-bottom: 8px;">2. Bukti Foto Serah Terima</div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;" id="ho-photos-container">
+                        
+                        <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-1" onclick="window.rto.mockHOPrepUpload('ho-photo-1', 'Foto Serah Terima Kendaraan')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">📸</div>
+                            <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto Serah Terima Kendaraan</div>
+                            <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
+                        </div>
 
+                        <div style="border: 2px dashed var(--db1); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s;" id="ho-photo-2" onclick="window.rto.mockHOPrepUpload('ho-photo-2', 'Foto KTP & Driver dengan Motor')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">🤳</div>
+                            <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Foto KTP & Driver dengan Motor</div>
+                            <div style="font-size: var(--text-3xs); color: var(--dt3); margin-top: 4px;">Klik untuk upload</div>
+                        </div>
+
+                    </div>
+                </div>
             </div>
+            
+            <button class="ho-complete-btn" id="btn-ho-complete" disabled style="margin-top:20px; width:100%; padding:14px; background:var(--dg1); color:var(--dg); border:none; border-radius:8px; font-weight:800; font-size:var(--text-sm); opacity: 0.5; cursor: not-allowed; transition: all 0.3s;" onclick="window.rto.markHandoverDone('${p.id}')">✨ Konfirmasi Serah Terima Selesai</button>
         </div>
-        <button class="ho-complete-btn green" id="btn-ho-complete" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.3s;" onclick="window.rto.markHandoverDone('${p.id}')">✅ Konfirmasi Serah Terima Selesai</button>
       ` : ''}
       
-      ${p.status === 'done' ? `<div style="margin:10px 16px;padding:12px;background:var(--dg1);border-radius:8px;border:1px solid rgba(52,211,153,.15);font-size: var(--text-base);color:var(--dg);font-weight:700;text-align:center">✅ Handover selesai · GPS diaktifkan · Rider aktif</div>` : ''}
+      ${p.status === 'done' ? `<div style="margin:10px 16px;padding:12px;background:var(--dg1);border-radius:8px;border:1px solid rgba(52,211,153,.15);font-size: var(--text-base);color:var(--dg);font-weight:700;text-align:center"> Handover selesai  GPS diaktifkan  Rider aktif</div>` : ''}
     `;
 
     renderPUCal();
     renderPUSlots();
 }
 
-export function renderHOTimeline(p) {
+function renderHOTimeline(p) {
     const steps = [
-        { k: 'approved', l: 'Aplikasi Disetujui', s: 'Score ' + p.hoStatus !== 'pending' ? 'Approved' : '—', done: true },
+        { k: 'approved', l: 'Aplikasi Disetujui', s: p.hoStatus !== 'pending' ? 'Approved' : 'Score Validated', done: true },
         { k: 'notified', l: 'Driver Diberitahu', s: 'WA notifikasi terkirim', done: p.status !== 'waiting' || p.hoStatus !== 'pending' },
-        { k: 'scheduled', l: 'Jadwal Disepakati', s: p.schedDate ? p.schedDate + ' · ' + p.schedTime : 'Belum dijadwalkan', done: !!p.schedDate },
+        { k: 'scheduled', l: 'Jadwal Disepakati', s: p.schedDate ? p.schedDate + '  ' + p.schedTime : 'Belum dijadwalkan', done: !!p.schedDate },
         { k: 'dealer_confirmed', l: 'Dealer Siapkan Motor', s: 'Verifikasi unit & GPS', done: p.hoStatus === 'dealer_confirmed' || p.status === 'done' },
         { k: 'done', l: 'Serah Terima Selesai', s: p.status === 'done' ? 'GPS aktif, rider jalan!' : 'Menunggu konfirmasi', done: p.status === 'done' },
     ];
     return steps.map((st, i) => {
         const isActive = !st.done && (i === 0 || (steps[i - 1] && steps[i - 1].done));
         return `<div class="ho-step">
-        <div class="ho-dot ${st.done ? 'done' : isActive ? 'active' : 'pending'}">${st.done ? '✓' : isActive ? '→' : i + 1}</div>
+        <div class="ho-dot ${st.done ? 'done' : isActive ? 'active' : 'pending'}">${st.done ? 'DONE' : isActive ? '->' : i + 1}</div>
         <div class="ho-info">
           <div class="ho-t" style="color:${st.done ? 'var(--dg)' : isActive ? 'var(--dac)' : 'var(--dt3)'}">${st.l}</div>
           <div class="ho-s">${st.s}</div>
@@ -1093,7 +1346,7 @@ export function renderHOTimeline(p) {
     }).join('');
 }
 
-export function renderPUCal() {
+function renderPUCal() {
     const p = state.puOrders.find(x => x.id === state.selPU);
     const now = new Date();
     const deadlineDate = p ? new Date(p.deadline) : null;
@@ -1104,13 +1357,13 @@ export function renderPUCal() {
     const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
     let html = `<div class="cal-nav">
-      <button class="cal-nb" onclick="window.rto.calNav(-1)">‹</button>
+      <button class="cal-nb" onclick="window.rto.calNav(-1)"><</button>
       <span class="cal-nav-t">${months[month]} ${year}</span>
-      <button class="cal-nb" onclick="window.rto.calNav(1)">›</button>
+      <button class="cal-nb" onclick="window.rto.calNav(1)">></button>
     </div>
     <div class="cal-grid">
         ${days.map(d => `<div class="cal-dh">${d}</div>`).join('')}
-        ${Array(firstDay).fill('<div class="cal-day cal-empty">·</div>').join('')}
+        ${Array(firstDay).fill('<div class="cal-day cal-empty">-</div>').join('')}
         ${Array.from({ length: daysInMonth }, (_, i) => {
         const d = i + 1;
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -1131,19 +1384,19 @@ export function renderPUCal() {
     document.getElementById('pu-cal').innerHTML = html;
 }
 
-export function calNav(dir) {
+function calNav(dir) {
     state.calMonth += dir;
     if (state.calMonth > 11) { state.calMonth = 0; state.calYear++ }
     if (state.calMonth < 0) { state.calMonth = 11; state.calYear-- }
     renderPUCal();
 }
 
-export function pickCalDay(dateStr, puId) {
+function pickCalDay(dateStr, puId) {
     state.selDate = dateStr; state.selTime = null;
     renderPUCal(); renderPUSlots();
 }
 
-export function renderPUSlots() {
+function renderPUSlots() {
     const p = state.puOrders.find(x => x.id === state.selPU);
     if (!p) return;
     const loc = DEALER_LOCATIONS[p.ptn];
@@ -1157,44 +1410,175 @@ export function renderPUSlots() {
     const btn = document.getElementById('pu-confirm-btn');
     if (btn) {
         btn.disabled = !(state.selDate && state.selTime);
-        btn.textContent = state.selDate && state.selTime ? `✅ Konfirmasi: ${state.selDate} · ${state.selTime}` : '← Pilih tanggal & waktu dulu';
+        btn.textContent = state.selDate && state.selTime ? ` Konfirmasi: ${state.selDate}  ${state.selTime}` : ' Pilih tanggal & waktu dulu';
     }
 }
 
-export function pickSlot(time, puId) {
+function pickSlot(time, puId) {
     state.selTime = time;
     renderPUSlots();
 }
 
-export function confirmPickup(puId) {
+function confirmPickup(puId) {
     if (!state.selDate || !state.selTime) { admT('Pilih tanggal & waktu terlebih dahulu', 'er'); return }
     const p = state.puOrders.find(x => x.id === puId);
     if (!p) return;
     p.schedDate = state.selDate; p.schedTime = state.selTime; p.status = 'scheduled'; p.hoStatus = 'dealer_confirmed';
-    admT(`✅ Pickup dikonfirmasi: ${p.nm} · ${state.selDate} · ${state.selTime}`);
-    renderPUList(); renderPUDetail();
+    admT(`OK. Pickup confirmed: ${p.nm} - ${state.selDate} - ${state.selTime}`);
+    renderPUList();
+    renderPUDetail();
 }
 
-export function sendPickupWA(puId) {
+function sendPickupWA(puId) {
     const p = state.puOrders.find(x => x.id === puId);
     if (!p) return;
-    admT(`📱 WA terkirim ke ${p.nm}(${p.ph})`);
+    admT(`WA sent to ${p.nm}(${p.ph})`);
     if (p.status === 'waiting') p.hoStatus = 'notified';
-    renderPUList(); renderPUDetail();
+    renderPUList();
+    renderPUDetail();
 }
 
-export function markHandoverDone(puId) {
-    const p = state.puOrders.find(x => x.id === puId);
-    if (!p) return;
-    p.status = 'done'; p.hoStatus = 'done';
-    const app = state.admApps.find(a => a.id === p.appId);
-    if (app) app.dec = 'active';
-    admT('🎉 Serah terima selesai! GPS diaktifkan → ' + p.nm);
-    renderPUList(); renderPUDetail();
+
+function openAssetAssignment(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    // Filter available vehicles from global state
+    if (!window.state || !window.state.vehicles) {
+        admT('Global vehicle state not found');
+        return;
+    }
+
+    // Include currently-assigned vehicle (for swap cases) as selectable
+    const puOrder = (state.puOrders || []).find(o => o.appId === appId);
+    const currentVehicleId = puOrder ? puOrder.vehicleId : null;
+
+    const available = window.state.vehicles.filter(v =>
+        (v.status === 'available' && v.programId === a.prog) ||
+        (v.id === currentVehicleId)
+    );
+
+    // Use pendingVehicle from app state, or fall back to currently assigned one
+    const pending = a.pendingVehicle || (puOrder ? { id: puOrder.vehicleId, plate: puOrder.plate } : null);
+
+    let listHtml = '';
+    if (available.length === 0) {
+        listHtml = `<div style="padding:40px;text-align:center;color:var(--dt3);border:2px dashed var(--db1);border-radius:12px">
+            <div style="font-size:32px;margin-bottom:12px"></div>
+            <div style="font-weight:700;color:var(--dt1)">No Assets Available</div>
+            <div style="font-size:var(--text-xs)">There are no available vehicles for the <b>${a.prog}</b> program.</div>
+        </div>`;
+    } else {
+        listHtml = `<div style="display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;padding-right:4px">
+            ${available.map(v => {
+            const isSelected = pending && pending.id === v.id;
+            const isCurrent = currentVehicleId === v.id;
+            return `<div style="background:${isSelected ? 'var(--dg1)' : 'var(--ds2)'};border:2px solid ${isSelected ? 'var(--dg)' : 'var(--db1)'};border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.15s"
+                         onclick="window.rto.stageAssetSelection('${appId}','${v.id}','${v.plate}')">
+                    <div>
+                        <div style="font-weight:800;color:var(--dt1);font-size:var(--text-base)">${v.plate}</div>
+                        <div style="font-size:var(--text-xs);color:var(--dt3)">${v.id} · ${v.model}${isCurrent ? ' <span style="color:var(--dac);font-weight:700">(current)</span>' : ''}</div>
+                    </div>
+                    <div style="color:${isSelected ? 'var(--dg)' : 'var(--dt3)'};font-weight:800;font-size:var(--text-xs)">${isSelected ? '✅ Selected' : 'Select'}</div>
+                </div>`;
+        }).join('')}
+        </div>`;
+    }
+
+    // Confirm button — only visible when a vehicle is staged
+    const confirmHtml = pending
+        ? `<button class="btn btn-primary" style="padding:10px 20px;flex:1;font-weight:800;background:var(--dg);color:#fff;border:none"
+                onclick="window.rto.assignAsset('${appId}','${pending.id}','${pending.plate}')">✅ Confirm Asset (${pending.plate})</button>`
+        : `<button class="btn" style="padding:10px 20px;flex:1;opacity:0.5;cursor:not-allowed" disabled>Select a vehicle first</button>`;
+
+    const html = `
+        <div style="padding:4px">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;background:var(--ds2);padding:14px;border-radius:10px;border:1px solid var(--db1)">
+                <div style="width:44px;height:44px;border-radius:10px;background:var(--dac);color:#000;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"></div>
+                <div>
+                    <div style="font-weight:800;color:var(--dt1);font-size:var(--text-base)">Pilih Asset Kendaraan</div>
+                    <div style="font-size:var(--text-xs);color:var(--dt3)">Assigning asset to <b>${a.nm}</b> · ${a.prog}</div>
+                </div>
+            </div>
+
+            ${listHtml}
+
+            <div class="modal-actions" style="margin-top:16px;display:flex;gap:10px">
+                ${confirmHtml}
+                <button class="btn" style="padding:10px 16px" onclick="window.closeModals()">Cancel</button>
+            </div>
+        </div>
+    `;
+
+    const titleEl = document.getElementById('gpsModalTitle');
+    const contentEl = document.getElementById('gpsModalContent');
+    const overlay = document.getElementById('gpsModalOverlay');
+
+    if (titleEl && contentEl && overlay) {
+        titleEl.textContent = ' Asset Assignment';
+        contentEl.innerHTML = html;
+        overlay.classList.add('active');
+    }
+}
+
+// Stage asset selection (highlight only, no commit)
+function stageAssetSelection(appId, vehicleId, plate) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    a.pendingVehicle = { id: vehicleId, plate };
+    // Re-render modal to show updated selection
+    openAssetAssignment(appId);
+}
+
+
+function assignAsset(appId, vehicleId, plate, dontClose = false) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    // Clear staged selection
+    delete a.pendingVehicle;
+
+    // Check if there's already a pickup order for this app (Asset Swapping case)
+    let order = state.puOrders.find(o => o.appId === appId);
+
+    if (order) {
+        // Un-reserve the previous vehicle if it was different
+        if (order.vehicleId && order.vehicleId !== vehicleId) {
+            const oldVehicle = window.state.vehicles.find(v => v.id === order.vehicleId);
+            if (oldVehicle) oldVehicle.status = 'available';
+        }
+
+        // Update existing order
+        order.vehicleId = vehicleId;
+        order.plate = plate;
+    } else {
+        // Create new order
+        const pr = MAIN_PROGS.find(p => p.id === a.prog);
+        addToPickupQueue(appId, a.nm, a.ph, a.ptn, a.prog, pr ? pr.nm : 'Motor Listrik', vehicleId, plate);
+    }
+
+    // Reserve the new vehicle
+    const vehicle = window.state.vehicles.find(v => v.id === vehicleId);
+    if (vehicle) {
+        vehicle.status = 'reserved';
+    }
+
+    a.dec = 'approved';
+    window.closeModals(); // always close after confirm
     admRTbl();
+    renderPUList(); // Refresh queue view
+    admT(' Asset assigned!');
+    // Refresh detail panel if this app is selected
+    if (state.selApp === appId) admSel(appId);
+    // Refresh pickup detail if this pickup is currently selected
+    if (state.selPU) {
+        const p = state.puOrders.find(x => x.id === state.selPU);
+        if (p && p.appId === appId) renderPUDetail();
+    }
 }
 
-export function evalHOChecklist() {
+
+function evalHOPrepChecklist() {
     const container = document.getElementById('ho-checklist-container');
     const photo1 = document.getElementById('ho-photo-1');
     const photo2 = document.getElementById('ho-photo-2');
@@ -1221,67 +1605,881 @@ export function evalHOChecklist() {
     }
 }
 
-export function mockHOUpload(elId, label) {
+function mockHOPrepUpload(elId, label) {
     const el = document.getElementById(elId);
     if (!el) return;
     if (el.classList.contains('uploaded')) return; // Prevent double trigger
 
     // Simulate an upload delay
-    el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px; animation: pulse 1s infinite;">⏳</div>
+    el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px; animation: pulse 1s infinite;"></div>
                     <div style="font-size: var(--text-xs); color: var(--dt2); font-weight: 600;">Mengunggah...</div>`;
 
     setTimeout(() => {
         el.classList.add('uploaded');
         el.style.borderColor = 'var(--c-success)';
         el.style.background = 'var(--dg1)';
-        el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px;">✅</div>
+        el.innerHTML = `<div style="font-size: 24px; margin-bottom: 4px;"></div>
                         <div style="font-size: var(--text-xs); color: var(--c-success); font-weight: 700;">${label}</div>
                         <div style="font-size: var(--text-3xs); color: var(--c-success); margin-top: 4px;">Berhasil Diunggah</div>`;
 
-        admT(`✅ ${label} berhasil diunggah!`);
-        evalHOChecklist(); // Re-evaluate the Master button
+        admT(` ${label} berhasil diunggah!`);
+        evalHOPrepChecklist(); // Re-evaluate the Master button
     }, 800);
 }
 
+function openApprovalConfirmation(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
 
+    // Check if asset already assigned
+    const order = state.puOrders.find(o => o.appId === appId);
+    const hasAsset = !!(order && order.vehicleId);
+
+    // Safe check for global state
+    const vehicles = (window.state && window.state.vehicles) ? window.state.vehicles : [];
+    const available = vehicles.filter(v => v.status === 'available' && v.programId === a.prog);
+
+    let html = `
+        <div style="padding:4px">
+            <div style="background:var(--ds2); border:1px solid var(--db1); border-radius:12px; padding:16px; margin-bottom:20px; display:flex; align-items:center; gap:16px">
+                <div style="width:50px; height:50px; border-radius:50%; background:var(--dg1); display:flex; align-items:center; justify-content:center; font-size:24px"></div>
+                <div>
+                    <div style="font-weight:800; color:var(--dt1); font-size:var(--text-lg)">Approve Application</div>
+                    <div style="font-size:var(--text-xs); color:var(--dt3)">${a.nm}  ${a.id}</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px">
+                <!-- Left: Asset Selection -->
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:var(--text-xs); color:var(--dac); text-transform:uppercase; letter-spacing:1px">1. Assignment Asset</h4>
+                    ${hasAsset ? `
+                        <div style="background:var(--dg1); border:1px solid var(--dg); border-radius:8px; padding:12px; display:flex; justify-content:space-between; align-items:center">
+                            <div>
+                                <div style="font-weight:800; color:var(--dg)">${order.plate}</div>
+                                <div style="font-size:var(--text-2xs); color:var(--dt3)">${order.vehicleId}  ${order.model}</div>
+                            </div>
+                            <button class="btn" style="padding:4px 8px; font-size:10px" onclick="window.rto.openAssetAssignment('${appId}')">Ubah Asset</button>
+                        </div>
+                    ` : `
+                        ${available.length === 0 ? `
+                            <div style="color:var(--dd); font-size:var(--text-sm); font-weight:700; text-align:center; padding:20px; border:1px dashed var(--dd); border-radius:8px">
+                                 No assets available for ${a.prog}!
+                            </div>
+                        ` : `
+                            <div style="display:flex; flex-direction:column; gap:8px; max-height:200px; overflow-y:auto; padding-right:8px">
+                                ${available.slice(0, 5).map(v => `
+                                    <div style="background:var(--ds2); border:1px solid var(--db1); border-radius:8px; padding:10px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:all 0.2s;" 
+                                         onmouseover="this.style.borderColor='var(--dac)'" onmouseout="this.style.borderColor='var(--db1)'"
+                                         onclick="window.rto.assignAsset('${appId}', '${v.id}', '${v.plate}', true); window.rto.openApprovalConfirmation('${appId}')">
+                                        <div>
+                                            <div style="font-weight:700; color:var(--dt1); font-size:var(--text-sm)">${v.plate}</div>
+                                            <div style="font-size:var(--text-3xs); color:var(--dt3)">${v.model}</div>
+                                        </div>
+                                        <div style="color:var(--dac); font-size:10px; font-weight:800">Assign </div>
+                                    </div>
+                                `).join('')}
+                                ${available.length > 5 ? `<div style="text-align:center; font-size:10px; color:var(--dt3)">And ${available.length - 5} more available...</div>` : ''}
+                            </div>
+                        `}
+                    `}
+                </div>
+
+                <!-- Right: WA Preview -->
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:var(--text-xs); color:var(--dp); text-transform:uppercase; letter-spacing:1px">2. WhatsApp Notification</h4>
+                    <div style="background:var(--ds3); border-radius:8px; padding:12px; height:180px; overflow-y:auto; margin-bottom:10px; position:relative">
+                        <div id="wa-approval-preview" style="font-size:var(--text-xs); color:var(--dt2); line-height:1.4; white-space:pre-line">
+                            ${buildWAMsg(a, 'approved')}
+                        </div>
+                        <div style="position:absolute; bottom:8px; right:8px; opacity:0.3; font-size:24px"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px">
+                <button class="btn" style="padding:10px 20px" onclick="window.closeModals()">Batal</button>
+                <button class="btn" style="padding:10px 24px; background:var(--dg1); color:var(--dg); border:1px solid var(--dg); font-weight:800; ${!hasAsset ? 'opacity:0.5; pointer-events:none' : ''}" 
+                        onclick="window.rto.sendApprovedWA('${appId}')">Confirm & Send WA</button>
+                <button class="btn" style="padding:10px 24px; background:var(--dac); color:#000; border:none; font-weight:800; ${!hasAsset ? 'opacity:0.5; pointer-events:none' : ''}" 
+                        onclick="window.rto.assignAsset('${appId}', '${order ? order.vehicleId : ''}', '${order ? order.plate : ''}'); window.closeModals()">Confirm Only</button>
+            </div>
+        </div>
+    `;
+
+    const titleEl = document.getElementById('gpsModalTitle');
+    const contentEl = document.getElementById('gpsModalContent');
+    const overlay = document.getElementById('gpsModalOverlay');
+
+    if (titleEl && contentEl && overlay) {
+        titleEl.innerHTML = `<div style="display:flex; align-items:center; gap:12px; color:var(--dg)"><span></span> Konfirmasi Persetujuan</div>`;
+        contentEl.innerHTML = html;
+        overlay.classList.add('active');
+    }
+}
+
+function sendApprovedWA(appId) {
+    finalizeDecision(appId, 'approved', true, 'approved');
+}
+
+
+function openAppDecisionModal(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const html = `
+        <div style="padding:4px">
+            <div style="background:var(--ds2); border:1px solid var(--db1); border-radius:12px; padding:16px; margin-bottom:24px; display:flex; align-items:center; gap:16px">
+                <div style="width:40px; height:40px; border-radius:50%; background:var(--dac1); display:flex; align-items:center; justify-content:center; font-size:20px"></div>
+                <div>
+                    <div style="font-weight:800; color:var(--dt1); font-size:var(--text-lg)">Application Decision</div>
+                    <div style="font-size:var(--text-xs); color:var(--dt3)">${a.nm}  ${a.id}</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:24px">
+                <!-- Accept -->
+                <div class="sc-cfg-card" style="padding:16px; cursor:pointer; text-align:center; border:2px solid transparent; transition:all 0.2s" 
+                     onmouseover="this.style.borderColor='var(--dg)'" onmouseout="this.style.borderColor='transparent'"
+                     onclick="window.rto.openApprovalConfirmation('${appId}')">
+                    <div style="font-size:24px; margin-bottom:8px"></div>
+                    <div style="font-weight:800; color:var(--dg)">ACCEPT</div>
+                    <div style="font-size:var(--text-2xs); color:var(--dt3)">Assign asset & send WA</div>
+                </div>
+
+                <!-- Reject -->
+                <div class="sc-cfg-card" style="padding:16px; cursor:pointer; text-align:center; border:2px solid transparent; transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dd)'" onmouseout="this.style.borderColor='transparent'"
+                     onclick="window.rto.confirmReject('${appId}')">
+                    <div style="font-size:24px; margin-bottom:8px"></div>
+                    <div style="font-weight:800; color:var(--dd)">REJECT</div>
+                    <div style="font-size:var(--text-2xs); color:var(--dt3)">Select reasons for decline</div>
+                </div>
+
+                <!-- Required Docs -->
+                <div class="sc-cfg-card" style="padding:16px; cursor:pointer; text-align:center; border:2px solid transparent; transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dw)'" onmouseout="this.style.borderColor='transparent'"
+                     onclick="window.rto.confirmDocs('${appId}')">
+                    <div style="font-size:24px; margin-bottom:8px"></div>
+                    <div style="font-weight:800; color:var(--dw)">DOCS REQ.</div>
+                    <div style="font-size:var(--text-2xs); color:var(--dt3)">Mark missing documents</div>
+                </div>
+
+                <!-- Extend Review -->
+                <div class="sc-cfg-card" style="padding:16px; cursor:pointer; text-align:center; border:2px solid transparent; transition:all 0.2s"
+                     onmouseover="this.style.borderColor='var(--dp)'" onmouseout="this.style.borderColor='transparent'"
+                     onclick="window.rto.confirmReview('${appId}')">
+                    <div style="font-size:24px; margin-bottom:8px"></div>
+                    <div style="font-weight:800; color:var(--dp)">REVIEW</div>
+                    <div style="font-size:var(--text-2xs); color:var(--dt3)">Extend manual review time</div>
+                </div>
+            </div>
+
+            <div style="text-align:right">
+                <button class="btn" style="padding:8px 24px" onclick="window.closeModals()">Tutup</button>
+            </div>
+        </div>
+    `;
+
+    const titleEl = document.getElementById('gpsModalTitle');
+    const contentEl = document.getElementById('gpsModalContent');
+    const overlay = document.getElementById('gpsModalOverlay');
+
+    if (titleEl && contentEl && overlay) {
+        titleEl.textContent = 'Decide Application';
+        contentEl.innerHTML = html;
+        overlay.classList.add('active');
+    }
+}
+
+function confirmReject(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const reasons = ['Skor Terlalu Rendah (< 60)', 'Area di Luar Jangkauan', 'Dokumen tidak valid/palsu', 'Riwayat kredit buruk (ID Check)', 'Data tidak sinkron', 'Lainnya'];
+
+    const html = `
+        <div style="padding:4px">
+            <h4 style="margin-top:0; color:var(--dd)">Select Rejection Reasons</h4>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px; max-height:250px; overflow-y:auto">
+                ${reasons.map(r => `<label style="display:flex; align-items:center; gap:10px; padding:10px; background:var(--ds2); border-radius:8px; cursor:pointer">
+                    <input type="checkbox" name="reject_reason" value="${r}">
+                    <span style="font-size:var(--text-sm); color:var(--dt1)">${r}</span>
+                </label>`).join('')}
+            </div>
+            <textarea id="reject-note" class="ov-in" style="width:100%; height:80px; margin-bottom:20px; padding:10px; font-size:var(--text-xs)" placeholder="Catatan tambahan (opsional)..."></textarea>
+            
+            <div class="modal-actions">
+                <button class="btn" onclick="window.rto.openAppDecisionModal('${appId}')">Kembali</button>
+                <button class="btn" style="background:var(--dd); color:#fff; border:none" onclick="window.rto.openStatusWAConfirmation('${appId}', 'declined')">Proceed to WA Confirmation </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('gpsModalContent').innerHTML = html;
+}
+
+function confirmDocs(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const allDocs = [...DOCS.id, ...DOCS.work];
+    const html = `
+        <div style="padding:4px">
+            <h4 style="margin-top:0; color:var(--dw)">Select Missing Documents</h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:20px">
+                ${allDocs.map(d => `<label style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--ds2); border-radius:8px; cursor:pointer">
+                    <input type="checkbox" name="missing_doc" value="${d.id}" ${a.miss && a.miss.includes(d.id) ? 'checked' : ''}>
+                    <span style="font-size:var(--text-xs)">${d.ic} ${d.n}</span>
+                </label>`).join('')}
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="window.rto.openAppDecisionModal('${appId}')">Kembali</button>
+                <button class="btn" style="background:var(--dw); color:#fff; border:none" onclick="window.rto.openStatusWAConfirmation('${appId}', 'missing_docs')">Proceed to WA Confirmation </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('gpsModalContent').innerHTML = html;
+}
+
+function confirmReview(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const html = `
+        <div style="padding:4px">
+            <h4 style="margin-top:0; color:var(--dp)">Extend Manual Review</h4>
+            <p style="font-size:var(--text-xs); color:var(--dt3); margin-bottom:16px">Move this application to manual review stage. Add notes for the analyst.</p>
+            <textarea id="review-note" class="ov-in" style="width:100%; height:120px; margin-bottom:20px; padding:10px; font-size:var(--text-sm)" placeholder="Analyst report / investigation needed..."></textarea>
+            
+            <div class="modal-actions">
+                <button class="btn" onclick="window.rto.openAppDecisionModal('${appId}')">Kembali</button>
+                <button class="btn" style="background:var(--dp); color:#fff; border:none" onclick="window.rto.openStatusWAConfirmation('${appId}', 'review')">Proceed to WA Confirmation </button>
+            </div>
+        </div>
+    `;
+    document.getElementById('gpsModalContent').innerHTML = html;
+}
+
+
+function openStatusWAConfirmation(appId, scenKey) {
+    const a = JSON.parse(JSON.stringify(state.admApps.find(x => x.id === appId))); // Clone for preview
+    if (!a) return;
+
+    // Capture temporary data based on scenario
+    let summaryHtml = '';
+    let status = '';
+
+    if (scenKey === 'declined') {
+        const checked = Array.from(document.querySelectorAll('input[name="reject_reason"]:checked')).map(i => i.value);
+        const note = document.getElementById('reject-note').value;
+        a.note = (checked.join(', ') + '. ' + note).trim();
+        status = 'declined';
+        summaryHtml = `<div style="color:var(--dd); font-weight:800; font-size:var(--text-sm); margin-bottom:10px"> REJECTION SUMMARY</div>
+                       <div style="font-size:var(--text-xs); color:var(--dt2); line-height:1.5">${a.note || 'No reason provided.'}</div>`;
+    } else if (scenKey === 'missing_docs') {
+        a.miss = Array.from(document.querySelectorAll('input[name="missing_doc"]:checked')).map(i => i.value);
+        status = 'pending_docs';
+        summaryHtml = `<div style="color:var(--dw); font-weight:800; font-size:var(--text-sm); margin-bottom:10px"> MISSING DOCUMENTS</div>
+                       <div style="font-size:var(--text-xs); color:var(--dt2); line-height:1.5">${a.miss.map(m => ' ' + m.toUpperCase()).join('<br>')}</div>`;
+    } else if (scenKey === 'review') {
+        a.note = document.getElementById('review-note').value;
+        status = 'review';
+        summaryHtml = `<div style="color:var(--dp); font-weight:800; font-size:var(--text-sm); margin-bottom:10px"> REVIEW NOTES</div>
+                       <div style="font-size:var(--text-xs); color:var(--dt2); line-height:1.5">${a.note || 'Proceed with manual analysis.'}</div>`;
+    }
+
+    // Store temporary data for the finalizer to avoid massive strings in HTML
+    if (!window.rto._tempDec) window.rto._tempDec = {};
+    window.rto._tempDec[appId] = { note: a.note, miss: a.miss };
+
+    const html = `
+        <div style="padding:4px">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px">
+                <!-- Left Side: Decision Summary -->
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:16px; font-size:var(--text-xs); color:var(--dt3); text-transform:uppercase; letter-spacing:1px">1. Decision Review</h4>
+                    <div style="background:var(--ds2); border-radius:8px; padding:12px; border:1px solid var(--db1)">
+                        ${summaryHtml}
+                    </div>
+                </div>
+
+                <!-- Right Side: WA Preview -->
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:var(--text-xs); color:var(--dt3); text-transform:uppercase; letter-spacing:1px">2. WhatsApp Notification</h4>
+                    <div style="background:var(--ds3); border-radius:8px; padding:12px; height:200px; overflow-y:auto; border:1px solid var(--db1); position:relative">
+                        <div style="font-size:var(--text-xs); color:var(--dt2); line-height:1.4; white-space:pre-line">
+                            ${buildWAMsg(a, scenKey)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px">
+                <button class="btn" style="padding:10px 20px" onclick="window.rto.openAppDecisionModal('${appId}')">Ubah Keputusan</button>
+                <button class="btn" style="padding:10px 24px; background:var(--ds2); border:1px solid var(--db1); color:var(--dt1); font-weight:800"
+                        onclick="window.rto.finalizeDecision('${appId}', '${status}', false)">Confirm Only</button>
+                <button class="btn" style="padding:10px 24px; background:var(--dac); color:#000; border:none; font-weight:800"
+                        onclick="window.rto.finalizeDecision('${appId}', '${status}', true, '${scenKey}')">Confirm & Send WA</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('gpsModalTitle').textContent = 'Confirm & Notify';
+    document.getElementById('gpsModalContent').innerHTML = html;
+}
+
+function finalizeDecision(appId, status, sendWA, scenKey) {
+    const a = state.admApps.find(x => x.id === appId);
+    const temp = window.rto._tempDec ? window.rto._tempDec[appId] : null;
+    if (!a) return;
+
+    a.dec = status;
+    if (temp) {
+        a.note = temp.note || '';
+        a.miss = temp.miss || [];
+        delete window.rto._tempDec[appId];
+    }
+
+    if (sendWA && scenKey) {
+        const msg = buildWAMsg(a, scenKey);
+        const cleanPh = a.ph.replace(/[^0-9]/g, '').replace(/^0/, '62');
+        window.open(`https://wa.me/${cleanPh}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    window.closeModals();
+    admRTbl();
+    admT(' Decision applied to ' + appId);
+}
+
+
+function openHandoverConfirmation(puId) {
+    const o = state.puOrders.find(x => x.id === puId);
+    if (!o) return;
+
+    const html = `
+        <div style="padding:4px">
+            <div style="background:var(--ds2); border:1px solid var(--db1); border-radius:12px; padding:16px; margin-bottom:20px; display:flex; align-items:center; gap:16px">
+                <div style="width:50px; height:50px; border-radius:50%; background:var(--dg1); display:flex; align-items:center; justify-content:center; font-size:24px"></div>
+                <div>
+                    <div style="font-weight:800; color:var(--dt1); font-size:var(--text-lg)">Final Handover Check</div>
+                    <div style="font-size:var(--text-xs); color:var(--dt3)">${o.nm}  ${o.id}</div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px">
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:var(--text-xs); color:var(--dac); text-transform:uppercase; letter-spacing:1px">1. Physical Inspection</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px">
+                        ${['Kondisi Body & Cat', 'Fungsi Lampu & Klakson', 'Tekanan Ban', 'Kapasitas Baterai 100%', 'Charger & STNK Tool'].map((item, idx) => `
+                            <label style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--ds2); border-radius:8px; cursor:pointer">
+                                <input type="checkbox" id="ho-check-${idx}" onchange="window.rto.evalHOFinalChecklist('${puId}')">
+                                <span style="font-size:var(--text-xs); color:var(--dt2)">${item}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="background:var(--ds1); border:1px solid var(--db1); border-radius:12px; padding:16px">
+                    <h4 style="margin-top:0; margin-bottom:12px; font-size:var(--text-xs); color:var(--dp); text-transform:uppercase; letter-spacing:1px">2. Documentation</h4>
+                    <div style="display:flex; flex-direction:column; gap:12px">
+                        <div style="border:1px dashed var(--db2); border-radius:8px; padding:20px; text-align:center; cursor:pointer" onclick="window.rto.mockHOFinalUpload('${puId}', 'unit')">
+                            <div style="font-size:24px; margin-bottom:4px"></div>
+                            <div style="font-size:var(--text-3xs); color:var(--dt3)">Foto Unit & Pelat</div>
+                            <div id="ho-up-unit" style="margin-top:4px; font-size:9px; color:var(--dg); font-weight:800; display:none"> Terunggah</div>
+                        </div>
+                        <div style="border:1px dashed var(--db2); border-radius:8px; padding:20px; text-align:center; cursor:pointer" onclick="window.rto.mockHOFinalUpload('${puId}', 'sign')">
+                            <div style="font-size:24px; margin-bottom:4px"></div>
+                            <div style="font-size:var(--text-3xs); color:var(--dt3)">Tanda Tangan Digital</div>
+                            <div id="ho-up-sign" style="margin-top:4px; font-size:9px; color:var(--dg); font-weight:800; display:none"> Terarsip</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:12px">
+                <button class="btn" style="padding:10px 20px" onclick="window.closeModals()">Batal</button>
+                <button id="ho-complete-btn" class="btn" style="padding:10px 24px; background:var(--dg); color:#000; border:none; font-weight:800; opacity:0.5; pointer-events:none" 
+                        onclick="window.rto.completeHandover('${puId}')">LENGKAPI SERAH TERIMA</button>
+            </div>
+        </div>
+    `;
+
+    const titleEl = document.getElementById('gpsModalTitle');
+    const contentEl = document.getElementById('gpsModalContent');
+    const overlay = document.getElementById('gpsModalOverlay');
+
+    if (titleEl && contentEl && overlay) {
+        titleEl.textContent = 'Serah Terima Unit';
+        contentEl.innerHTML = html;
+        overlay.classList.add('active');
+    }
+}
+
+function evalHOFinalChecklist(puId) {
+    const checks = document.querySelectorAll('input[id^="ho-check-"]:checked').length;
+    const btn = document.getElementById('ho-complete-btn');
+    if (!btn) return;
+
+    if (checks === 5) {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+    } else {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+    }
+}
+
+function mockHOFinalUpload(puId, type) {
+    const el = document.getElementById('ho-up-' + type);
+    if (el) el.style.display = 'block';
+    admT(' Photo stored successfully');
+}
+
+function markHandoverDone(puId) {
+    const o = state.puOrders.find(x => x.id === puId);
+    if (!o) return;
+
+    // Trigger Handover Confirmation Modal in UI
+    if (window.rto.openHandoverConfirmation) {
+        window.rto.openHandoverConfirmation(puId);
+    } else {
+        // Fallback for direct completion if UI not ready (unlikely)
+        completeHandover(puId);
+    }
+}
+
+function completeHandover(puId) {
+    const o = state.puOrders.find(x => x.id === puId);
+    if (!o) return;
+
+    // Update order status
+    o.status = 'done';
+    o.hoStatus = 'completed';
+    o.hoDate = new Date().toISOString();
+
+    // Link vehicle to customer in main state
+    if (o.vehicleId) {
+        const vehicle = window.state.vehicles.find(v => v.id === o.vehicleId);
+        if (vehicle) {
+            vehicle.status = 'active';
+            vehicle.customer = o.nm;
+            vehicle.customerPhone = o.ph;
+            vehicle.owner = o.ptn;
+            vehicle.programId = o.prog;
+            vehicle.programType = MAIN_PROGS.find(p => p.id === o.prog)?.ty || 'RTO';
+            // Set initial credits (e.g. 7 days from grace)
+            vehicle.credits = 7;
+        }
+    }
+
+    renderPUList();
+    admT(` Handover completed for ${o.nm} (${o.id})`);
+
+    // Refresh fleet UI if visible
+    if (window.renderVehicleListView) window.renderVehicleListView();
+}
+
+// ── DECISION MODAL HELPERS ────────────────────────────────────────────────────
+function _openModal(title, bodyHtml, footerHtml = '') {
+    const titleEl = document.getElementById('gpsModalTitle');
+    const contentEl = document.getElementById('gpsModalContent');
+    const overlay = document.getElementById('gpsModalOverlay');
+    if (!titleEl || !contentEl || !overlay) return;
+    titleEl.textContent = title;
+    contentEl.innerHTML = `<div style="padding:4px">${bodyHtml}</div>${footerHtml ? `<div class="modal-actions" style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px">${footerHtml}</div>` : ''}`;
+    overlay.classList.add('active');
+}
+
+function confirmReject(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const reasons = [
+        'Skor terlalu rendah (di bawah ambang batas)',
+        'Dokumen wajib tidak lengkap',
+        'DSR melebihi batas maksimal',
+        'Penghasilan tidak memenuhi syarat minimum',
+        'Riwayat kredit buruk / gagal bayar',
+        'Data tidak konsisten / terindikasi palsu',
+        'Area layanan tidak terjangkau',
+        'Lainnya (lihat catatan analis)',
+    ];
+
+    _openModal('❌ Tolak Aplikasi', `
+        <div style="background:var(--dd1);border:1px solid var(--dd);border-radius:10px;padding:14px;margin-bottom:18px;display:flex;gap:14px;align-items:center">
+            <div style="font-size:32px">❌</div>
+            <div>
+                <div style="font-weight:800;color:var(--dd);font-size:var(--text-base)">Tolak Pengajuan</div>
+                <div style="font-size:var(--text-xs);color:var(--dt2)">${a.nm} · ${a.id} · Score ${a.score}</div>
+            </div>
+        </div>
+        <div style="font-size:var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:8px">Alasan Penolakan:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="rej-reasons">
+            ${reasons.map((r, i) => `
+                <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:8px 10px;border-radius:6px;border:1px solid var(--db1);background:var(--ds2);transition:all 0.15s"
+                       onmouseover="this.style.borderColor='var(--dd)'" onmouseout="this.style.borderColor='var(--db1)'">
+                    <input type="radio" name="rejReason" value="${r}" style="margin-top:2px" ${i === 0 ? 'checked' : ''}>
+                    <span style="font-size:var(--text-sm);color:var(--dt1)">${r}</span>
+                </label>`).join('')}
+        </div>
+        <div style="font-size:var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:6px">Catatan Tambahan (opsional):</div>
+        <textarea id="rej-note" class="ov-in" style="width:100%;height:70px;resize:none;font-size:var(--text-sm)" placeholder="Tulis catatan tambahan..."></textarea>
+        <label style="display:flex;gap:10px;align-items:center;margin-top:12px;cursor:pointer">
+            <input type="checkbox" id="rej-notify-wa" checked>
+            <span style="font-size:var(--text-sm);color:var(--dt1)">Kirim notifikasi WhatsApp ke driver</span>
+        </label>
+    `, `
+        <button class="btn" onclick="document.getElementById('gpsModalOverlay').classList.remove('active')">Batal</button>
+        <button class="btn btn-danger" style="padding:10px 24px" onclick="
+            const sel = document.querySelector('input[name=rejReason]:checked');
+            const reason = sel ? sel.value : 'Tidak memenuhi syarat';
+            const note = document.getElementById('rej-note').value;
+            const notify = document.getElementById('rej-notify-wa').checked;
+            window.rto._applyDecision('${appId}', 'declined', reason, note, notify);
+        ">❌ Tolak Pengajuan</button>
+    `);
+}
+
+function confirmReview(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    _openModal('⏳ Tunda ke Manual Review', `
+        <div style="background:var(--dw1);border:1px solid var(--dw);border-radius:10px;padding:14px;margin-bottom:18px;display:flex;gap:14px;align-items:center">
+            <div style="font-size:32px">⏳</div>
+            <div>
+                <div style="font-weight:800;color:var(--dw);font-size:var(--text-base)">Tandai untuk Review Manual</div>
+                <div style="font-size:var(--text-xs);color:var(--dt2)">${a.nm} · ${a.id} · Score ${a.score}</div>
+            </div>
+        </div>
+        <div style="font-size:var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:6px">Alasan Review (wajib diisi):</div>
+        <textarea id="rev-note" class="ov-in" style="width:100%;height:80px;resize:none;font-size:var(--text-sm)" placeholder="Contoh: Perlu verifikasi tambahan dari supervisor..."></textarea>
+        <label style="display:flex;gap:10px;align-items:center;margin-top:12px;cursor:pointer">
+            <input type="checkbox" id="rev-notify-wa" checked>
+            <span style="font-size:var(--text-sm);color:var(--dt1)">Kirim notifikasi WA 'masih dalam review' ke driver</span>
+        </label>
+    `, `
+        <button class="btn" onclick="document.getElementById('gpsModalOverlay').classList.remove('active')">Batal</button>
+        <button class="btn btn-secondary" style="padding:10px 24px;background:var(--dw1);border:1px solid var(--dw);color:var(--dw)" onclick="
+            const note = document.getElementById('rev-note').value || 'Membutuhkan review manual';
+            const notify = document.getElementById('rev-notify-wa').checked;
+            window.rto._applyDecision('${appId}', 'review', note, '', notify);
+        ">⏳ Tandai Review</button>
+    `);
+}
+
+function confirmDocs(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+
+    const allDocs = [...DOCS.id, ...DOCS.work, ...DOCS.boost];
+    const missingDocs = a.miss && a.miss.length
+        ? allDocs.filter(d => a.miss.includes(d.id))
+        : allDocs.filter(d => d.tag === 'wajib');
+
+    _openModal('📋 Minta Dokumen Tambahan', `
+        <div style="background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:10px;padding:14px;margin-bottom:18px;display:flex;gap:14px;align-items:center">
+            <div style="font-size:32px">📋</div>
+            <div>
+                <div style="font-weight:800;color:var(--dw);font-size:var(--text-base)">Request Dokumen Tambahan</div>
+                <div style="font-size:var(--text-xs);color:var(--dt2)">${a.nm} · ${a.id}</div>
+            </div>
+        </div>
+        <div style="font-size:var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:10px">Pilih dokumen yang harus dilengkapi:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:250px;overflow-y:auto;padding-right:4px">
+            ${allDocs.map(d => {
+        const isMissing = a.miss && a.miss.includes(d.id);
+        return `
+                <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:8px 10px;border-radius:6px;border:1px solid ${isMissing ? 'rgba(251,191,36,.3)' : 'var(--db1)'};background:${isMissing ? 'var(--dw1)' : 'var(--ds2)'};transition:all 0.15s">
+                    <input type="checkbox" name="reqDoc" value="${d.id}" ${isMissing ? 'checked' : ''} style="margin-top:2px">
+                    <div>
+                        <div style="font-size:var(--text-sm);color:var(--dt1);font-weight:${isMissing ? '700' : '400'}">${d.n} ${isMissing ? '<span style="color:var(--dw);font-size:10px">MISSING</span>' : ''}</div>
+                        <div style="font-size:var(--text-3xs);color:var(--dt3)">${d.d} · ${d.tag}</div>
+                    </div>
+                </label>`;
+    }).join('')}
+        </div>
+        <div style="font-size:var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:6px">Pesan ke Driver:</div>
+        <textarea id="docs-note" class="ov-in" style="width:100%;height:60px;resize:none;font-size:var(--text-sm)" placeholder="Contoh: Harap upload dokumen dalam 3 hari kerja..."></textarea>
+        <label style="display:flex;gap:10px;align-items:center;margin-top:12px;cursor:pointer">
+            <input type="checkbox" id="docs-notify-wa" checked>
+            <span style="font-size:var(--text-sm);color:var(--dt1)">Kirim reminder WhatsApp ke driver</span>
+        </label>
+    `, `
+        <button class="btn" onclick="document.getElementById('gpsModalOverlay').classList.remove('active')">Batal</button>
+        <button class="btn btn-secondary" style="padding:10px 24px;background:var(--dw1);border:1px solid rgba(251,191,36,.5);color:var(--dw)" onclick="
+            const checked = [...document.querySelectorAll('input[name=reqDoc]:checked')].map(i => i.value);
+            const note = document.getElementById('docs-note').value;
+            const notify = document.getElementById('docs-notify-wa').checked;
+            window.rto._applyDocRequest('${appId}', checked, note, notify);
+        ">📋 Kirim Request Dokumen</button>
+    `);
+}
+
+function openAppDecisionModal(appId) {
+    // alias for backward compat
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    if (a.dec === 'declined') confirmReview(appId);
+    else openApprovalConfirmation(appId);
+}
+
+function openStatusWAConfirmation(appId) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    const waScenKey = a.dec === 'approved' ? 'approved' : a.dec === 'declined' ? 'declined' : a.miss && a.miss.length ? 'missing_docs' : 'review';
+    const msg = buildWAMsg(a, waScenKey);
+    const cleanPhone = a.ph.replace(/\D/g, '');
+    let ph = cleanPhone.startsWith('0') ? '62' + cleanPhone.substring(1) : cleanPhone;
+    showWAPreviewModal(ph, msg, a.nm);
+}
+
+// Apply a decision to an application
+function _applyDecision(appId, dec, reason, note, notifyWA) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    a.dec = dec;
+    if (note) a.note = note;
+    if (reason) a.ovlog = `[${new Date().toLocaleTimeString('id-ID')}] ${reason}${note ? ' | ' + note : ''}`;
+    document.getElementById('gpsModalOverlay').classList.remove('active');
+    admRTbl();
+    admSel(appId);
+    admT(`✅ Decision: ${dec.toUpperCase()} applied for ${a.nm}`);
+    if (notifyWA) {
+        setTimeout(() => {
+            const waScenKey = dec === 'approved' ? 'approved' : dec === 'declined' ? 'declined' : dec === 'review' ? 'review' : 'missing_docs';
+            const msg = buildWAMsg(a, waScenKey);
+            const ph = a.ph.replace(/\D/g, '').replace(/^0/, '62');
+            window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, '_blank');
+        }, 500);
+    }
+}
+
+// Apply required document request
+function _applyDocRequest(appId, docIds, note, notifyWA) {
+    const a = state.admApps.find(x => x.id === appId);
+    if (!a) return;
+    a.miss = docIds;
+    a.dec = 'pending_docs';
+    if (note) a.note = note;
+    a.ovlog = `[${new Date().toLocaleTimeString('id-ID')}] Dokumen diminta: ${docIds.join(', ')}`;
+    document.getElementById('gpsModalOverlay').classList.remove('active');
+    admRTbl();
+    admSel(appId);
+    admT(`📋 ${docIds.length} dokumen diminta dari ${a.nm}`);
+    if (notifyWA) {
+        setTimeout(() => {
+            const msg = buildWAMsg(a, 'missing_docs');
+            const ph = a.ph.replace(/\D/g, '').replace(/^0/, '62');
+            window.open(`https://wa.me/${ph}?text=${encodeURIComponent(msg)}`, '_blank');
+        }, 500);
+    }
+}
 
 // Setup globally exposed functions for onclick handlers
-export function extendGlobalWindow() {
-    window.rto = Object.assign(window.rto || {}, {
-        admV,
-        setAdmFlt,
-        admSrch,
-        admSel,
-        saveOv,
-        admDec,
-        quickDec,
-        renderAnalytics,
-        switchRtoTab,
-        admWA,
-        sendWAModal,
-        updDimCfg,
-        updThreshCfg,
-        updDSR,
-        saveCfg,
-        resetCfg,
-        admRTbl,
-        renderPUList,
-        renderScoreCfg,
-        renderWAScens,
-        selWAScen,
-        selPUOrder,
-        setPUF,
-        waContext,
-        previewImg,
-        closePreview,
-        uploadDoc
-    });
+// Bind everything to window for global access
+window.rto = window.rto || {};
+Object.assign(window.rto, {
 
-    // Also bind directly to window for compatibility with app.js
-    window.admRTbl = admRTbl;
-    window.renderPUList = renderPUList;
-    window.renderScoreCfg = renderScoreCfg;
-    window.renderWAScens = renderWAScens;
-    window.selWAScen = selWAScen;
-    window.switchRtoTab = switchRtoTab;
-}
+    state, // Expose for debugging and cross-module access
+    admSel,
+    saveOv,
+    openAssetAssignment,
+    assignAsset,
+    stageAssetSelection,
+    switchDpTab,
+    markHandoverDone,
+    addToPickupQueue,
+    renderAnalytics,
+    switchRtoTab,
+    admWA,
+    sendWAModal,
+    updDimCfg,
+    updThreshCfg,
+    updDSR,
+    saveCfg,
+    resetCfg,
+    admRTbl,
+    goToAdmPage,
+    renderPUList,
+    renderScoreCfg,
+    renderWAScens,
+    selWAScen,
+    selPUOrder,
+    setPUF,
+    setPUProgFlt,
+    waContext,
+    previewImg,
+    closePreview,
+    uploadDoc,
+    openHandoverConfirmation,
+    completeHandover,
+    evalHOPrepChecklist,
+    evalHOFinalChecklist,
+    mockHOPrepUpload,
+    mockHOFinalUpload,
+    openApprovalConfirmation,
+    sendApprovedWA,
+    buildWAMsg,
+    openAppDecisionModal,
+    confirmReject,
+    confirmDocs,
+    confirmReview,
+    openStatusWAConfirmation,
+    admSrch,
+    setAdmFlt,
+    setAdmProgFlt,
+    sendPickupWA,
+    admT,
+    pickCalDay,
+    calNav,
+    confirmPickup,
+    _applyDecision,
+    _applyDocRequest,
+    init: () => {
+        console.log('RTO System Initializing...');
+        admRTbl();
+        renderPUList();
+        renderScoreCfg();
+        renderWAScens();
+        renderAnalytics();
+    },
+    APPLICATIONS: ADMIN_APPS
+});
+
+// Also bind critical functions directly to window for legacy app.js support
+window.admRTbl = admRTbl;
+window.renderPUList = renderPUList;
+window.renderScoreCfg = renderScoreCfg;
+window.renderWAScens = renderWAScens;
+window.selWAScen = selWAScen;
+window.switchRtoTab = window.switchRtoTab || switchRtoTab;
+
+// ──────────────────────────────────────────
+// CREATE APPLICANT MODAL
+// ──────────────────────────────────────────
+window.openAddApplicantModal = () => {
+    const programs = MAIN_PROGS.map(p => `<option value="${p.id}">${p.nm}</option>`).join('');
+    const partners = Object.entries(PARTNERS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
+
+    const html = `
+        <div style="padding:16px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="na-name" placeholder="e.g. Budi Santoso" style="background:var(--s3);border-color:var(--b2)">
+                </div>
+                <div class="form-group">
+                    <label>Phone *</label>
+                    <input type="text" id="na-phone" placeholder="+62 812-xxxx-xxxx" style="background:var(--s3);border-color:var(--b2)">
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Partner *</label>
+                    <select id="na-partner" style="background:var(--s3);border-color:var(--b2)">${partners}</select>
+                </div>
+                <div class="form-group">
+                    <label>Program *</label>
+                    <select id="na-prog" style="background:var(--s3);border-color:var(--b2)">${programs}</select>
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Profession</label>
+                    <input type="text" id="na-prof" placeholder="e.g. OJOL, Karyawan" style="background:var(--s3);border-color:var(--b2)">
+                </div>
+                <div class="form-group">
+                    <label>Monthly Income (IDR)</label>
+                    <input type="number" id="na-income" placeholder="e.g. 4500000" style="background:var(--s3);border-color:var(--b2)">
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div class="form-group">
+                    <label>Area / City</label>
+                    <input type="text" id="na-area" placeholder="e.g. Jakarta Selatan" style="background:var(--s3);border-color:var(--b2)">
+                </div>
+                <div class="form-group">
+                    <label>Initial Decision</label>
+                    <select id="na-dec" style="background:var(--s3);border-color:var(--b2)">
+                        <option value="pending">Pending</option>
+                        <option value="review">Review</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:4px">
+                <label style="font-size:12px; font-weight:800; color:var(--dw); margin-bottom:8px; display:block">Upload Required Documents</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label style="font-size:10px;color:var(--dt3)">KTP Asli</label>
+                        <input type="file" id="na-doc-ktp" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label style="font-size:10px;color:var(--dt3)">SIM C</label>
+                        <input type="file" id="na-doc-sim" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label style="font-size:10px;color:var(--dt3)">Kartu Keluarga</label>
+                        <input type="file" id="na-doc-kk" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0">
+                        <label style="font-size:10px;color:var(--dt3)">Selfie + KTP</label>
+                        <input type="file" id="na-doc-selfie" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
+                        <label style="font-size:10px;color:var(--dt3)">Slip Gaji / Screenshot Income</label>
+                        <input type="file" id="na-doc-slip" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:right; margin-top:16px;">
+                <button class="btn btn-secondary" style="margin-right:8px" onclick="window.closeGPSModal()">Cancel</button>
+                <button class="btn" style="background:var(--dac);color:#000;border:none;font-weight:800;padding:8px 24px;" onclick="window.saveNewApplicant()">Create Application</button>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('gpsModalTitle').innerHTML = `<span>📋</span> New Manual Application`;
+    document.getElementById('gpsModalContent').innerHTML = html;
+    document.getElementById('gpsModalOverlay').classList.add('active');
+};
+
+window.saveNewApplicant = () => {
+    const name = document.getElementById('na-name')?.value?.trim();
+    const phone = document.getElementById('na-phone')?.value?.trim();
+    const ptn = document.getElementById('na-partner')?.value;
+    const prog = document.getElementById('na-prog')?.value;
+    const prof = document.getElementById('na-prof')?.value?.trim() || '—';
+    const inc = parseInt(document.getElementById('na-income')?.value || 0);
+    const area = document.getElementById('na-area')?.value?.trim() || '—';
+    const dec = document.getElementById('na-dec')?.value || 'pending';
+
+    if (!name || !phone) {
+        alert('Name and Phone are required.');
+        return;
+    }
+
+    const newId = 'CASAN-M' + String(Date.now()).slice(-5);
+    const now = new Date();
+    const submitted = 'Baru saja';
+
+    let miss = ['ktp', 'sim', 'kk', 'selfie', 'slip', 'rekening'];
+    if (document.getElementById('na-doc-ktp')?.files.length > 0) miss = miss.filter(m => m !== 'ktp');
+    if (document.getElementById('na-doc-sim')?.files.length > 0) miss = miss.filter(m => m !== 'sim');
+    if (document.getElementById('na-doc-kk')?.files.length > 0) miss = miss.filter(m => m !== 'kk');
+    if (document.getElementById('na-doc-selfie')?.files.length > 0) miss = miss.filter(m => m !== 'selfie');
+    if (document.getElementById('na-doc-slip')?.files.length > 0) miss = miss.filter(m => m !== 'slip');
+
+    const newApp = {
+        id: newId, nm: name, ph: phone, ptn, prog, area, prof,
+        inc, score: 0, dec, miss,
+        submitted, adj: 0, note: '', ovlog: ''
+    };
+
+    state.admApps.push(newApp);
+    window.closeGPSModal();
+    admRTbl();
+
+    const toast = document.getElementById('adm-toast');
+    if (toast) { toast.textContent = `✅ Application ${newId} created for ${name}`; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+};
+

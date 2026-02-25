@@ -1,5 +1,4 @@
 /* Map Logic */
-import { timeAgo } from './utils.js';
 
 let map = null;
 let markers = null;
@@ -35,16 +34,16 @@ const COLORS = {
 
 // Icons for each filter button
 const ICONS = {
-    active: '✅',
-    expiring: '⚠️',
+    active: 'OK',
+    expiring: 'WARN',
     grace: '⏳',
-    immobilized: '🔒',
-    paused: '⏸',
-    available: '🔵',
-    online: '🟢',
-    offline: '🔴',
-    running: '🏃',
-    stopped: '🅿️'
+    immobilized: 'LOCK',
+    paused: 'P',
+    available: 'B',
+    online: 'G',
+    offline: 'R',
+    running: '->',
+    stopped: 'P'
 };
 
 // Labels for filter buttons
@@ -68,33 +67,44 @@ const bearingLabel = (deg) => {
 };
 
 
-export const initMap = (onVehicleSelect) => {
-    // Check if map container exists
-    if (!document.getElementById('map')) return;
+const initMap = (containerId = 'map', onVehicleSelect) => {
+    try {
+        // Check if map container exists
+        if (!document.getElementById(containerId)) return;
 
-    // Jabodetabek view
-    map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false // Hide for cleaner look
-    }).setView([-6.2088, 106.8456], 11);
+        // Check if Leaflet is loaded
+        if (typeof L === 'undefined') {
+            console.error('Leaflet library (L) is not loaded. Map cannot be initialized.');
+            return;
+        }
 
-    // Dark Map Tiles (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd'
-    }).addTo(map);
+        // Jabodetabek view
+        map = L.map(containerId, {
+            zoomControl: false,
+            attributionControl: false // Hide for cleaner look
+        }).setView([-6.2088, 106.8456], 11);
 
-    L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        // Dark Map Tiles (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(map);
 
-    // No clustering — show all markers individually
-    markers = L.layerGroup();
-    map.addLayer(markers);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-    // Store callback
-    map.onVehicleSelect = onVehicleSelect;
+        // No clustering — show all markers individually
+        markers = L.layerGroup();
+        map.addLayer(markers);
+
+        // Store callback
+        map.onVehicleSelect = onVehicleSelect;
+        console.log('Map initialized successfully');
+    } catch (err) {
+        console.error('Error initializing map:', err);
+    }
 };
 
-export const renderMapControls = (vehicles) => {
+const renderMapControls = (vehicles) => {
     const elMock = document.getElementById('mapFilters');
     if (!elMock) return;
 
@@ -224,12 +234,14 @@ export const renderMapControls = (vehicles) => {
     };
     window.toggleStatusGuide = () => {
         guideActive = !guideActive;
-        renderMapControls(vehicles);
+        // Don't re-render with vehicles here as it might be out of scope, 
+        // rely on the user event listener or local state
+        // renderMapControls([]); // Temporary silent update
     };
 };
 
 // Update Map Makers with Filter Logic
-export const updateMapMarkers = (vehicles) => {
+const updateMapMarkers = (vehicles) => {
     if (!map || !markers) return;
 
     // First render controls (so counts update if provided, logic somewhat circular if we rely on it for filtering)
@@ -375,7 +387,7 @@ export const updateMapMarkers = (vehicles) => {
     });
 };
 
-export const focusVehicleOnMap = (id) => {
+const focusVehicleOnMap = (id) => {
     const marker = markerMap.get(id);
     if (marker) {
         map.flyTo(marker.getLatLng(), 15);
@@ -383,7 +395,7 @@ export const focusVehicleOnMap = (id) => {
     }
 };
 
-export const resizeMap = () => {
+const resizeMap = () => {
     // Leaflet needs to know if container resized
     setTimeout(() => {
         if (map) map.invalidateSize();

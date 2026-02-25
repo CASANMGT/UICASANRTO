@@ -1,6 +1,7 @@
 /* App Layout */
-
-/* App Layout */
+.hidden {
+    display: none !important;
+}
 
 .app-wrapper {
     display: flex;
@@ -18,7 +19,23 @@
     border-right: 1px solid var(--b1);
     display: flex;
     flex-direction: column;
-    z-index: 10;
+    z-index: 1000;
+    transition: margin-left 0.3s ease, transform 0.3s ease;
+}
+
+.global-sidebar.collapsed {
+    margin-left: -250px;
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--t1);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 12px;
 }
 
 .main-workspace {
@@ -41,9 +58,7 @@
     z-index: 10;
 }
 
-.logo-area {
-    /* Kept for nested elements inside sidebar */
-}
+
 
 .logo-box {
     width: 32px;
@@ -287,6 +302,42 @@
         padding: 8px 12px;
         flex-direction: row;
         justify-content: space-between;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 900;
+        display: none;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    .global-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .global-sidebar.show-sidebar {
+        transform: translateX(0);
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .app-header-top {
+        padding: 0 12px;
     }
 
     .logo-area h1 {

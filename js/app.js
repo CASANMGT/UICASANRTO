@@ -1,39 +1,8 @@
-import { initData, state, getFilteredVehicles, getStats, getContextStats, simulateMovement } from './modules/store.js';
-import { initMap, updateMapMarkers, focusVehicleOnMap, resizeMap } from './modules/map.js';
-import { initUI, renderStats, renderFilters, renderVehicleList, openModal, updateCountdowns, renderFinanceDashboard, resetPagination, renderGpsList, openGpsModal, closeGpsModal, renderVehicleListView, renderUserListView, renderProgramListView, renderProgramsTable, openCommandPalette, closeCommandPalette } from './modules/ui.js';
-import { getFinanceStats, getTransactions, getProgramStats } from './modules/finance.js';
-import { getGpsDevices, getGpsStats, getGpsById, createGpsDevice, updateGpsDevice, deleteGpsDevice } from './modules/gps.js';
-import * as rtoLogic from './modules/rto.js';
+﻿// Main App Entry Point (Legacy Script Architecture)
 
-// Expose globally for inline onclicks in index.html
-window.state = state; // Crucial for visibility & debugging
-window.rto = Object.assign(window.rto || {}, rtoLogic);
-Object.assign(window, rtoLogic);
-
-// Expose UI functions
-rtoLogic.extendGlobalWindow(); // Bind all RTO functions
-window.renderStats = renderStats;
-window.renderFilters = renderFilters;
-window.renderVehicleList = renderVehicleList;
-window.openModal = openModal;
-window.updateCountdowns = updateCountdowns;
-window.renderFinanceDashboard = renderFinanceDashboard;
-window.resetPagination = resetPagination;
-window.renderGpsList = renderGpsList;
-window.openGpsModal = openGpsModal;
-window.closeGpsModal = closeGpsModal;
-window.renderVehicleListView = renderVehicleListView;
-window.renderUserListView = renderUserListView;
-window.renderProgramListView = renderProgramListView;
-window.renderProgramsTable = renderProgramsTable;
-window.openCommandPalette = openCommandPalette;
-window.closeCommandPalette = closeCommandPalette;
-window.selectProgram = (pid) => {
-    state.filter.program = pid;
-    const rtoTab = document.querySelector('.nav-tab[data-tab="rto-fleet"]');
-    if (rtoTab) rtoTab.click();
-    updateView();
-};
+// Redundant bindings removed as they are now global
+// window.state is already set in store.js
+// UI functions are already global
 
 let activeTab = 'users'; // default
 
@@ -42,30 +11,70 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         console.log('App Initializing...');
 
+        // 0. Global Aliases for backward compatibility
+        if (window.rto) {
+            window.rtoLogic = window.rto;
+            console.log('Aliased window.rtoLogic to window.rto');
+        }
+
         // 1. Data
         initData();
         console.log(`Data loaded: ${state.vehicles.length} vehicles, ${state.transactions.length} transactions`);
-        window.admRTbl(); // Initialize RTO Apps Queue
-        window.renderPUList(); // Initialize RTO Pickup
 
-        // 2. Map
-        initMap('map');
-
-        // 3. UI
-        initUI(); // Setup listeners and global UI
-        const initialStats = getStats();
-        renderFilters('all', initialStats);
-        updateView();
-        updateUsers(); // LANDING VIEW: Users override
-        updateStatsBar(); // Contextual stats for Users
-
-        // 4. Events
+        // 2. Event Listeners (Setup early so navigation works even if map/RTO fail)
         setupEventListeners();
+        console.log('UI Event listeners established');
 
-        // 5. Loops
+        // 3. RTO Module Initial Load
+        if (window.rto && window.rto.init) {
+            window.rto.init();
+        } else {
+            console.warn('RTO module not fully loaded at DOMContentLoaded');
+            setTimeout(() => {
+                if (window.rto && window.rto.init) window.rto.init();
+                else console.error('RTO module failed to load after timeout');
+            }, 500);
+        }
+
+        // 4. Map (Wrapped to prevent blocking)
+        try {
+            initMap('map');
+        } catch (mapErr) {
+            console.error('Fatal error during map initialization:', mapErr);
+        }
+
+        // 5. UI Initial Render
+        if (window.initUI) {
+            window.initUI();
+            const initialStats = window.getStats ? window.getStats() : {};
+            if (window.renderStats) window.renderStats(initialStats);
+            if (window.renderFilters) window.renderFilters('all', initialStats);
+            if (window.renderProgramsTable) window.renderProgramsTable();
+            if (window.updateView) window.updateView();
+            if (window.updateUsers) window.updateUsers();
+            if (window.updateStatsBar) window.updateStatsBar();
+        } else {
+            console.warn('UI module not fully loaded at DOMContentLoaded');
+            setTimeout(() => {
+                if (window.initUI) {
+                    window.initUI();
+                    const stats = window.getStats ? window.getStats() : {};
+                    if (window.renderStats) window.renderStats(stats);
+                    if (window.renderFilters) window.renderFilters('all', stats);
+                    if (window.renderProgramsTable) window.renderProgramsTable();
+                    if (window.updateView) window.updateView();
+                    if (window.updateUsers) window.updateUsers();
+                    if (window.updateStatsBar) window.updateStatsBar();
+                } else {
+                    console.error('UI module failed to load after timeout');
+                }
+            }, 500);
+        }
+
+        // 6. Loops
         // Countdowns
         setInterval(() => {
-            updateCountdowns();
+            if (window.updateCountdowns) window.updateCountdowns();
         }, 1000);
 
         // Movement Simulation Loop (every 3 seconds)
@@ -74,8 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeTab === 'fleet') {
                 const filtered = getFilteredVehicles();
                 updateMapMarkers(filtered);
-                // Optionally update list too if not too heavy, but map is priority
-                // renderVehicleList(filtered, (id) => focusVehicleOnMap(id));
             }
         }, 3000);
 
@@ -94,17 +101,13 @@ document.addEventListener('DOMContentLoaded', () => {
             updateFinance();
         });
 
-    } catch (err) {
-        console.error('FATAL APP ERROR:', err);
-        // Show error on screen
-        const errDiv = document.createElement('div');
-        errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:white;padding:16px;z-index:9999;font-family:monospace;font-size: var(--text-lg);white-space:pre-wrap;';
-        errDiv.textContent = `FATAL APP ERROR:\n${err.message}\n\nStack:\n${err.stack}`;
-        document.body.prepend(errDiv);
+    } catch (criticalErr) {
+        console.error('CRITICAL: App failed to initialize properly:', criticalErr);
+        alert('Application failed to initialize. Please check the console for details.');
     }
 });
 
-function updateView() {
+window.updateView = () => {
     // Check if views exist (might run before DOM is fully ready despite listener)
     if (!document.getElementById('fleetView')) return;
 
@@ -134,25 +137,25 @@ function updateView() {
     }
 }
 
-function updateFinance() {
-    renderFinanceDashboard(getFinanceStats(), getTransactions(), getProgramStats());
-}
+window.updateFinance = () => {
+    renderFinanceDashboard(window.getFinanceStats ? window.getFinanceStats() : {}, window.getTransactions ? window.getTransactions() : [], window.getProgramStats ? window.getProgramStats() : []);
+};
 
 // GPS filter state
 let gpsFilter = { status: 'all', brand: 'all', search: '' };
 window.gpsPage = 1;
 
-function updateGps() {
-    renderGpsList(getGpsDevices(gpsFilter), getGpsStats(), gpsFilter);
-}
+window.updateGps = () => {
+    renderGpsList(window.getGpsDevices ? window.getGpsDevices(gpsFilter) : [], window.getGpsStats ? window.getGpsStats() : {}, gpsFilter);
+};
 
 function updateVehicles() {
     renderVehicleListView();
 }
 
-function updateUsers() {
+window.updateUsers = () => {
     renderUserListView();
-}
+};
 
 function updatePrograms() {
     renderProgramsTable();
@@ -171,9 +174,9 @@ window.changeGpsPage = (delta) => {
     updateGps();
 };
 
-function updateStatsBar() {
-    renderStats(getContextStats(activeTab), activeTab);
-}
+window.updateStatsBar = () => {
+    renderStats(getStats(activeTab), activeTab);
+};
 
 function selectVehicle(id) {
     console.log('Selecting:', id);
@@ -209,28 +212,24 @@ function setupEventListeners() {
                 const showFleet = target === 'fleet';
 
                 const rtoFleetView = document.getElementById('rto-fleetView');
+                const rtoLayoutView = document.getElementById('rto-layout-view');
                 const financeView = document.getElementById('financeView');
                 const gpsView = document.getElementById('gpsView');
                 const vehicleListView = document.getElementById('vehicleListView');
                 const userListView = document.getElementById('userListView');
                 const programsView = document.getElementById('programsView');
-                const rtoAppsView = document.getElementById('rto-applicationsView');
-                const rtoPickupView = document.getElementById('rto-pickupView');
-                const rtoScoreView = document.getElementById('rto-scoreView');
-                const rtoWAView = document.getElementById('rto-waView');
                 const programSettingsView = document.getElementById('program-settingsView');
                 const fleetView = document.getElementById('fleetView');
 
+                const isRtoTab = showRtoApps || showRtoPickup || showRtoScore || showRtoWA;
+
                 if (rtoFleetView) rtoFleetView.classList.toggle('hidden', !showRtoFleet);
+                if (rtoLayoutView) rtoLayoutView.classList.toggle('hidden', !isRtoTab);
                 if (financeView) financeView.classList.toggle('hidden', !showFinance);
                 if (gpsView) gpsView.classList.toggle('hidden', !showGps);
                 if (vehicleListView) vehicleListView.classList.toggle('hidden', !showVehicles);
                 if (userListView) userListView.classList.toggle('hidden', !showUsers);
                 if (programsView) programsView.classList.toggle('hidden', !showPrograms);
-                if (rtoAppsView) rtoAppsView.classList.toggle('hidden', !showRtoApps);
-                if (rtoPickupView) rtoPickupView.classList.toggle('hidden', !showRtoPickup);
-                if (rtoScoreView) rtoScoreView.classList.toggle('hidden', !showRtoScore);
-                if (rtoWAView) rtoWAView.classList.toggle('hidden', !showRtoWA);
                 if (programSettingsView) programSettingsView.classList.toggle('hidden', !showProgramSettings);
                 if (fleetView) fleetView.classList.toggle('hidden', !showFleet);
 
@@ -248,10 +247,12 @@ function setupEventListeners() {
                 if (showVehicles) updateVehicles();
                 if (showUsers) updateUsers();
                 if (showPrograms) updatePrograms();
-                if (showRtoApps) window.admRTbl();
-                if (showRtoPickup) { rtoLogic.state.calYear = new Date().getFullYear(); rtoLogic.state.calMonth = new Date().getMonth(); window.renderPUList(); }
-                if (showRtoScore) window.renderScoreCfg();
-                if (showRtoWA) { window.renderWAScens(); if (!rtoLogic.state.selScen && rtoLogic.WA_SCENARIOS.length) window.selWAScen(rtoLogic.WA_SCENARIOS[0].k); }
+
+                // Consolidated RTO switch logic
+                if (showRtoApps) window.rto.switchRtoTab('apps');
+                if (showRtoPickup) window.rto.switchRtoTab('pickup');
+                if (showRtoScore) window.rto.switchRtoTab('score');
+                if (showRtoWA) window.rto.switchRtoTab('wa');
 
                 updateStatsBar(); // Refresh context stats on tab switch
             });
@@ -294,10 +295,16 @@ function setupEventListeners() {
     if (partnerSelect) {
         partnerSelect.addEventListener('change', (e) => {
             state.filter.partner = e.target.value;
-            resetPagination();
+            // Reset renter-view program filter when partner changes
+            state.filter.program = 'all';
+            if (typeof resetPagination === 'function') resetPagination();
             updateView();
             updateStatsBar(); // Re-calc stats
             updateFinance(); // Update finance tab too
+            if (window.updatePrograms) window.updatePrograms(); // Update Programs Admin tab
+            if (window.admRTbl) window.admRTbl(); // Update RTO Applications tab
+            if (window.renderPUList) window.renderPUList(); // Update RTO Pickup Schedule tab
+            if (activeTab === 'rto-fleet' && window.renderProgramListView) window.renderProgramListView(); // Update Renters view
         });
     }
 
@@ -350,7 +357,7 @@ function setupEventListeners() {
         updateGps();
     });
 
-    // ── GPS CRUD Events ────────────────────────────────────────────────────────
+    //  GPS CRUD Events 
 
     // Filter change (search, status, brand)
     window.addEventListener('gps-filter', (e) => {
@@ -405,7 +412,7 @@ function setupEventListeners() {
     window.addEventListener('gps-modal-close', () => closeGpsModal());
 }
 
-// ── Program Settings CRUD ──────────────────────────────────────────────────
+//  Program Settings CRUD 
 window.createProgram = () => {
     const name = document.getElementById('new-prog-name')?.value;
     const partner = document.getElementById('new-prog-partner')?.value;
@@ -463,14 +470,18 @@ window.selectProgramSetting = (pid, el) => {
     const container = document.getElementById('prog-rto-listings');
     if (!container || !prog) return;
 
-    if (!window.rtoLogic) return;
+    if (!window.rto) return;
 
     // Filter applications loosely matching the brand/partner
-    let matchingApps = window.rtoLogic.APPLICATIONS.filter(a => a.program.includes(prog.shortName) || a.program.includes(prog.name));
+    let matchingApps = (window.rto.state.admApps || []).filter(a =>
+        (a.prog && a.prog.includes(prog.shortName)) ||
+        (a.prog && a.prog.includes(prog.name)) ||
+        (a.ptn && a.ptn === prog.partnerId)
+    );
 
     // Fallback: Just grab random apps for demo purposes if none strictly match
     if (matchingApps.length === 0) {
-        matchingApps = window.rtoLogic.APPLICATIONS.sort(() => 0.5 - Math.random()).slice(0, 4);
+        matchingApps = (window.rto.state.admApps || []).sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
     let html = `<div style="font-weight:700; color:var(--dt1); margin-bottom:12px; font-size:var(--text-md);">Applicants for ${prog.name}</div>`;
@@ -482,17 +493,17 @@ window.selectProgramSetting = (pid, el) => {
         matchingApps.forEach(app => {
             let badgeBg = 'var(--dw1)';
             let badgeCol = 'var(--dw)';
-            if (app.status === 'approved') { badgeBg = 'var(--dg1)'; badgeCol = 'var(--dg)'; }
-            if (app.status === 'declined') { badgeBg = 'var(--dd1)'; badgeCol = 'var(--dd)'; }
+            if (app.dec === 'approved') { badgeBg = 'var(--dg1)'; badgeCol = 'var(--dg)'; }
+            if (app.dec === 'declined') { badgeBg = 'var(--dd1)'; badgeCol = 'var(--dd)'; }
 
             html += `
                 <div style="background: var(--s0); border: 1px solid var(--b1); border-radius: 6px; padding: 12px; display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="font-weight:700; color:var(--dw); font-size:var(--text-sm);">${app.applicant}</div>
+                        <div style="font-weight:700; color:var(--dw); font-size:var(--text-sm);">${app.nm}</div>
                         <div style="font-size:var(--text-xs); color:var(--dt3); margin-top:2px;">${app.id} | Score: <span style="color:var(--dac); font-weight:700;">${app.score || 'N/A'}</span></div>
                     </div>
                     <div style="padding: 4px 8px; border-radius: 4px; font-size: var(--text-2xs); font-weight:800; background: ${badgeBg}; color: ${badgeCol}; text-transform:uppercase;">
-                        ${app.status}
+                        ${app.dec}
                     </div>
                 </div>
             `;
@@ -503,5 +514,6 @@ window.selectProgramSetting = (pid, el) => {
     container.innerHTML = html;
 };
 window.updatePrograms = updatePrograms;
+
 
 

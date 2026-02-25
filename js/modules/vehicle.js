@@ -1,15 +1,15 @@
 /* Vehicle Module — helpers for vehicle list & drawer */
-import { state } from './store.js';
 
-export const getVehicleById = (id) => state.vehicles.find(v => v.id === id);
+function getVehicleById(id) { return state.vehicles.find(v => v.id === id); }
 
-export const getVehicleTransactions = (vehicleId) =>
-    state.transactions
+function getVehicleTransactions(vehicleId) {
+    return state.transactions
         .filter(t => t.vehicleId === vehicleId)
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 10);
+}
 
-export const getRTOProgress = (vehicle) => {
+function getRTOProgress(vehicle) {
     if (vehicle.programType !== 'RTO' || !vehicle.startDate || !vehicle.contractMonths) return null;
     const start = new Date(vehicle.startDate).getTime();
     const now = Date.now();
@@ -30,38 +30,37 @@ export const getRTOProgress = (vehicle) => {
         monthsLeft: Math.round(daysLeft / 30),
         daysElapsed: Math.round(elapsedDays),
         totalDays,
-        monthsElapsed: Math.round(elapsedDays / 30) // deprecated but kept for UI compatibility if needed
+        monthsElapsed: Math.round(elapsedDays / 30),
+        percent: Math.min(100, Math.round((elapsedDays / totalDays) * 100)) // alias for store.js
     };
-};
+}
 
-export const immobilizeVehicle = (id, reason = 'Manual lock') => {
+function immobilizeVehicle(id, reason = 'Manual lock') {
     const v = getVehicleById(id);
     if (!v) return;
     v.status = 'immobilized';
     v.credits = 0;
     v.immobilizeLog.push({ action: 'lock', timestamp: new Date().toISOString(), reason });
-};
+}
 
-export const releaseVehicle = (id) => {
+function releaseVehicle(id) {
     const v = getVehicleById(id);
     if (!v) return;
     v.status = 'active';
     v.immobilizeLog.push({ action: 'unlock', timestamp: new Date().toISOString(), reason: 'Manual release' });
-};
+}
 
-export const extendGrace = (id, days) => {
+function extendGrace(id, days) {
     const v = getVehicleById(id);
     if (!v) return;
     const current = v.graceExpiry ? new Date(v.graceExpiry) : new Date();
     current.setDate(current.getDate() + days);
     v.graceExpiry = current.toISOString();
-};
+}
 
-// Get all vehicles with optional filter/sort
-export const getAllVehicles = (filter = {}) => {
+function getAllVehicles(filter = {}) {
     let list = [...state.vehicles];
 
-    // Search
     if (filter.search) {
         const q = filter.search.toLowerCase();
         list = list.filter(v =>
@@ -72,7 +71,6 @@ export const getAllVehicles = (filter = {}) => {
         );
     }
 
-    // Status filter
     if (filter.status && filter.status !== 'all') {
         if (filter.status === 'stnk_soon') {
             list = list.filter(v => {
@@ -84,12 +82,10 @@ export const getAllVehicles = (filter = {}) => {
         }
     }
 
-    // Program filter
     if (filter.program && filter.program !== 'all') {
         list = list.filter(v => v.programId === filter.program);
     }
 
-    // Sort
     if (filter.sortBy) {
         const dir = filter.sortDir === 'desc' ? -1 : 1;
         list.sort((a, b) => {
@@ -102,10 +98,9 @@ export const getAllVehicles = (filter = {}) => {
     }
 
     return list;
-};
+}
 
-// Check if STNK is expiring soon (within 30 days)
-export const getSTNKAlert = (vehicle) => {
+function getSTNKAlert(vehicle) {
     if (!vehicle.stnkExpiry) return null;
     const expiry = new Date(vehicle.stnkExpiry);
     const now = new Date();
@@ -115,11 +110,22 @@ export const getSTNKAlert = (vehicle) => {
     if (days < 0) return { type: 'expired', days: Math.abs(days), label: 'EXPIRED' };
     if (days < 30) return { type: 'warning', days, label: `${days}d left` };
     return null;
-};
+}
 
-export const getVehicleSTNKStats = () => {
+function getVehicleSTNKStats() {
     return state.vehicles.filter(v => {
         const alert = getSTNKAlert(v);
         return alert && (alert.type === 'expired' || alert.type === 'warning');
     }).length;
-};
+}
+
+// ─── GLOBAL EXPOSURE ──────────────────────────────────────────────────────────
+window.getVehicleById = getVehicleById;
+window.getVehicleTransactions = getVehicleTransactions;
+window.getRTOProgress = getRTOProgress;
+window.immobilizeVehicle = immobilizeVehicle;
+window.releaseVehicle = releaseVehicle;
+window.extendGrace = extendGrace;
+window.getAllVehicles = getAllVehicles;
+window.getSTNKAlert = getSTNKAlert;
+window.getVehicleSTNKStats = getVehicleSTNKStats;

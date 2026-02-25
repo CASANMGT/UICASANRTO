@@ -1,6 +1,6 @@
-# CASAN RTO — Fleet Management Dashboard
+# CASAN RTO — Vehicle & Renter Management Dashboard
 
-A web-based fleet operations dashboard for managing EV motorcycles on **RTO (Rent-to-Own)** and **Rental** programs. Built for CASAN platform operators, OEM dealers, and GPS partners.
+A web-based operations dashboard for managing EV motorcycles on **RTO (Rent-to-Own)** and **Rental** programs. Built for CASAN platform operators, OEM dealers, and GPS partners. Supports **Vehicle Inventory** management and **Renter Program** administration in a unified interface.
 
 ---
 
@@ -28,8 +28,8 @@ casan_rto/
     ├── app.js                  # Simulation Loop & Event Bus
     ├── debug.js                # Dev helper utilities
     └── modules/
-        ├── store.js            # Movement Simulation Engine
-        ├── ui.js               # Render functions (v1.6.1)
+        ├── store.js            # Movement Simulation Engine (v1.8.0)
+        ├── ui.js               # Render functions (v1.8.0)
         ├── map.js              # Leaflet 1:1 directional markers
         ├── finance.js          # Revenue analytics
         ├── gps.js              # GPS hardware auditing
@@ -83,6 +83,7 @@ casan_rto/
 ### � Programs & Collections Management
 | Feature | Status |
 |---------|--------|
+| **Commission Dual-Mode:** Toggle between % or Fixed Rp/day | ✅ |
 | **Deep Program Insights:** Live breakdown stats (Active/Grace/Locked) | ✅ |
 | **Collection & Maturity KPIs:** Score-based progress bars | ✅ |
 | **Program Details Drawer:** High-density operational slide panel | ✅ |
@@ -116,7 +117,8 @@ casan_rto/
 |---------|--------|
 | Paginated transactions (25/page) | ✅ |
 | **Transaction Summaries:** Paid, Pending, Failed KPI cards | ✅ |
-| **CREDIT DAYS column** (1, 2, 3, 5, 7, 15 days packages) | ✅ |
+| **CASAN FEE column** (Replacing Credit Days for revenue clarity) | ✅ |
+| **Smart Program Strips:** Shows % or Rp/day per program mode | ✅ |
 | Payment method column | ✅ |
 | Program filter (per-program revenue & stats) | ✅ |
 | Clickable program earnings strip | ✅ |
@@ -138,14 +140,17 @@ casan_rto/
 ### 🎨 Navigation & Architecture
 | Feature | Status |
 |---------|--------|
-| **Renamed: Fleet** (Unified Monitoring) | ✅ |
-| **Renamed: Programs (Admin)** (Scheme Administration) | ✅ |
-| **Renamed: Assets** (Vehicle Management) | ✅ |
+| **Terminology Split:** Vehicles (Inventory) vs. Renters (Program Participants) | ✅ |
+| **Sidebar:** Users → Programs (Admin) → Applications → Renters → Finance → Vehicles → Maps → GPS | ✅ |
+| **Renamed: Renters** (Active program participants — formerly Assets) | ✅ |
+| **Renters Overhaul:** Removed top KPI bar, added prominent "+ Add Renter" | ✅ |
+| **Inline Editing:** "Edit" button for renter profiles in row | ✅ |
+| **Renamed: Vehicles** (Physical motorcycle inventory) | ✅ |
 | **Renamed: Maps** (Fleet Tracking) | ✅ |
 | **Renamed: GPS** (GPS List) | ✅ |
 | **Vertical Viewports:** Maximized vertical height | ✅ |
 | **Sub-Nav Layout Fix:** No stats bar occlusion | ✅ |
-| **In-App Changelog Modal:** Versioned updates (v1.6.1) | ✅ |
+| **In-App Changelog Modal:** Versioned updates (v1.8.0) | ✅ |
 
 ---
 
@@ -179,11 +184,12 @@ All data is generated client-side in `store.js` — no backend required.
 
 | Entity | Key Fields |
 |--------|-----------|
-| **Vehicle** | `id`, `status`, `programId`, `partnerId`, `credits`, `bearing`, `speed`, `isOnline`, `isRunning`, `rider`, `plate` |
-| **User** | `userId`, `name`, `gender` (90% M / 10% F), `nik`, `phone`, `riskLabel`, `vehicleId` (Strict 1:1) |
+| **Vehicle** *(Inventory)* | `id`, `status`, `programId`, `partnerId`, `credits`, `bearing`, `speed`, `isOnline`, `isRunning`, `rider`, `plate` |
+| **User** *(Renter/KYC)* | `userId`, `name`, `gender` (90% M / 10% F), `nik`, `phone`, `riskLabel`, `vehicleId` (Strict 1:1) |
 | **Transaction** | `id`, `vehicleId`, `date`, `amount`, `method`, `status`, `creditDays` (1, 2, 3, 5, 7, 15) |
 | **GPS Device** | `id`, `imei`, `vehicleId`, `vehiclePlate`, `sim`, `status`, `lat`, `lng` |
-| **Program** | `id`, `name`, `type` (RTO/Rent), `price/day`, `graceDays` (Standardized to 1) |
+| **Program** | `id`, `name`, `type` (RTO/Rent), `price/day`, `graceDays`, `commissionType` (%/Fixed), `commissionFixed`, `minSalary`, `targetScore`, `contractDuration`, `eligibleModels` |
+| **RTO Application** | `id`, `userId`, `programId`, `status`, `score`, `assignedVehicleId`, `pickupDate` |
 | **Partner** | `id`, `name`, `color` |
 
 ---

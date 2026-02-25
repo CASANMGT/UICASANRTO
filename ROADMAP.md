@@ -12,7 +12,9 @@ The dashboard is currently a **High-Fidelity Prototype (SPA)** running with gene
 ### **Phase 1: Feature Completion & UX Hardening** (Short Term)
 Focus on completing the core operator workflow and stabilizing the UI.
 
-- [ ] **Program List View:** Implementation of full terms, pricing models, grace period rules, and holiday settings.
+- [x] **Terminology Differentiation:** Differentiated "Vehicles" (Inventory) from "Renters" (Program Participants) across all UI and documentation.
+- [x] **Dual-Mode Commission & Pricing:** Implementation of flexible commission models (% or Fixed Rp/day) and grace period rules.
+- [x] **Renter Onboarding Overhaul:** Unified "Add Renter" workflow with identity validation.
 - [ ] **Partner/Dealer Management:** Dedicated tab for GPS partners and OEM dealers with banking details and contract status.
 - [ ] **Fleet Detail Modals:** Enhanced views for battery SOV, vehicle lifecycle, and digitized documentation (STNK/BPKB).
 - [ ] **Advanced Alerting:** Real-time push notifications for low battery, GPS offline, and credit expiry.
@@ -29,13 +31,30 @@ Transition from mock data to a resilient backend architecture.
 Integrating industrial-grade monitoring for fleet and system health.
 
 - [ ] **Prometheus Integration:** 
-  - Deploy exporters to track system uptime, API latency, and IoT message throughput.                                   qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+  - Deploy exporters to track system uptime, API latency, and IoT message throughput.
   - Track fleet-wide KPIs (In-service vs. Out-of-service) as time-series data.
 - [ ] **Grafana Dashboard Embedding:**
   - Create high-resolution operational dashboards in Grafana.
   - Embed Grafana panels directly into the **Analytics** tab for deep-dive technical troubleshooting.
 - [ ] **Industrial Alerting:** Use Grafana Alerting / Prometheus Alertmanager for critical infrastructure failures (e.g., Station downtime).
 - [ ] **Predictive Maintenance:** Machine learning models for battery degradation based on historical data.
+
+---
+
+### **Phase 4: Advanced Analytics & Proactive Monitoring** (Future Development) 🚀
+Elevating the platform from a reactive dashboard to a predictive intelligence suite.
+
+#### 📊 Next-Gen Dashboard Analytics
+- [ ] **Interactive Waterfall Charts:** Visualize revenue streams from gross collection to net profit after partner sharing.
+- [ ] **Rider Behavioral Scoring (AI):** Machine learning models to predict default risk based on telemetry patterns (e.g., erratic speed, night-time usage).
+- [ ] **CO2 Offset Tracker:** Dashboard section showing total carbon footprint reduction across the entire EV fleet.
+- [ ] **Cross-Program Comparison:** Multi-select analytics to compare the profitability of different leasing schemes side-by-side.
+
+#### 🏍️ Advanced Fleet Monitoring
+- [ ] **Geofencing & Corridor Alerts:** Dynamic virtual boundaries with automated triggers (e.g., SMS alerts if a bike leaves the Greater Jakarta area).
+- [ ] **Remote Diagnostics (CAN bus):** Live ingestion of SOC (State of Charge), temperature, and motor health codes.
+- [ ] **Stolen Vehicle Recovery Mode:** High-frequency pinging and automated engine immobilization for recovery scenarios.
+- [ ] **Route Optimization:** Analysis of rider delivery patterns to recommend charging station placement based on demand heatmaps.
 
 ---
 

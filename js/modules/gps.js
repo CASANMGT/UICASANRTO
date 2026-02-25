@@ -1,8 +1,7 @@
 /* GPS Device CRUD Operations */
-import { state } from './store.js';
 
 // ─── CREATE ──────────────────────────────────────────────────────────────────
-export const createGpsDevice = (fields) => {
+function createGpsDevice(fields) {
     const newDevice = {
         id: `GPS-${String(state.gpsDevices.length + 1).padStart(5, '0')}`,
         imei: fields.imei || '',
@@ -39,10 +38,10 @@ export const createGpsDevice = (fields) => {
     };
     state.gpsDevices.push(newDevice);
     return newDevice;
-};
+}
 
 // ─── READ ─────────────────────────────────────────────────────────────────────
-export const getGpsDevices = (filter = {}) => {
+function getGpsDevices(filter = {}) {
     let devices = [...state.gpsDevices];
     if (filter.status && filter.status !== 'all') {
         devices = devices.filter(d => d.status === filter.status);
@@ -63,11 +62,11 @@ export const getGpsDevices = (filter = {}) => {
         );
     }
     return devices;
-};
+}
 
-export const getGpsById = (id) => state.gpsDevices.find(d => d.id === id);
+function getGpsById(id) { return state.gpsDevices.find(d => d.id === id); }
 
-export const getGpsStats = () => {
+function getGpsStats() {
     const all = state.gpsDevices;
     return {
         total: all.length,
@@ -82,39 +81,43 @@ export const getGpsStats = () => {
             return days >= 0 && days < 30;
         }).length,
     };
-};
+}
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
-export const updateGpsDevice = (id, fields) => {
+function updateGpsDevice(id, fields) {
     const idx = state.gpsDevices.findIndex(d => d.id === id);
     if (idx === -1) return null;
     const device = state.gpsDevices[idx];
 
-    // Update top-level fields
     const topLevel = ['brand', 'model', 'firmware', 'mountPosition', 'vehicleId', 'installDate', 'warrantyExpiry', 'purchaseCost'];
     topLevel.forEach(k => { if (fields[k] !== undefined) device[k] = fields[k]; });
 
-    // Update vehicle plate if vehicleId changed
     if (fields.vehicleId !== undefined) {
         device.vehiclePlate = fields.vehicleId
             ? (state.vehicles.find(v => v.id === fields.vehicleId)?.plate || '—')
             : '—';
     }
 
-    // Update SIM sub-fields
-    const simFields = ['simNumber', 'carrier', 'simExpiry'];
     if (fields.simNumber !== undefined) device.sim.number = fields.simNumber;
     if (fields.carrier !== undefined) device.sim.carrier = fields.carrier;
     if (fields.simExpiry !== undefined) device.sim.expiry = fields.simExpiry;
 
     state.gpsDevices[idx] = device;
     return device;
-};
+}
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
-export const deleteGpsDevice = (id) => {
+function deleteGpsDevice(id) {
     const idx = state.gpsDevices.findIndex(d => d.id === id);
     if (idx === -1) return false;
     state.gpsDevices.splice(idx, 1);
     return true;
-};
+}
+
+// ─── GLOBAL EXPOSURE ──────────────────────────────────────────────────────────
+window.createGpsDevice = createGpsDevice;
+window.getGpsDevices = getGpsDevices;
+window.getGpsById = getGpsById;
+window.getGpsStats = getGpsStats;
+window.updateGpsDevice = updateGpsDevice;
+window.deleteGpsDevice = deleteGpsDevice;

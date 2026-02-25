@@ -2,6 +2,42 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.8.0] - 2026-02-25
+
+### 💰 Dual-Mode Commission System
+- **Commission Flexibility:** Programs now support dual commission modes: **% Percentage** (e.g., 10% of transaction) or **Rp Fixed / day** (e.g., Rp 5,000/day).
+- **Program Configuration:** Added a visual toggle in the Program Settings modal to switch between commission types.
+- **Finance Transparency:** Replaced "Credit Days" column in the Finance transaction table with **"CASAN FEE"**, showing the exact platform revenue share per transaction.
+- **Smart Program Cards:** Finance program cards now dynamically display active commission rates (e.g., `(10%)` vs `(Rp 5.000/day)`).
+
+### 🤝 Renters View Overhaul
+- **Simplified Interface:** Removed the top KPI stats bar to reduce visual clutter and focus on the renter list.
+- **Prominent Primary Action:** Added a high-visibility **"＋ Add Renter"** button to the header for manual renter onboarding.
+- **Inline Operations:** Each renter row now features an **"✏ Edit"** button for direct profile updates alongside the existing vehicle audit.
+- **Advanced Renter Modal:** New multi-section modal for onboarding and editing renters, featuring **Phone Uniqueness Enforcement** to prevent duplicate profile creation.
+
+### 🎨 UX Consistency Pass
+- **Standardized Headers:** Unified the header layout (Logo/Icon + Title + Action Button) across all major tabs.
+- **Normalized Badge Styling:** Refined status and risk colors for better readability and a professional "one-person design" feel.
+- **Clean Filter Padding:** Standardized internal margins and filter bar alignment across Users, Programs, Renters, and Finance views.
+
+## [1.7.0] - 2026-02-25
+
+### 🏷️ Terminology Differentiation & Documentation Audit
+- **Terminology Split:** Differentiated **Vehicles** (Inventory — the physical motorcycle pool) from **Renters** (Program Participants — active riders in an RTO/Rental scheme).
+- **Sidebar Rename:** "Assets" tab renamed to **"🤝 Renters"** and legacy "Vehicles" tab renamed to **"🏍️ Vehicles"** to align with the new nomenclature.
+- **Page Title:** Updated to **"CASAN RTO | Vehicle & Renter Management"** for clearer product identity.
+- **Logo Update:** Sidebar branding updated to **"CASAN Operations"**.
+- **Version Badge:** Bumped to `v1.7.0`.
+- **Documentation Audit:** Comprehensive update of `README.md`, `CHANGELOG.md`, `Skills.md`, and `ROADMAP.md` to reflect latest features and terminology.
+- **In-App Changelog:** Modal updated to surface v1.7.0 as the latest release.
+
+## [1.6.2] - 2026-02-25
+### Added
+- **Program Qualification Settings:** Added "Asset Eligibility" and "Minimum Salary" requirements to Program Administrative settings.
+- **Modern UI Redesign:** Completely overhauled the Program Create/Edit modal with a modern, sectioned layout for better cognitive load management.
+- **Enhanced Program Audit:** The Program Details drawer now includes a "Qualification Profile" summary with asset focus badges and salary benchmarks.
+
 ## [1.6.1] - 2026-02-24
 
 ### 🏗️ UI Standardization & Pagination

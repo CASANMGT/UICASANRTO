@@ -576,3 +576,58 @@
         opacity: 0;
     }
 }
+
+/* ── Detail Panel Tabs ────────────────────────────────── */
+.dp-tab {
+    flex: 1;
+    padding: 9px 10px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--dt3);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: -2px;
+    /* Overlap the container border */
+}
+
+.dp-tab:hover {
+    color: var(--dt1);
+    background: var(--ds2);
+}
+
+.dp-tab.on {
+    color: var(--dac);
+    border-bottom-color: var(--dac);
+    background: transparent;
+}
+
+/* ── Admin Toast Notification ─────────────────────────── */
+.adm-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--ds1, #1a1a2e);
+    border: 1px solid var(--db1, #2a2a4a);
+    color: var(--dt1, #fff);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+}
+
+.adm-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}

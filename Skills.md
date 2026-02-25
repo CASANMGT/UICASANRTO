@@ -6,9 +6,10 @@ This document defines the core skills and operational capabilities enabled by th
 
 ## 🛠️ Operational Skill Domains
 
-### 🗺️ 1. Asset Monitoring & Telemetry
-Operators maintain real-time situational awareness of the entire fleet.
-- **Skill (Industrial Grade):** Assets Management — Auditing high-density logs and unit health with standardized 10-item precision.
+### 🗺️ 1. Vehicle Monitoring & Telemetry
+Operators maintain real-time situational awareness of the entire vehicle inventory.
+- **Skill (Industrial Grade):** Vehicle Inventory Management — Auditing high-density vehicle logs and unit health with standardized 10-item precision.
+- **Skill (Renter Management):** Manual Onboarding — Registering new renters via the prominent "Add Renter" workflow with unique identity enforcement.
 - **Skill (Telemetry):** Maps & Observability — Interpreting bearing, speed, and movement states via the vertical panoramic interface.
 
 ### ⚖️ 2. KYC & Risk Management
@@ -19,15 +20,15 @@ Operators use data correlation to vet riders and minimize asset exposure.
 
 ### 🏗️ 3. Infrastructure & IoT Control
 Operators manage the health of the physical charging network and connected devices.
-- **Skill:** Hierarchical Asset Monitoring — Navigating from Station → Device → Socket views.
+- **Skill:** Hierarchical Vehicle Monitoring — Navigating from Station → Device → Socket views.
 - **Skill:** Connectivity Auditing — Troubleshooting IMEI/SIM status and carrier data consumption.
 - **Skill:** IoT Troubleshooting — Identifying hardware-level downtime vs. network-level latency.
 
 ### 💰 4. Financial & Collection Oversight
 Operators manage the revenue lifecycle and the hire-purchase (RTO) progress.
-- **Skill:** Revenue Auditing — Monitoring paid vs. pending vs. failed transaction streams.
+- **Skill:** Revenue Auditing — Monitoring paid vs. pending vs. failed transaction streams with exact CASAN Fee attribution.
 - **Skill:** Collection Maturity Tracking — Analyzing fleet-wide equity recovery and RTO progress.
-- **Skill:** Program Logic Governance — Managing price-per-day, grace periods, and holiday rules.
+- **Skill:** Program Logic Governance — Managing price-per-day, grace periods, and dual-mode commission settings (% vs Fixed).
 
 ---
 

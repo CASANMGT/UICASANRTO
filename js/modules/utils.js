@@ -1,32 +1,40 @@
 /* Utility Functions */
 
-export const formatRupiah = (number) => {
+function formatRupiah(number) {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(number);
-};
+}
 
-export const formatDate = (isoString) => {
+function formatShortCurrency(number) {
+    if (!number && number !== 0) return 'Rp0';
+    if (Math.abs(number) >= 1000000000) return `Rp${(number / 1000000000).toFixed(1)}B`;
+    if (Math.abs(number) >= 1000000) return `Rp${(number / 1000000).toFixed(1)}M`;
+    if (Math.abs(number) >= 1000) return `Rp${(number / 1000).toFixed(0)}K`;
+    return `Rp${number}`;
+}
+
+function formatDate(isoString) {
     if (!isoString) return '-';
     return new Date(isoString).toLocaleDateString('id-ID', {
         day: '2-digit', month: 'short', year: 'numeric'
     });
-};
+}
 
-export const timeAgo = (timestamp) => {
+function timeAgo(timestamp) {
     if (!timestamp) return 'Never';
     const diff = Date.now() - new Date(timestamp).getTime();
 
-    if (diff < 60000) return 'Just now'; // < 1 min
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`; // < 1 hour
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`; // < 1 day
-    return `${Math.floor(diff / 86400000)}d ago`; // > 1 day
-};
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+}
 
-export const getCountdown = (targetDate) => {
+function getCountdown(targetDate) {
     const now = Date.now();
     const end = new Date(targetDate).getTime();
     const diff = end - now;
@@ -39,11 +47,11 @@ export const getCountdown = (targetDate) => {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
     return { expired: false, days, hours, minutes, seconds, total: diff };
-};
+}
 
-export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-export const downloadCSV = (filename, rows) => {
+function downloadCSV(filename, rows) {
     const csvContent = "data:text/csv;charset=utf-8,"
         + rows.map(e => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
@@ -53,4 +61,13 @@ export const downloadCSV = (filename, rows) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-};
+}
+
+// ─── GLOBAL EXPOSURE ──────────────────────────────────────────────────────────
+window.formatRupiah = formatRupiah;
+window.formatShortCurrency = formatShortCurrency;
+window.formatDate = formatDate;
+window.timeAgo = timeAgo;
+window.getCountdown = getCountdown;
+window.sleep = sleep;
+window.downloadCSV = downloadCSV;

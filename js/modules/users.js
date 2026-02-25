@@ -1,37 +1,37 @@
 /* Users Module — helpers for user list & profile drawer */
-import { state } from './store.js';
 
-export const getUserById = (id) => state.users.find(u => u.userId === id);
+function getUserById(id) { return state.users.find(u => u.userId === id); }
 
-export const getUserVehicles = (userId) =>
-    state.vehicles.filter(v => v.userId === userId);
+function getUserVehicles(userId) {
+    return state.vehicles.filter(v => v.userId === userId);
+}
 
-export const getUserTransactions = (userId) => {
+function getUserTransactions(userId) {
     const vehicleIds = getUserVehicles(userId).map(v => v.id);
     return state.transactions
         .filter(t => vehicleIds.includes(t.vehicleId))
         .sort((a, b) => new Date(b.date) - new Date(a.date));
-};
+}
 
-export const getRiskLabel = (score) =>
-    score >= 75 ? 'Low' : score >= 45 ? 'Medium' : 'High';
+function getRiskLabel(score) {
+    return score >= 75 ? 'Low' : score >= 45 ? 'Medium' : 'High';
+}
 
-export const getRiskColor = (label) => {
+function getRiskColor(label) {
     if (label === 'Low') return 'var(--c-success)';
     if (label === 'Medium') return 'var(--c-warning)';
     return 'var(--c-danger)';
-};
+}
 
 const OCC_EMOJI = {
     ojol: '🛵', msme: '🏪', private_employee: '👔', civil_servant: '🏛️',
     freelancer: '🔧', logistics: '🚛', student: '🎓', other: '❓'
 };
-export const getOccupationEmoji = (occ) => OCC_EMOJI[occ] || '❓';
+function getOccupationEmoji(occ) { return OCC_EMOJI[occ] || '❓'; }
 
-export const getUsers = (filter = {}) => {
+function getUsers(filter = {}) {
     let list = [...state.users];
 
-    // Search
     if (filter.search) {
         const q = filter.search.toLowerCase();
         list = list.filter(u =>
@@ -42,12 +42,10 @@ export const getUsers = (filter = {}) => {
         );
     }
 
-    // Risk filter
     if (filter.risk && filter.risk !== 'all') {
         list = list.filter(u => u.riskLabel === filter.risk);
     }
 
-    // Program filter
     if (filter.program && filter.program !== 'all') {
         list = list.filter(u => {
             const userVehicles = getUserVehicles(u.userId);
@@ -55,7 +53,6 @@ export const getUsers = (filter = {}) => {
         });
     }
 
-    // Sort
     const sortBy = filter.sortBy || 'joinDate';
     const sortDir = filter.sortDir || 'desc';
     const dir = sortDir === 'desc' ? -1 : 1;
@@ -70,4 +67,13 @@ export const getUsers = (filter = {}) => {
     });
 
     return list;
-};
+}
+
+// ─── GLOBAL EXPOSURE ──────────────────────────────────────────────────────────
+window.getUserById = getUserById;
+window.getUserVehicles = getUserVehicles;
+window.getUserTransactions = getUserTransactions;
+window.getRiskLabel = getRiskLabel;
+window.getRiskColor = getRiskColor;
+window.getOccupationEmoji = getOccupationEmoji;
+window.getUsers = getUsers;
