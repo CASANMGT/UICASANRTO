@@ -2,6 +2,23 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [2.0.0] - 2026-02-26
+
+### 💎 Premium Modern UI Overhaul
+- **Standardized Form System:** Implemented a unified design system for all modals (Renter, Program, Manual App) using high-depth containers, bold labels, and premium `.form-control` styling.
+- **Visual Depth & Glassmorphism:** Enhanced the UI with consistent use of layered backgrounds, soft borders, and refined focus states for a more professional dashboard feel.
+- **Renter Profile Enhancements:** Refactored the Renter list with detailed risk audit info, progress tracking, and live GPS status indicators.
+
+### 📋 Administrative Operations Logic
+- **Manual Application Flow:** Refactored the manual onboarding process into a high-density, multi-column modal for faster data entry.
+- **Admin Scheduling Assistant:** Enhanced the pickup scheduling interface in `rto.js` with an "Admin Assistant" mode, allowing operators to directly coordinate dates and times for drivers.
+- **Prominent Actions:** Added a dedicated "+ New Manual App" button to the Applications tab with an optimized layout to prevent UI clipping.
+
+### 🔧 Operational Fixes & Refinements
+- **Finance Transparency:** Integrated **Commission Rate** directly into the Program Admin cards and Finance strips.
+- **Terminology Consistency:** Unified the "Vehicle" (Inventory) vs "Renter" (Participant) nomenclature across all administrative helpers.
+- **Scheduling Logic:** Fixed `pickSlot` interaction for administrators, enabling full pickup coordination capability.
+
 ## [1.9.1] - 2026-02-26
 
 ### 🎨 Emoji & UI Rendering Restoration

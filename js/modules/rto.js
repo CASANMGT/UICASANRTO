@@ -207,7 +207,7 @@ function admV(view, elId) {
     if (elId) document.getElementById(elId).classList.add('on');
 
     document.getElementById('adm-tb-t').textContent = {
-        apps: 'Applications', analytics: 'Analytics', fleet: 'Fleet', pickup: 'Pickup Schedule', score: 'Score Config', wa: 'WA Templates'
+        apps: 'Applications', analytics: 'Analytics', fleet: 'Renter', pickup: 'Pickup Schedule', score: 'Score Config', wa: 'WA Templates'
     }[view] || view;
 
     if (view === 'analytics') renderAnalytics();
@@ -1243,13 +1243,17 @@ function renderPUDetail() {
         }
 
       <!--Calendar(driver scheduling) -->
-      <div class="cal-wrap">
-        <div class="cal-t"> Jadwal Pickup  Pilih Tanggal & Waktu</div>
-        <div id="pu-cal"></div>
-        <div style="font-size: var(--text-xs);font-weight:700;color:var(--dt2);margin-bottom:6px"> Slot Tersedia</div>
-        <div class="time-slots" id="pu-slots"></div>
-        <button class="pu-confirm-btn" id="pu-confirm-btn" onclick="window.rto.confirmPickup('${p.id}')" ${state.selDate && state.selTime ? '' : 'disabled'}>
-          ${state.selDate && state.selTime ? ` Konfirmasi: ${state.selDate}  ${state.selTime}` : ' Pilih tanggal & waktu dulu'}
+      <div class="cal-wrap" style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:20px; border:2px solid var(--ac)33">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; color:var(--ac)">
+            <span style="font-size:20px">🗓️</span>
+            <div style="font-size:var(--text-md); font-weight:800; letter-spacing:0.5px">ADMIN SCHEDULING ASSISTANT</div>
+        </div>
+        <div class="cal-t" style="color:var(--t2); font-size:var(--text-sm); margin-bottom:16px">Help driver select pickup date & time:</div>
+        <div id="pu-cal" style="margin-bottom:16px"></div>
+        <div style="font-size: var(--text-xs); font-weight:800; color:var(--ac); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px">Available Slots</div>
+        <div class="time-slots" id="pu-slots" style="margin-bottom:20px"></div>
+        <button class="pu-confirm-btn" id="pu-confirm-btn" onclick="window.rto.confirmPickup('${p.id}')" ${state.selDate && state.selTime ? '' : 'disabled'} style="width:100%; padding:14px; border-radius:10px; font-weight:800; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor:pointer">
+          ${state.selDate && state.selTime ? `✨ CONFIRM SCHEDULE: ${state.selDate} @ ${state.selTime}` : 'Choose Date & Time First'}
         </button>
       </div>
   
@@ -1410,7 +1414,7 @@ function renderPUSlots() {
     const btn = document.getElementById('pu-confirm-btn');
     if (btn) {
         btn.disabled = !(state.selDate && state.selTime);
-        btn.textContent = state.selDate && state.selTime ? ` Konfirmasi: ${state.selDate}  ${state.selTime}` : ' Pilih tanggal & waktu dulu';
+        btn.innerHTML = state.selDate && state.selTime ? `✨ CONFIRM SCHEDULE: ${state.selDate} @ ${state.selTime}` : 'Choose Date & Time First';
     }
 }
 
@@ -2331,6 +2335,7 @@ Object.assign(window.rto, {
     sendPickupWA,
     admT,
     pickCalDay,
+    pickSlot,
     calNav,
     confirmPickup,
     _applyDecision,
@@ -2362,83 +2367,90 @@ window.openAddApplicantModal = () => {
     const partners = Object.entries(PARTNERS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('');
 
     const html = `
-        <div style="padding:16px; display:flex; flex-direction:column; gap:16px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="form-group">
-                    <label>Full Name *</label>
-                    <input type="text" id="na-name" placeholder="e.g. Budi Santoso" style="background:var(--s3);border-color:var(--b2)">
-                </div>
-                <div class="form-group">
-                    <label>Phone *</label>
-                    <input type="text" id="na-phone" placeholder="+62 812-xxxx-xxxx" style="background:var(--s3);border-color:var(--b2)">
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="form-group">
-                    <label>Partner *</label>
-                    <select id="na-partner" style="background:var(--s3);border-color:var(--b2)">${partners}</select>
-                </div>
-                <div class="form-group">
-                    <label>Program *</label>
-                    <select id="na-prog" style="background:var(--s3);border-color:var(--b2)">${programs}</select>
-                </div>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="form-group">
-                    <label>Profession</label>
-                    <input type="text" id="na-prof" placeholder="e.g. OJOL, Karyawan" style="background:var(--s3);border-color:var(--b2)">
-                </div>
-                <div class="form-group">
-                    <label>Monthly Income (IDR)</label>
-                    <input type="number" id="na-income" placeholder="e.g. 4500000" style="background:var(--s3);border-color:var(--b2)">
+        <div class="modal-form modern-form" style="max-width:600px; margin:0 auto">
+            <div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:24px; margin-bottom:16px">
+                <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Personal Information</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="na-name" class="form-control" placeholder="e.g. Budi Santoso">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="text" id="na-phone" class="form-control" placeholder="+62 812-xxxx-xxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>Profession</label>
+                        <input type="text" id="na-prof" class="form-control" placeholder="e.g. OJOL, Karyawan">
+                    </div>
+                    <div class="form-group">
+                        <label>Monthly Income (IDR)</label>
+                        <input type="number" id="na-income" class="form-control" placeholder="e.g. 4500000">
+                    </div>
+                    <div class="form-group" style="grid-column: 1/-1">
+                        <label>Area / City</label>
+                        <input type="text" id="na-area" class="form-control" placeholder="e.g. Jakarta Selatan">
+                    </div>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <div class="form-group">
-                    <label>Area / City</label>
-                    <input type="text" id="na-area" placeholder="e.g. Jakarta Selatan" style="background:var(--s3);border-color:var(--b2)">
-                </div>
-                <div class="form-group">
-                    <label>Initial Decision</label>
-                    <select id="na-dec" style="background:var(--s3);border-color:var(--b2)">
-                        <option value="pending">Pending</option>
-                        <option value="review">Review</option>
-                    </select>
+
+            <div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:24px; margin-bottom:16px">
+                <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Program Selection</h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+                    <div class="form-group">
+                        <label>Partner *</label>
+                        <select id="na-partner" class="form-control">${partners}</select>
+                    </div>
+                    <div class="form-group">
+                        <label>Program *</label>
+                        <select id="na-prog" class="form-control">${programs}</select>
+                    </div>
+                    <div class="form-group" style="grid-column: 1/-1">
+                        <label>Initial Decision</label>
+                        <select id="na-dec" class="form-control">
+                            <option value="pending">Pending</option>
+                            <option value="review">Review</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div style="margin-top:4px">
-                <label style="font-size:12px; font-weight:800; color:var(--dw); margin-bottom:8px; display:block">Upload Required Documents</label>
+
+            <div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:24px">
+                <h4 style="margin:0 0 16px; color:var(--dw); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Document Uploads</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div class="form-group" style="margin-bottom:0">
-                        <label style="font-size:10px;color:var(--dt3)">KTP Asli</label>
-                        <input type="file" id="na-doc-ktp" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    <div class="form-group">
+                        <label style="font-size:var(--text-2xs)">KTP Asli</label>
+                        <input type="file" id="na-doc-ktp" accept="image/*" class="form-control" style="padding:8px; font-size:11px">
                     </div>
-                    <div class="form-group" style="margin-bottom:0">
-                        <label style="font-size:10px;color:var(--dt3)">SIM C</label>
-                        <input type="file" id="na-doc-sim" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    <div class="form-group">
+                        <label style="font-size:var(--text-2xs)">SIM C</label>
+                        <input type="file" id="na-doc-sim" accept="image/*" class="form-control" style="padding:8px; font-size:11px">
                     </div>
-                    <div class="form-group" style="margin-bottom:0">
-                        <label style="font-size:10px;color:var(--dt3)">Kartu Keluarga</label>
-                        <input type="file" id="na-doc-kk" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    <div class="form-group">
+                        <label style="font-size:var(--text-2xs)">Kartu Keluarga</label>
+                        <input type="file" id="na-doc-kk" accept="image/*" class="form-control" style="padding:8px; font-size:11px">
                     </div>
-                    <div class="form-group" style="margin-bottom:0">
-                        <label style="font-size:10px;color:var(--dt3)">Selfie + KTP</label>
-                        <input type="file" id="na-doc-selfie" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    <div class="form-group">
+                        <label style="font-size:var(--text-2xs)">Selfie + KTP</label>
+                        <input type="file" id="na-doc-selfie" accept="image/*" class="form-control" style="padding:8px; font-size:11px">
                     </div>
-                    <div class="form-group" style="margin-bottom:0; grid-column: span 2;">
-                        <label style="font-size:10px;color:var(--dt3)">Slip Gaji / Screenshot Income</label>
-                        <input type="file" id="na-doc-slip" accept="image/*" style="background:var(--s3);border-color:var(--b2);padding:6px;font-size:11px;border-radius:6px;width:100%">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label style="font-size:var(--text-2xs)">Slip Gaji / Screenshot Income</label>
+                        <input type="file" id="na-doc-slip" accept="image/*" class="form-control" style="padding:8px; font-size:11px">
                     </div>
                 </div>
             </div>
-            <div style="text-align:right; margin-top:16px;">
-                <button class="btn btn-secondary" style="margin-right:8px" onclick="window.closeGPSModal()">Cancel</button>
-                <button class="btn" style="background:var(--dac);color:#000;border:none;font-weight:800;padding:8px 24px;" onclick="window.saveNewApplicant()">Create Application</button>
+
+            <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px">
+                <button class="vl-pill" onclick="window.closeGPSModal()">Cancel</button>
+                <button onclick="window.saveNewApplicant()" style="background:var(--ac); color:#000; border:none; font-weight:800; padding:12px 32px; border-radius:10px; cursor:pointer; font-size:var(--text-base); transition: all 0.2s ease" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    🚀 Create Application
+                </button>
             </div>
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>📋</span> New Manual Application`;
+    document.getElementById('gpsModalTitle').innerHTML = `<div style="display:flex; align-items:center; gap:10px; color:var(--ac)"><span style="font-size:24px">📋</span> New Manual Application</div>`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };

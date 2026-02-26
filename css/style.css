@@ -582,22 +582,25 @@ textarea {
 
 .ov-in {
     flex: 1;
-    padding: 6px 8px;
-    background: var(--ds3);
-    border: 1px solid var(--db1);
-    border-radius: 5px;
-    color: var(--dt1);
+    background: var(--s3);
+    border: 1px solid var(--b2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--t1);
     font-size: var(--text-sm);
-    font-family: var(--font-ui);
-    outline: none
+    transition: all 0.2s ease;
 }
 
 .ov-in:focus {
-    border-color: var(--dac)
+    outline: none;
+    border-color: var(--ac);
+    background: var(--s2);
+    box-shadow: 0 0 0 3px rgba(0, 229, 195, 0.1);
 }
 
 .ov-sel {
-    max-width: 100px
+    flex: 0 0 90px;
+    cursor: pointer;
 }
 
 .ov-btn {

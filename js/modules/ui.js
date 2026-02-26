@@ -1827,7 +1827,7 @@ const renderProgramListView = () => {
     }
 
     let displayVehicles = [];
-    let viewTitle = 'All Renters';
+    let viewTitle = 'All Renter';
     let viewSubtitle = 'Consolidated renter monitoring across all active schemes.';
 
     if (state.filter.program === 'all') {
@@ -1896,10 +1896,10 @@ const renderProgramListView = () => {
         const isRenterExpanded = window._renterExpandSet.has(v.id);
 
         return `
-            <tr style="transition:background 0.15s; cursor:pointer" 
+            <tr data-status="${v.status}" style="transition:background 0.15s; cursor:pointer; ${isRenterExpanded ? 'background:var(--s2); border-bottom:none;' : ''}" 
                 onclick="event.target.tagName !== 'BUTTON' && window._toggleRenterExpand('${v.id}')"
-                onmouseover="this.style.background='var(--s2)'" 
-                onmouseout="this.style.background=''">
+                onmouseover="if(!${isRenterExpanded}) this.style.background='var(--s2)'" 
+                onmouseout="if(!${isRenterExpanded}) this.style.background=''">
                 <td style="padding:10px 12px">
                     <div style="display:flex; align-items:center; gap:8px">
                         <span style="color:var(--t3); font-size:var(--text-lg); flex-shrink:0">${isRenterExpanded ? '\u25BC' : '\u25B6'}</span>
@@ -1955,55 +1955,57 @@ const renderProgramListView = () => {
                 </td>
             </tr>
             ${isRenterExpanded ? `
-            <tr style="background:var(--s1); border-bottom:1px solid var(--b1)">
-                <td colspan="8" style="padding:16px 24px">
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:24px">
-                        <div>
-                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Rider Identity</div>
-                            <div style="display:flex; flex-direction:column; gap:8px">
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">NIK</span>
-                                    <span style="color:var(--t1); font-weight:600; font-family:'IBM Plex Mono'">${rider?.nik || v.nik || '-'}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Join Date</span>
-                                    <span style="color:var(--t1); font-weight:600">${rider?.joinDate ? new Date(rider.joinDate).toLocaleDateString('id-ID') : '-'}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Phone (WA)</span>
-                                    <span style="color:var(--t1); font-weight:600">${riderPhone}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">Emergency Contact</div>
-                            <div style="display:flex; flex-direction:column; gap:8px">
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Name</span>
-                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.name || '-'}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Relationship</span>
-                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.relationship || '-'}</span>
-                                </div>
-                                <div style="display:flex; justify-content:space-between">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Phone</span>
-                                    <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.phone || '-'}</span>
+            <tr data-status="${v.status}" style="background:var(--s2);">
+                <td colspan="8" style="padding:0 12px 16px 40px">
+                    <div style="background:var(--s1); border:1px solid var(--b1); border-radius:12px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.2)">
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:24px">
+                            <div>
+                                <div style="font-size:var(--text-xs); color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px; display:flex; align-items:center; gap:6px">\u{1F464} Identity</div>
+                                <div style="display:flex; flex-direction:column; gap:10px">
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">NIK</span>
+                                        <span style="color:var(--t1); font-weight:600; font-family:'IBM Plex Mono'">${rider?.nik || v.nik || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Join Date</span>
+                                        <span style="color:var(--t1); font-weight:600">${rider?.joinDate ? new Date(rider.joinDate).toLocaleDateString('id-ID') : '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Phone (WA)</span>
+                                        <span style="color:var(--t1); font-weight:600">${riderPhone}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div>
-                            <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; margin-bottom:8px; letter-spacing:1px">RTO Performance</div>
-                            <div style="display:flex; flex-direction:column; gap:8px">
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Total Paid</span>
-                                    <span style="color:var(--g); font-weight:800">${formatRupiah(rider?.totalPaid || 0)}</span>
+                            <div>
+                                <div style="font-size:var(--text-xs); color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px; display:flex; align-items:center; gap:6px">\u{1F6A8} Emergency</div>
+                                <div style="display:flex; flex-direction:column; gap:10px">
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Name</span>
+                                        <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.name || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Relationship</span>
+                                        <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.relationship || '-'}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Phone</span>
+                                        <span style="color:var(--t1); font-weight:600">${rider?.emergencyContacts?.[0]?.phone || '-'}</span>
+                                    </div>
                                 </div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--b1); padding-bottom:4px">
-                                    <span style="color:var(--t3); font-size:var(--text-sm)">Missed Payments</span>
-                                    <span style="color:var(--c-danger); font-weight:800">${rider?.missedPayments || 0}</span>
+                            </div>
+                            <div>
+                                <div style="font-size:var(--text-xs); color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:12px; letter-spacing:1px; display:flex; align-items:center; gap:6px">\u{1F4C8} RTO Metrics</div>
+                                <div style="display:flex; flex-direction:column; gap:10px">
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Total Paid</span>
+                                        <span style="color:var(--g); font-weight:800">${formatRupiah(rider?.totalPaid || 0)}</span>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px">
+                                        <span style="color:var(--t3); font-size:var(--text-sm)">Missed Payments</span>
+                                        <span style="color:var(--c-danger); font-weight:800">${rider?.missedPayments || 0}</span>
+                                    </div>
+                                    <button class="btn btn-secondary" style="margin-top:4px; font-size:var(--text-xs); justify-content:center; padding:8px" onclick="window.openUserDrawer('${rider?.userId || v.userId}')">Full History \u2192</button>
                                 </div>
-                                <button class="btn btn-secondary" style="margin-top:4px; font-size:var(--text-xs); justify-content:center" onclick="window.openUserDrawer('${rider?.userId || v.userId}')">View Full Payment History</button>
                             </div>
                         </div>
                     </div>
@@ -2048,7 +2050,7 @@ const renderProgramListView = () => {
                         
                         <div style="display:flex; flex-direction:column; gap:4px;">
                             <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Brand / Maker</label>
-                            <select id="rtoFilterBrand" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('brand', this.value)">
+                            <select id="rtoFilterBrand" class="form-control" style="width:160px;" onchange="window.setRtoFilter('brand', this.value)">
                                 <option value="all">All Brands</option>
                                 ${Array.from(new Set(state.vehicles.map(v => v.brand).filter(Boolean))).map(b => `<option value="${b}" ${window.rtoListFilter?.brand === b ? 'selected' : ''}>${b}</option>`).join('')}
                             </select>
@@ -2056,7 +2058,7 @@ const renderProgramListView = () => {
 
                         <div style="display:flex; flex-direction:column; gap:4px;">
                             <label style="font-size: var(--text-xs); color:var(--dt3); font-weight:600;">Program</label>
-                            <select id="rtoFilterProgram" class="form-control" style="width:160px; padding:6px 12px; font-size:var(--text-sm);" onchange="window.setRtoFilter('programName', this.value)">
+                            <select id="rtoFilterProgram" class="form-control" style="width:160px;" onchange="window.setRtoFilter('programName', this.value)">
                                 <option value="all">All Programs</option>
                                 ${Array.from(new Set(state.programs.map(p => p.name).filter(Boolean))).map(pn => `<option value="${pn}" ${window.rtoListFilter?.programName === pn ? 'selected' : ''}>${pn}</option>`).join('')}
                             </select>
@@ -2221,7 +2223,7 @@ const renderProgramListView = () => {
 };
 
 window.popoutProgramStats = (type, programId) => {
-    const p = programId === 'all' ? { name: 'All Programs', shortName: 'FLEET' } : state.programs.find(x => x.id === programId);
+    const p = programId === 'all' ? { name: 'All Programs', shortName: 'RENTERS' } : state.programs.find(x => x.id === programId);
     let title = '';
     let html = '';
 
@@ -2296,7 +2298,7 @@ window.popoutProgramStats = (type, programId) => {
     } else {
         const maturityColor = maturityPct > 75 ? 'var(--c-success)' : (maturityPct > 25 ? 'var(--ac)' : 'var(--c-warning)');
 
-        title = `Fleet Maturity Snapshot: ${p.shortName}`;
+        title = `Renter Maturity Snapshot: ${p.shortName}`;
         html = `
             <div style="padding:20px">
                 <div style="height:12px; background:var(--b1); border-radius:50px; margin-bottom:15px; overflow:hidden; border:1px solid var(--s3)">
@@ -2310,7 +2312,7 @@ window.popoutProgramStats = (type, programId) => {
 
                 <div style="background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; border:1px solid var(--b1)">
                     <h4 style="margin-bottom:12px; font-size: var(--text-xl); display:flex; align-items:center; gap:8px"> Lifecycle Benchmarks</h4>
-                    <p style="font-size: var(--text-base); color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the fleet. This determines when assets transition from RTO to full ownership.</p>
+                    <p style="font-size: var(--text-base); color:var(--t2); margin-bottom:15px">Maturity represents the average contract completion across the renters. This determines when assets transition from RTO to full ownership.</p>
                     
                     <div style="display:flex; flex-direction:column; gap:10px">
                         <div style="display:flex; align-items:center; justify-content:space-between; font-size: var(--text-md)">
@@ -2385,22 +2387,22 @@ window.openProgramModal = (programId = null) => {
                 <h4 style="margin-top:0; margin-bottom:16px; font-size:var(--text-md); color:var(--ac); letter-spacing:1px; text-transform:uppercase">Core Identity</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Display Name</label>
-                        <input type="text" id="pName" value="${p.name}" style="background:var(--s3); border-color:var(--b2)" placeholder="e.g. Maka RTO Standard">
+                        <label>Display Name</label>
+                        <input type="text" id="pName" value="${p.name}" class="form-control" placeholder="e.g. Maka RTO Standard">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Slug / Short Name</label>
-                        <input type="text" id="pShort" value="${p.shortName}" style="background:var(--s3); border-color:var(--b2)" placeholder="e.g. Maka">
+                        <label>Slug / Short Name</label>
+                        <input type="text" id="pShort" value="${p.shortName}" class="form-control" placeholder="e.g. Maka">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Underwriting Partner</label>
-                        <select id="pPartner" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Underwriting Partner</label>
+                        <select id="pPartner" class="form-control">
                             ${partners.map(part => `<option value="${part.id}" ${p.partnerId === part.id ? 'selected' : ''}>${part.name}</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Program Intent</label>
-                        <select id="pType" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Program Intent</label>
+                        <select id="pType" class="form-control">
                             <option value="RTO" ${p.type === 'RTO' ? 'selected' : ''}>Rent To Own (RTO)</option>
                             <option value="Rental" ${p.type === 'Rental' ? 'selected' : ''}>Daily Rental</option>
                         </select>
@@ -2414,7 +2416,7 @@ window.openProgramModal = (programId = null) => {
                     ${isEdit ? `
                         <div style="display:flex; gap:12px; align-items:center">
                             <div style="text-align:right">
-                                <div style="font-size:10px; color:var(--t3); text-transform:uppercase">Asset Pool</div>
+                                <div style="font-size:10px; color:var(--t3); text-transform:uppercase">Asset Vehicle</div>
                                 <div style="font-weight:800; font-size:14px; color:var(--t1)">${availableAssets} / ${totalAssets} <span style="font-size:10px; color:var(--t3); font-weight:400">AVAIL</span></div>
                             </div>
                             <div style="width:40px; height:40px; border-radius:50%; background:var(--s3); display:flex; align-items:center; justify-content:center; border:1px solid var(--b1)"></div>
@@ -2422,18 +2424,18 @@ window.openProgramModal = (programId = null) => {
                     ` : ''}
                 </div>
                 <div class="form-group" style="margin-bottom:16px">
-                    <label style="color:var(--t3); font-weight:700">Eligible Vehicle Models</label>
-                    <input type="text" id="pModels" value="${(p.eligibleModels || []).join(', ')}" style="background:var(--s3); border-color:var(--b2)" placeholder="e.g. Zeeho AE8, Zeeho AE2 (Comma separated)">
+                    <label>Eligible Vehicle Models</label>
+                    <input type="text" id="pModels" value="${(p.eligibleModels || []).join(', ')}" class="form-control" placeholder="e.g. Zeeho AE8, Zeeho AE2 (Comma separated)">
                     <small style="color:var(--t3); font-size:var(--text-2xs); margin-top:4px; display:block">Separating models with commas allows for multi-asset filtering.</small>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Min. Monthly Salary (IDR)</label>
-                        <input type="number" id="pSalary" value="${p.minSalary || 0}" style="background:var(--s3); border-color:var(--b2)" placeholder="e.g. 4500000">
+                        <label>Min. Monthly Salary (IDR)</label>
+                        <input type="number" id="pSalary" value="${p.minSalary || 0}" class="form-control" placeholder="e.g. 4500000">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Daily Price (IDR)</label>
-                        <input type="number" id="pPrice" value="${p.price}" style="background:var(--s3); border-color:var(--c-success)">
+                        <label>Daily Price (IDR)</label>
+                        <input type="number" id="pPrice" value="${p.price}" class="form-control">
                     </div>
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label style="color:var(--t3); font-weight:700">CASAN Commission Mode</label>
@@ -2443,13 +2445,13 @@ window.openProgramModal = (programId = null) => {
                         </div>
                         <input type="hidden" id="pCommissionType" value="${p.commissionType || 'percentage'}">
                         <div id="commField_pct" style="display:${(p.commissionType || 'percentage') === 'percentage' ? 'block' : 'none'}">
-                            <label style="color:var(--t3); font-size:var(--text-xs); font-weight:600">Commission Rate (%)</label>
-                            <input type="number" id="pCommission" value="${Math.round((p.commissionRate ?? 0.10) * 100)}" min="0" max="100" style="background:var(--s3); border-color:var(--ac)" placeholder="e.g. 10">
+                            <label>Commission Rate (%)</label>
+                            <input type="number" id="pCommission" value="${Math.round((p.commissionRate ?? 0.10) * 100)}" min="0" max="100" class="form-control" placeholder="e.g. 10">
                             <small style="color:var(--t3); font-size:var(--text-2xs); margin-top:4px; display:block">% of each payment goes to CASAN. Partner gets the rest.</small>
                         </div>
                         <div id="commField_fix" style="display:${(p.commissionType || 'percentage') === 'fixed' ? 'block' : 'none'}">
-                            <label style="color:var(--t3); font-size:var(--text-xs); font-weight:600">Fixed Fee per Credit Day (Rp)</label>
-                            <input type="number" id="pCommissionFixed" value="${p.commissionFixed ?? 5000}" min="0" style="background:var(--s3); border-color:var(--ac)" placeholder="e.g. 5000">
+                            <label>Fixed Fee per Credit Day (Rp)</label>
+                            <input type="number" id="pCommissionFixed" value="${p.commissionFixed ?? 5000}" min="0" class="form-control" placeholder="e.g. 5000">
                             <small style="color:var(--t3); font-size:var(--text-2xs); margin-top:4px; display:block">Flat Rp amount per credit day. Partner gets the daily rate minus this fee.</small>
                         </div>
                     </div>
@@ -2460,27 +2462,27 @@ window.openProgramModal = (programId = null) => {
                 <h4 style="margin-top:0; margin-bottom:16px; font-size:var(--text-md); color:var(--ac); letter-spacing:1px; text-transform:uppercase">Risk & Tolerance</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Grace Period (Days)</label>
-                        <input type="number" id="pGrace" value="${p.grace}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Grace Period (Days)</label>
+                        <input type="number" id="pGrace" value="${p.grace}" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Target Min. Credit Score</label>
-                        <input type="number" id="pScore" value="${p.targetScore || 60}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Target Min. Credit Score</label>
+                        <input type="number" id="pScore" value="${p.targetScore || 60}" class="form-control">
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Contract Duration (Days)</label>
-                        <input type="number" id="pDuration" value="${p.contractDuration || 0}" placeholder="e.g. 540" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Contract Duration (Days)</label>
+                        <input type="number" id="pDuration" value="${p.contractDuration || 0}" placeholder="e.g. 540" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">No Collection (Holidays)</label>
-                        <input type="text" id="pHolidays" value="${p.holidays || ''}" placeholder="e.g. Sunday, 17-8" style="background:var(--s3); border-color:var(--b2)">
+                        <label>No Collection (Holidays)</label>
+                        <input type="text" id="pHolidays" value="${p.holidays || ''}" placeholder="e.g. Sunday, 17-8" class="form-control">
                     </div>
                 </div>
                 <div class="form-group" style="margin-top:16px">
-                    <label style="color:var(--t3); font-weight:700">Hero Photo URL</label>
-                    <input type="text" id="pHeroPhoto" value="${p.heroPhoto || ''}" placeholder="https://example.com/photo.jpg" style="background:var(--s3); border-color:var(--b2)">
+                    <label>Hero Photo URL</label>
+                    <input type="text" id="pHeroPhoto" value="${p.heroPhoto || ''}" placeholder="https://example.com/photo.jpg" class="form-control">
                 </div>
             </div>
 
@@ -2600,20 +2602,32 @@ window.openHandoverConfirmation = (puId) => {
                              style="height:120px; border:2px dashed var(--b2); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;"
                              onmouseover="this.style.borderColor='var(--ac)'" onmouseout="this.style.borderColor='var(--b2)'">
                             <div style="font-size:24px; margin-bottom:4px"></div>
-                            <div style="font-size:var(--text-xs); color:var(--t3); font-weight:700">Foto KTP + Rider</div>
-                            <div style="font-size:var(--text-2xs); color:var(--t3); opacity:0.6">Klik untuk ambil foto</div>
+                            <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v2.0.0</h3>
+                    <div style="font-size: var(--text-base); color:var(--dt3); margin-top:4px">Premium UI & Administrative Overhaul</div>
+                    
+                    <div style="margin-top:24px; display:grid; gap:20px">
+                        <div style="background:var(--ds2); padding:20px; border-radius:12px; border:1px solid var(--db1)">
+                            <div style="font-weight:800; color:var(--ac); font-size:var(--text-md); margin-bottom:12px; display:flex; align-items:center; gap:8px">
+                                <span>💎</span> PREMIUM MODERN UI
+                            </div>
+                            <ul style="margin:0; padding-left:20px; color:var(--dt2); line-height:1.6">
+                                <li>Standardized high-depth form system for all administrative modals.</li>
+                                <li>Enhanced visual hierarchy with glassmorphism and refined design tokens.</li>
+                                <li>Modernized Renter Profiles with live tracking and risk audit dashboards.</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background:var(--ds2); padding:20px; border-radius:12px; border:1px solid var(--db1)">
+                            <div style="font-weight:800; color:var(--dac); font-size:var(--text-md); margin-bottom:12px; display:flex; align-items:center; gap:8px">
+                                <span>📋</span> ADMIN OPERATIONS
+                            </div>
+                            <ul style="margin:0; padding-left:20px; color:var(--dt2); line-height:1.6">
+                                <li>New Administrative Scheduling Assistant for vehicle pickups.</li>
+                                <li>Streamlined Manual Application flow with dual-column high-density layout.</li>
+                                <li>Fixed UI clipping on global application triggers.</li>
+                            </ul>
                         </div>
                     </div>
-
-                    <div style="background:rgba(0, 229, 195, 0.05); border:1px solid var(--ac); border-radius:12px; padding:16px; margin-top:20px">
-                        <div style="display:flex; align-items:center; gap:8px; color:var(--ac); font-weight:700; font-size:var(--text-xs); text-transform:uppercase; margin-bottom:8px">
-                            <span></span> Link Status
-                        </div>
-                        <div style="font-size:var(--text-sm); line-height:1.5; color:var(--t2)">
-                            Asset <strong>${o.plate}</strong> otomatis akan dipindahkan ke kepemilikan <strong>${o.nm}</strong> setelah konfirmasi.
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="modal-actions" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
@@ -2676,40 +2690,40 @@ window.openProgramDetails = (id) => {
     const settingsHtml = `
         <div class="modal-form" style="padding:0">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-                <div class="form-group"><label>Program Name</label><input type="text" id="dpName" value="${p.name}"></div>
-                <div class="form-group"><label>Short Name</label><input type="text" id="dpShort" value="${p.shortName}"></div>
+                <div class="form-group"><label>Program Name</label><input type="text" id="dpName" value="${p.name}" class="form-control"></div>
+                <div class="form-group"><label>Short Name</label><input type="text" id="dpShort" value="${p.shortName}" class="form-control"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
                 <div class="form-group">
                     <label>Partner</label>
-                    <select id="dpPartner">
+                    <select id="dpPartner" class="form-control">
                         ${partners.map(part => `<option value="${part.id}" ${p.partnerId === part.id ? 'selected' : ''}>${part.name}</option>`).join('')}
                     </select>
                 </div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-                <div class="form-group"><label>Daily Price (Rp)</label><input type="number" id="dpPrice" value="${p.price}"></div>
-                <div class="form-group"><label>Grace Period (Days)</label><input type="number" id="dpGrace" value="${p.grace}"></div>
+                <div class="form-group"><label>Daily Price (Rp)</label><input type="number" id="dpPrice" value="${p.price}" class="form-control"></div>
+                <div class="form-group"><label>Grace Period (Days)</label><input type="number" id="dpGrace" value="${p.grace}" class="form-control"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-                <div class="form-group"><label>Min Salary (IDR)</label><input type="number" id="dpSalary" value="${p.minSalary || 0}"></div>
-                <div class="form-group"><label>Target Score</label><input type="number" id="dpScore" value="${p.targetScore || 60}"></div>
+                <div class="form-group"><label>Min Salary (IDR)</label><input type="number" id="dpSalary" value="${p.minSalary || 0}" class="form-control"></div>
+                <div class="form-group"><label>Target Score</label><input type="number" id="dpScore" value="${p.targetScore || 60}" class="form-control"></div>
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-                <div class="form-group"><label>Contract (Days)</label><input type="number" id="dpDuration" value="${p.contractDuration || 0}" placeholder="e.g. 540"></div>
-                <div class="form-group"><label>Holidays</label><input type="text" id="dpHolidays" value="${p.holidays || ''}" placeholder="e.g. Sunday, 17-8"></div>
+                <div class="form-group"><label>Contract (Days)</label><input type="number" id="dpDuration" value="${p.contractDuration || 0}" placeholder="e.g. 540" class="form-control"></div>
+                <div class="form-group"><label>Holidays</label><input type="text" id="dpHolidays" value="${p.holidays || ''}" placeholder="e.g. Sunday, 17-8" class="form-control"></div>
             </div>
             <div class="form-group" style="margin-bottom:12px">
                 <label>Hero Photo URL</label>
-                <input type="text" id="dpHeroPhoto" value="${p.heroPhoto || ''}" placeholder="https://example.com/photo.jpg">
+                <input type="text" id="dpHeroPhoto" value="${p.heroPhoto || ''}" placeholder="https://example.com/photo.jpg" class="form-control">
             </div>
             <div class="form-group" style="margin-bottom:20px">
                 <label>Eligible Models (Comma separated)</label>
-                <input type="text" id="dpModels" value="${(p.eligibleModels || []).join(', ')}">
+                <input type="text" id="dpModels" value="${(p.eligibleModels || []).join(', ')}" class="form-control">
             </div>
             <div class="form-group" style="margin-bottom:20px">
                 <label>Program Type</label>
-                <select id="dpType">
+                <select id="dpType" class="form-control">
                     <option value="RTO" ${p.type === 'RTO' ? 'selected' : ''}>Rent To Own (RTO)</option>
                     <option value="Rental" ${p.type === 'Rental' ? 'selected' : ''}>Daily Rental</option>
                 </select>
@@ -2739,7 +2753,7 @@ window.openProgramDetails = (id) => {
             <div id="p-overview" class="p-content-pane">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
                     <div style="background:var(--s1); padding:20px; border-radius:12px; border:1px solid var(--b1)">
-                        <div style="color:var(--t3); font-size:var(--text-xs); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px">Fleet Size</div>
+                        <div style="color:var(--t3); font-size:var(--text-xs); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px">Renter Size</div>
                         <div style="font-size:32px; font-weight:800; color:var(--t1)">${fleetSize}</div>
                     </div>
                     <div style="background:var(--s1); padding:20px; border-radius:12px; border:1px solid var(--b1)">
@@ -2778,7 +2792,7 @@ window.openProgramDetails = (id) => {
                     <div style="font-size:24px; font-weight:800; color:var(--c-success)">${formatRupiah(revenueEst)}</div>
                 </div>
 
-                <button class="btn btn-secondary" style="width:100%; justify-content:center" onclick="window.viewFleetForProgram('${p.id}')">View Fleet in Tracker </button>
+                <button class="btn btn-secondary" style="width:100%; justify-content:center" onclick="window.viewFleetForProgram('${p.id}')">View Renter in Tracker </button>
             </div>
 
             <!-- PROMOTIONS TAB -->
@@ -3030,7 +3044,7 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates  v1.9.1";
+    elTitle.innerText = "Platform Updates  v2.0.0";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
@@ -3164,16 +3178,16 @@ window.openAddRenterModal = () => {
                 <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Renter Identity</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
                     <div class="form-group" style="grid-column:1/-1">
-                        <label style="color:var(--t3); font-weight:700">Full Name *</label>
-                        <input type="text" id="rnName" placeholder="e.g. Ahmad Rizki" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Full Name *</label>
+                        <input type="text" id="rnName" class="form-control" placeholder="e.g. Ahmad Rizki">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Phone Number * <span style="font-size:var(--text-2xs); color:var(--t3)">(must be unique)</span></label>
-                        <input type="tel" id="rnPhone" placeholder="+62 8xx-xxxx-xxxx" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Phone Number * <span style="font-size:var(--text-2xs); color:var(--t3); text-transform:lowercase">(must be unique)</span></label>
+                        <input type="tel" id="rnPhone" class="form-control" placeholder="+62 8xx-xxxx-xxxx">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">NIK</label>
-                        <input type="text" id="rnNik" placeholder="16-digit NIK" maxlength="16" style="background:var(--s3); border-color:var(--b2)">
+                        <label>NIK</label>
+                        <input type="text" id="rnNik" class="form-control" placeholder="16-digit NIK" maxlength="16">
                     </div>
                 </div>
             </div>
@@ -3182,15 +3196,15 @@ window.openAddRenterModal = () => {
                 <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Program & Vehicle</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Program *</label>
-                        <select id="rnProgram" style="background:var(--s3); border-color:var(--b2)" onchange="window._updateRenterVehicleList()">
+                        <label>Program *</label>
+                        <select id="rnProgram" class="form-control" onchange="window._updateRenterVehicleList()">
                             <option value="">? Select Program ?</option>
                             ${programs.map(p => `<option value="${p.id}">${p.name} (${p.type})</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Assign Vehicle *</label>
-                        <select id="rnVehicle" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Assign Vehicle *</label>
+                        <select id="rnVehicle" class="form-control">
                             <option value="">? Select Program first ?</option>
                         </select>
                     </div>
@@ -3202,12 +3216,12 @@ window.openAddRenterModal = () => {
                 <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Emergency Contact</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Contact Name</label>
-                        <input type="text" id="rnEmgName" placeholder="e.g. Siti Rahayu" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Contact Name</label>
+                        <input type="text" id="rnEmgName" class="form-control" placeholder="e.g. Siti Rahayu">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Contact Phone</label>
-                        <input type="tel" id="rnEmgPhone" placeholder="+62 8xx-xxxx-xxxx" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Contact Phone</label>
+                        <input type="tel" id="rnEmgPhone" class="form-control" placeholder="+62 8xx-xxxx-xxxx">
                     </div>
                 </div>
             </div>
@@ -3251,16 +3265,16 @@ window.openEditRenterModal = (vehicleId) => {
                 <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Renter Identity</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
                     <div class="form-group" style="grid-column:1/-1">
-                        <label style="color:var(--t3); font-weight:700">Full Name *</label>
-                        <input type="text" id="rnName" value="${rider.name || v.customer || ''}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Full Name *</label>
+                        <input type="text" id="rnName" value="${rider.name || v.customer || ''}" class="form-control" placeholder="e.g. Ahmad Rizki">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Phone *</label>
-                        <input type="tel" id="rnPhone" value="${rider.phone || v.phone || ''}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Phone *</label>
+                        <input type="tel" id="rnPhone" value="${rider.phone || v.phone || ''}" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">NIK</label>
-                        <input type="text" id="rnNik" value="${rider.nik || v.nik || ''}" maxlength="16" style="background:var(--s3); border-color:var(--b2)">
+                        <label>NIK</label>
+                        <input type="text" id="rnNik" value="${rider.nik || v.nik || ''}" maxlength="16" class="form-control">
                     </div>
                 </div>
             </div>
@@ -3282,12 +3296,12 @@ window.openEditRenterModal = (vehicleId) => {
                 <h4 style="margin:0 0 16px; color:var(--ac); font-size:var(--text-md); letter-spacing:1px; text-transform:uppercase">Emergency Contact</h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Contact Name</label>
-                        <input type="text" id="rnEmgName" value="${rider.emergencyContacts?.[0]?.name || ''}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Contact Name</label>
+                        <input type="text" id="rnEmgName" value="${rider.emergencyContacts?.[0]?.name || ''}" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label style="color:var(--t3); font-weight:700">Contact Phone</label>
-                        <input type="tel" id="rnEmgPhone" value="${rider.emergencyContacts?.[0]?.phone || ''}" style="background:var(--s3); border-color:var(--b2)">
+                        <label>Contact Phone</label>
+                        <input type="tel" id="rnEmgPhone" value="${rider.emergencyContacts?.[0]?.phone || ''}" class="form-control">
                     </div>
                 </div>
             </div>
@@ -3520,8 +3534,8 @@ function renderProgramsTable() {
                         <div style="font-size:10px;color:var(--dt3);margin-top:1px">${prog.type || 'RTO'} • ${prog.partnerName || prog.partnerId || '?'}</div>
                     </div>
                 </div>
-                <!-- RTO Fleet Status -->
-                <div style="font-size:9px;font-weight:800;color:var(--dt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">RTO Fleet Status</div>
+                <!-- RTO Renter Status -->
+                <div style="font-size:9px;font-weight:800;color:var(--dt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">RTO Renter Status</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
                     <div style="text-align:center;background:var(--ds3);border-radius:6px;padding:6px 4px">
                         <div style="font-size:16px;font-weight:900;color:var(--dg)">${sc.active}</div>
@@ -3536,8 +3550,8 @@ function renderProgramsTable() {
                         <div style="font-size:9px;color:var(--dt3);text-transform:uppercase">Locked</div>
                     </div>
                 </div>
-                <!-- Asset Pool -->
-                <div style="font-size:9px;font-weight:800;color:var(--dt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Asset Pool</div>
+                <!-- Asset Vehicle -->
+                <div style="font-size:9px;font-weight:800;color:var(--dt3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Asset Vehicle</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
                     <div style="text-align:center;background:var(--ds3);border-radius:6px;padding:6px 4px">
                         <div style="font-size:16px;font-weight:900;color:var(--dt1)">${sc.total}</div>
@@ -3550,6 +3564,21 @@ function renderProgramsTable() {
                     <div style="text-align:center;background:var(--ds3);border-radius:6px;padding:6px 4px">
                         <div style="font-size:16px;font-weight:900;color:var(--t2)">${sc.total - sc.available}</div>
                         <div style="font-size:9px;color:var(--dt3);text-transform:uppercase">Assigned</div>
+                    </div>
+                </div>
+                <!-- Scheme Details -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; margin-bottom:12px; padding:8px 10px; background:var(--ds3); border-radius:8px; border:1px solid rgba(255,255,255,0.03)">
+                    <div>
+                        <div style="font-size:9px; color:var(--dt3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px">Daily Rate</div>
+                        <div style="font-size:12px; font-weight:800; color:var(--dac)">${prog.price ? formatShortCurrency(prog.price) : '--'}</div>
+                    </div>
+                    <div style="text-align:center">
+                        <div style="font-size:9px; color:var(--dt3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px">Commission</div>
+                        <div style="font-size:12px; font-weight:800; color:var(--dw)">${prog.commissionType === 'fixed' ? formatShortCurrency(prog.commissionFixed) : (Math.round((prog.commissionRate ?? 0.1) * 100)) + '%'}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:9px; color:var(--dt3); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px">Holidays</div>
+                        <div style="font-size:11px; font-weight:700; color:var(--dt1)">${prog.holidays || 'None'}</div>
                     </div>
                 </div>
                 <!-- Progress Bars: Health & Maturity -->
@@ -3576,8 +3605,8 @@ function renderProgramsTable() {
             <!-- Actions Buttons -->
             <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramDetails('${prog.id}')">\u{270F}\u{FE0F} Edit</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">\u{1F3CD}\u{FE0F} Fleet</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">\u{1F4E6} Pool</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">\u{1F464} Renter</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">\u{1F3CD} Vehicle</button>
             </div>
         </div>`;
     }).join('');
@@ -3595,7 +3624,7 @@ function renderProgramsTable() {
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
                 <div>
                     <h2 style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);margin:0">\u{2699}\u{FE0F} Programs Admin</h2>
-                    <div style="font-size:var(--text-xs);color:var(--dt3);margin-top:2px">Manage programs, fleet allocation &amp; assignment</div>
+                    <div style="font-size:var(--text-xs);color:var(--dt3);margin-top:2px">Manage programs, renter allocation &amp; assignment</div>
                 </div>
                 <button class="btn" style="font-size:var(--text-xs);background:var(--dac);color:#000;border:none;font-weight:800;padding:8px 18px" onclick="window.openCreateProgramModal()">
                     + New Program
@@ -3633,23 +3662,23 @@ window.openCreateProgramModal = () => {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-group">
                     <label>Program Name *</label>
-                    <input type="text" id="np-name" placeholder="e.g. Zeeho RTO" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="text" id="np-name" class="form-control" placeholder="e.g. Zeeho RTO">
                 </div>
                 <div class="form-group">
                     <label>Short Name *</label>
-                    <input type="text" id="np-short" placeholder="e.g. Zeeho" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="text" id="np-short" class="form-control" placeholder="e.g. Zeeho">
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-group">
                     <label>Partner</label>
-                    <select id="np-partner" style="background:var(--s3);border-color:var(--b2)">
+                    <select id="np-partner" class="form-control">
                         ${partnerOptions}
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Program Type</label>
-                    <select id="np-type" style="background:var(--s3);border-color:var(--b2)">
+                    <select id="np-type" class="form-control">
                         <option value="RTO">Rent To Own (RTO)</option>
                         <option value="Rent">Rental</option>
                     </select>
@@ -3658,31 +3687,31 @@ window.openCreateProgramModal = () => {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-group">
                     <label>Daily Price (Rp)</label>
-                    <input type="number" id="np-price" placeholder="e.g. 38000" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="number" id="np-price" class="form-control" placeholder="e.g. 38000">
                 </div>
                 <div class="form-group">
                     <label>Grace Period (Days)</label>
-                    <input type="number" id="np-grace" placeholder="e.g. 7" value="7" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="number" id="np-grace" class="form-control" placeholder="e.g. 7" value="7">
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-group">
                     <label>Min Salary (IDR)</label>
-                    <input type="number" id="np-salary" placeholder="e.g. 4500000" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="number" id="np-salary" class="form-control" placeholder="e.g. 4500000">
                 </div>
                 <div class="form-group">
                     <label>Target Score</label>
-                    <input type="number" id="np-score" placeholder="e.g. 60" value="60" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="number" id="np-score" class="form-control" placeholder="e.g. 60" value="60">
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-group">
                     <label>Contract Duration (Days)</label>
-                    <input type="number" id="np-contract" placeholder="e.g. 730" value="0" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="number" id="np-contract" class="form-control" placeholder="e.g. 730" value="0">
                 </div>
                 <div class="form-group">
                     <label>Holidays (e.g. Sunday, 17-8)</label>
-                    <input type="text" id="np-holidays" placeholder="e.g. Sunday, 17-8" style="background:var(--s3);border-color:var(--b2)">
+                    <input type="text" id="np-holidays" class="form-control" placeholder="e.g. Sunday, 17-8">
                 </div>
             </div>
             <div style="background:var(--s2); border:1px solid var(--b1); border-radius:8px; padding:16px;">
@@ -3694,21 +3723,21 @@ window.openCreateProgramModal = () => {
                 <input type="hidden" id="np-commType" value="percentage">
                 <div id="npCommField_pct">
                     <label style="font-size:11px; color:var(--t3)">Rate (%)</label>
-                    <input type="number" id="np-commRate" placeholder="e.g. 10" value="10" style="background:var(--s3);border-color:var(--ac)">
+                    <input type="number" id="np-commRate" class="form-control" placeholder="e.g. 10" value="10">
                 </div>
                 <div id="npCommField_fix" style="display:none">
                     <label style="font-size:11px; color:var(--t3)">Fixed Fee (Rp)</label>
-                    <input type="number" id="np-commFixed" placeholder="e.g. 5000" value="5000" style="background:var(--s3);border-color:var(--ac)">
+                    <input type="number" id="np-commFixed" class="form-control" placeholder="e.g. 5000" value="5000">
                 </div>
             </div>
             
             <div class="form-group">
                 <label>Eligible Models (comma separated)</label>
-                <input type="text" id="np-models" placeholder="e.g. Zeeho AE8, Zeeho AE2" style="background:var(--s3);border-color:var(--b2)">
+                <input type="text" id="np-models" class="form-control" placeholder="e.g. Zeeho AE8, Zeeho AE2">
             </div>
             <div class="form-group">
                 <label>Hero Photo URL</label>
-                <input type="text" id="np-hero" placeholder="https://example.com/photo.jpg" style="background:var(--s3);border-color:var(--b2)">
+                <input type="text" id="np-hero" class="form-control" placeholder="https://example.com/photo.jpg">
             </div>
             <div style="text-align:right;margin-top:4px;">
                 <button class="btn btn-secondary" style="margin-right:8px" onclick="window.closeGPSModal()">Cancel</button>
@@ -3782,7 +3811,7 @@ window.openAssetPoolModal = (programId) => {
             </div>
             <div style="text-align:center;background:var(--ds2);border:1px solid var(--db1);border-radius:6px;padding:8px">
                 <div style="font-size:18px;font-weight:900;color:var(--dac)">${totalAvailable}</div>
-                <div style="font-size:10px;color:var(--dt3);text-transform:uppercase">Global Available Pool</div>
+                <div style="font-size:10px;color:var(--dt3);text-transform:uppercase">Global Available Vehicle</div>
             </div>
             <div style="text-align:center;background:var(--ds2);border:1px solid var(--db1);border-radius:6px;padding:8px">
                 <div style="font-size:18px;font-weight:900;color:var(--t2)">${totalAssigned}</div>
@@ -3794,7 +3823,7 @@ window.openAssetPoolModal = (programId) => {
     const html = `
         <div style="padding:16px">
             ${statsHtml}
-            <div style="margin-bottom:16px; color:var(--t2); font-size:var(--text-sm)">Select vehicles from the global available pool to assign to <strong>${p.name}</strong>.</div>
+            <div style="margin-bottom:16px; color:var(--t2); font-size:var(--text-sm)">Select vehicles from the global available vehicles to assign to <strong>${p.name}</strong>.</div>
             <div style="max-height:400px; overflow-y:auto; border:1px solid var(--b1); border-radius:8px; background:var(--s1)">
                 <table style="width:100%; border-collapse:collapse; font-size:var(--text-xs)">
                     <thead>
@@ -3818,7 +3847,7 @@ window.openAssetPoolModal = (programId) => {
                                 </td>
                             </tr>
                         `).join('')}
-                        ${availablePool.length === 0 ? '<tr><td colspan="4" style="padding:16px; text-align:center; color:var(--t3)">No available vehicles in the pool.</td></tr>' : ''}
+                        ${availablePool.length === 0 ? '<tr><td colspan="4" style="padding:16px; text-align:center; color:var(--t3)">No available vehicles found.</td></tr>' : ''}
                     </tbody>
                 </table>
             </div>
@@ -3828,7 +3857,7 @@ window.openAssetPoolModal = (programId) => {
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00f0\u0178\u201c\u00a6</span> Manage Asset Pool for ${p.shortName}`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span style="font-size:1.2em">\u{1F4E6}</span> Manage Asset Vehicle for ${p.shortName}`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };
@@ -3913,6 +3942,14 @@ window.openProgramFleetModal = (programId) => {
     const pendingApproved = admApps.filter(a => a.dec === 'approved' || a.dec === 'pending');
     const progApps = pendingApproved.filter(a => a.prog === p.id);
 
+    // Expansion Tracker for Modal
+    if (!window._renterModalExpandSet) window._renterModalExpandSet = new Set();
+    window._toggleRenterModalExpand = (vid) => {
+        if (window._renterModalExpandSet.has(vid)) window._renterModalExpandSet.delete(vid);
+        else window._renterModalExpandSet.add(vid);
+        window.openProgramFleetModal(programId); // Re-render modal content
+    };
+
     const statusChip = (status) => {
         const map = {
             active: ['ACTIVE', 'var(--dg)', 'var(--dg1)'],
@@ -3921,30 +3958,90 @@ window.openProgramFleetModal = (programId) => {
             immobilized: ['LOCKED', 'var(--dd)', 'var(--dd1)'],
         };
         const [l, c, bg] = map[status] || [status.toUpperCase(), 'var(--dt2)', 'var(--ds3)'];
-        return `<span style="background:${bg};color:${c};font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px">${l}</span>`;
+        return `<span style="background:${bg};color:${c};font-size:9px;font-weight:800;padding:2px 8px;border-radius:4px">${l}</span>`;
     };
 
     const vehicleRows = vs.length === 0
-        ? `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--dt3);font-size:var(--text-sm)">No vehicles in this program yet</td></tr>`
+        ? `<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--dt3);font-size:var(--text-sm)">No renters in this program yet</td></tr>`
         : vs.map(v => {
-            const user = state.users.find(u => u.name === v.customer) || {};
-            const phone = user.phone || v.phone || "\u00ef\u00bf\u00bd";
-            const driver = v.customer || v.userId ? `<div style="font-size:var(--text-sm);color:var(--dt1);font-weight:600">${v.customer || "\u00ef\u00bf\u00bd"}</div><div style="font-size:10px;color:var(--dt3)">${v.userId || ""}</div>` : "<span style='color:var(--dt3);font-size:var(--text-sm)'>" + "\u2014" + "</span>";
+            const user = state.users.find(u => u.userId === v.userId || u.name === v.customer) || {};
+            const riskColor = user.riskLabel === 'Low' ? 'var(--dg)' : user.riskLabel === 'Medium' ? 'var(--dw)' : 'var(--dd)';
+            const progress = window.getRTOProgress ? window.getRTOProgress(v) : null;
+            const progressHtml = progress ? `<div style="width:100%; max-width:60px; height:4px; background:var(--db1); border-radius:2px; margin-top:4px"><div style="width:${progress.percent}%; height:100%; background:var(--ac); border-radius:2px"></div></div><div style="font-size:10px; color:var(--dt3); margin-top:2px">${progress.percent}%</div>` : '--';
+
+            const gpsStatus = v.isOnline ?
+                `<span style="color:var(--dg); font-weight:800; font-size:10px; display:flex; align-items:center; gap:4px"><span style="width:6px; height:6px; background:var(--dg); border-radius:50%; display:inline-block"></span> ON</span>` :
+                `<span style="color:var(--dt3); font-weight:800; font-size:10px; display:flex; align-items:center; gap:4px"><span style="width:6px; height:6px; background:var(--dt3); border-radius:50%; display:inline-block"></span> OFF</span>`;
+
+            const driver = v.customer || v.userId ?
+                `<div style="font-size:var(--text-sm);color:var(--dt1);font-weight:600">${v.customer || "Unknown"}</div><div style="font-size:10px;color:var(--dt3);font-family:'IBM Plex Mono'">${v.userId || ""}</div>` :
+                "<span style='color:var(--dt3);font-size:var(--text-sm)'>—</span>";
+
+            const riskAudit = user.riskLabel ?
+                `<div style="color:${riskColor}; font-weight:800; font-size:11px">${user.riskLabel}</div><div style="font-size:10px; color:var(--dt3)">Score: ${user.riskScore}</div>` :
+                '--';
+
+            const address = v.address || v.lastActiveLocation || 'Location Hidden';
+
             const assignBtn = v.status === 'available' && progApps.length > 0
                 ? `<button class="btn" style="font-size:10px;padding:3px 10px;background:var(--dac1);border:1px solid rgba(251,191,36,.3);color:var(--dac)"
-                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">?? Assign</button>`
+                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">Assign</button>`
                 : v.status === 'available'
                     ? `<span style="font-size:10px;color:var(--dt3)">No pending apps</span>`
                     : '';
 
-            return `<tr style="border-bottom:1px solid var(--b1)">
-                <td style="padding:10px;">${driver}</td>
-                <td style="padding:10px;font-size:var(--text-xs);color:var(--dt2)">${phone}</td>
-                <td style="padding:10px;">${statusChip(v.status)}</td>
-                <td style="padding:10px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);color:var(--dt1)"><div style="font-weight:700">${v.plate || v.id}</div><div style="font-size:10px;color:var(--dt3)">${v.model || "\u00ef\u00bf\u00bd"}</div></td>
-                <td style="padding:10px;font-size:var(--text-xs);color:var(--dt3)">${v.credits !== undefined ? v.credits + "d" : "\u00ef\u00bf\u00bd"}</td>
-                <td style="padding:10px;">${assignBtn}</td>
-            </tr>`;
+            const isExpanded = window._renterModalExpandSet.has(v.id);
+
+            return `
+            <tr style="border-bottom:none; cursor:pointer; background:${isExpanded ? 'var(--s2)' : 'transparent'}; transition:background 0.2s" onclick="window._toggleRenterModalExpand('${v.id}')">
+                <td style="padding:12px 10px;">
+                    <div style="display:flex; align-items:center; gap:8px">
+                        <span style="color:var(--dt3); font-size:14px; transition:transform 0.2s; transform:${isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'}">\u25B6</span>
+                        ${driver}
+                    </div>
+                </td>
+                <td style="padding:12px 10px;">${riskAudit}</td>
+                <td style="padding:12px 10px;">${statusChip(v.status)}</td>
+                <td style="padding:12px 10px;">${progressHtml}</td>
+                <td style="padding:12px 10px; max-width:180px;"><div style="font-size:11px; color:var(--dt2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis" title="${address}">${address}</div></td>
+                <td style="padding:12px 10px;">${gpsStatus}</td>
+                <td style="padding:12px 10px;font-family:'IBM Plex Mono',monospace;font-size:var(--text-xs);color:var(--dt1)"><div style="font-weight:700">${v.plate || v.id}</div><div style="font-size:10px;color:var(--dt3)">${v.model || ""}</div></td>
+                <td style="padding:12px 10px;font-size:var(--text-xs);color:var(--dt3)">${v.credits !== undefined ? v.credits + "d" : "--"}</td>
+                <td style="padding:12px 10px;">${assignBtn}</td>
+            </tr>
+            ${isExpanded ? `
+            <tr style="background:var(--s2)">
+                <td colspan="9" style="padding:0 16px 16px 40px">
+                    <div style="background:var(--s1); border:1px solid var(--b1); border-radius:10px; padding:16px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1)">
+                        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px">
+                            <div>
+                                <div style="font-size:9px; color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:10px; opacity:0.8">Rider Info</div>
+                                <div style="font-size:11px; color:var(--dt1); display:flex; flex-direction:column; gap:6px">
+                                    <div style="display:flex; justify-content:space-between"><span>NIK</span><span style="font-family:'IBM Plex Mono'">${user.nik || '--'}</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Phone</span><span>${user.phone || v.phone || '--'}</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Join</span><span>${user.joinDate ? new Date(user.joinDate).toLocaleDateString() : '--'}</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:9px; color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:10px; opacity:0.8">Emergency</div>
+                                <div style="font-size:11px; color:var(--dt1); display:flex; flex-direction:column; gap:6px">
+                                    <div style="display:flex; justify-content:space-between"><span>Name</span><span>${user.emergencyContacts?.[0]?.name || '--'}</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Phone</span><span>${user.emergencyContacts?.[0]?.phone || '--'}</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:9px; color:var(--dw); font-weight:800; text-transform:uppercase; margin-bottom:10px; opacity:0.8">Performance</div>
+                                <div style="font-size:11px; color:var(--dt1); display:flex; flex-direction:column; gap:6px">
+                                    <div style="display:flex; justify-content:space-between"><span>Total Paid</span><span style="color:var(--dg);font-weight:700">${formatRupiah(user.totalPaid || 0)}</span></div>
+                                    <div style="display:flex; justify-content:space-between"><span>Missed</span><span style="color:var(--dd);font-weight:700">${user.missedPayments || 0}</span></div>
+                                </div>
+                                <button class="btn btn-secondary" style="margin-top:8px; width:100%; font-size:10px; padding:4px" onclick="event.stopPropagation(); window.openUserDrawer('${v.userId}')">View Profile</button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>` : `<tr style="border-bottom:1px solid var(--db1); height:0"><td colspan="9" style="padding:0"></td></tr>`}
+            `;
         }).join('');
 
     const activeCount = vs.filter(v => v.status === 'active').length;
@@ -3974,15 +4071,18 @@ window.openProgramFleetModal = (programId) => {
     `;
 
     const html = `
-        <div style="padding:16px;">
+        <div style="padding:16px; width:1000px; max-width:90vw;">
             ${statsHtml}
-            <div style="max-height:400px; overflow-y:auto; border:1px solid var(--b1); border-radius:8px; background:var(--s1)">
-                <table style="width:100%;border-collapse:collapse">
+            <div style="max-height:500px; overflow-y:auto; border:1px solid var(--b1); border-radius:8px; background:var(--s1)">
+                <table class="vl-table" style="width:100%;border-collapse:collapse">
                     <thead style="position:sticky;top:0;background:var(--s2);z-index:1">
                         <tr style="border-bottom:1px solid var(--b1)">
-                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Driver Info</th>
-                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Phone</th>
+                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Renter Info</th>
+                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Risk Audit</th>
                             <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Status</th>
+                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Progress</th>
+                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Active Address</th>
+                            <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">GPS</th>
                             <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Nopol / ID</th>
                             <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Credits</th>
                             <th style="padding:10px;text-align:left;font-size:10px;color:var(--dt3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Action</th>
@@ -3992,14 +4092,14 @@ window.openProgramFleetModal = (programId) => {
                 </table>
             </div>
             ${vs.length > 0 ? `<div style="padding:10px 16px;margin-top:16px;border:1px solid var(--db1);border-radius:8px;background:var(--ds2);display:flex;justify-content:space-between;align-items:center">
-                <div style="font-size:var(--text-xs);color:var(--dt3)">${availableCount} vehicle${availableCount !== 1 ? 's' : ''} available for assignment</div>
+                <div style="font-size:var(--text-xs);color:var(--dt3)">${availableCount} asset${availableCount !== 1 ? 's' : ''} available for assignment</div>
                 ${availableCount > 0 && progApps.length > 0 ? `<button class="btn btn-secondary" style="font-size:var(--text-xs);padding:6px 14px" 
-                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">?? Assign Next Applicant</button>` : ''}
+                    onclick="window.closeGPSModal(); window.rto && window.rto.openApprovalConfirmation && window.rto.openApprovalConfirmation('${progApps[0].id}')">Assign Next Applicant</button>` : ''}
             </div>` : ''}
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00f0\u0178\u008f\u008d\u00ef\u00b8\u008f</span> Fleet Details for ${p.shortName}`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span style="font-size:1.2em">\u{1F464}</span> Renter Details for ${p.shortName}`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };

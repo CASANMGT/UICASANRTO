@@ -73,7 +73,7 @@
                 <div class="nav-tab active" data-tab="users">👤 Users</div>
                 <div class="nav-tab" data-tab="programs">⚙️ Programs</div>
                 <div class="nav-tab" data-tab="rto-applications">📋 Applications</div>
-                <div class="nav-tab" data-tab="rto-fleet">🤝 Renters</div>
+                <div class="nav-tab" data-tab="rto-fleet">🤝 Renter</div>
                 <div class="nav-tab" data-tab="finance">💰 Finance</div>
                 <div class="nav-tab" data-tab="vehicles">🏍️ Vehicles</div>
                 <div class="nav-tab" data-tab="fleet">🗺️ Maps</div>
@@ -253,19 +253,26 @@
                                                 style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--ds1); border: 1px solid var(--db1); border-radius: 12px; overflow: hidden;">
                                                 <!-- Search + Filters + Add Button -->
                                                 <div
-                                                    style="padding: 12px; border-bottom: 1px solid var(--db1); background: var(--ds2); display: flex; flex-direction: column; gap: 8px;">
+                                                    style="padding: 12px; border-bottom: 1px solid var(--db1); background: var(--ds2); display: flex; flex-direction: column; gap: 10px;">
+                                                    <div
+                                                        style="display: flex; justify-content: space-between; align-items: center;">
+                                                        <div
+                                                            style="font-size: var(--text-sm); font-weight: 800; color: var(--dt1);">
+                                                            APPLICATIONS</div>
+                                                        <button class="vl-pill"
+                                                            style="font-size:11px; padding:8px 16px; background:var(--ac); color:#000; border:none; font-weight:800; white-space:nowrap; border-radius:8px; display:flex; align-items:center; gap:4px"
+                                                            onclick="window.openAddApplicantModal()"><span>+</span> New
+                                                            Manual App</button>
+                                                    </div>
                                                     <div style="display: flex; gap: 8px; align-items: center;">
-                                                        <input class="adm-srch" placeholder="🔍 Search name, ID..."
+                                                        <input class="adm-srch" placeholder="🔍 Search..."
                                                             oninput="window.rto.admSrch(this.value)"
-                                                            style="flex:1; margin:0;">
+                                                            style="flex:1.2; margin:0; font-size:var(--text-xs); padding:8px;">
                                                         <select id="app-prog-filter" class="form-select"
                                                             style="flex:1; margin:0; font-size:var(--text-xs); padding:6px; background:var(--ds1); border:1px solid var(--db1); color:var(--dt1); border-radius:8px"
                                                             onchange="window.rto.setAdmProgFlt(this.value)">
                                                             <option value="all">🌐 All Programs</option>
                                                         </select>
-                                                        <button class="btn"
-                                                            style="font-size:10px; padding:6px 12px; background:var(--dac); color:#000; border:none; font-weight:800; white-space:nowrap;"
-                                                            onclick="window.openAddApplicantModal()">+ Add</button>
                                                     </div>
                                                     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                                                         <button id="afb-all" class="afb on"
