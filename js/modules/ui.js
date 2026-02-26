@@ -3047,43 +3047,45 @@ window.openChangelogModal = () => {
     elTitle.innerText = "Platform Updates  v2.0.0";
     elContent.innerHTML = `
         <div style="padding:4px">
-            <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
+                <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v1.9.1</h3>
+                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v2.0.0</h3>
                     <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-26</span>
                 </div>
-                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>Emoji & UI Restoration</strong> update is live. This release fixes persistent Mojibake in the Programs tab, restores missing identity icons, and standardizes UI delimiters.</p>
+                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>Premium Modern UI Overhaul</strong> is live. This major update standardizes the administrative experience with high-density forms, glassmorphism aesthetics, and enhanced renter operational logic.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> EMOJI & UI RESTORATION
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> PREMIUM MODERN UI
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Programs Admin Fix:</strong> Cleaned malformed symbols from the management interface.</li>
-                        <li><strong>Gender Icons:</strong> Restored 👨/👩 icons in expanded user profile identity cards.</li>
-                        <li><strong>Delimiter Polish:</strong> Standardized "•" delimiters across programs and dropdowns.</li>
+                        <li><strong>Unified Form System:</strong> High-depth containers and premium styling for all operational modals.</li>
+                        <li><strong>Glassmorphism:</strong> Layered backgrounds and refined focus states across the dashboard.</li>
+                        <li><strong>Manual Onboarding:</strong> Multi-column layouts for rapid renter and application entry.</li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> SYSTEM STABILITY
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> OPS & STABILITY
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Init Hardening:</strong> Further race condition resolution for SPA state loading.</li>
-                        <li><strong>Component Margins:</strong> Refined grid spacing in high-density views.</li>
+                        <li><strong>Admin Assistant:</strong> Refined pickup scheduling logic for direct operator coordination.</li>
+                        <li><strong>Finance Transparency:</strong> Integrated commission rates into Program Admin and Finance strips.</li>
+                        <li><strong>Naming Audit:</strong> Standardized nomenclature for Vehicles (Inventory) vs Renters (Participants).</li>
                     </ul>
                 </div>
 
                 <div style="border-top: 1px dashed var(--b1); padding-top: 20px; margin-top: 10px;">
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t3); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                         PREVIOUS: v1.9.0 (UI Consistency & Aesthetics)
+                         PREVIOUS: v1.9.1 (Emoji & UI Restoration)
                     </h4>
                     <ul style="font-size: var(--text-sm); color:var(--t3); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px; opacity: 0.8">
-                        <li><strong>Premium Aesthetics:</strong> IBM Plex Mono & layout standardization.</li>
-                        <li><strong>Emoji Restoration:</strong> Fixed broken icons across GPS and Maps.</li>
+                        <li><strong>Programs Admin Fix:</strong> Cleaned malformed symbols from management.</li>
+                        <li><strong>Gender Icons:</strong> Restored identity icons in expanded user profiles.</li>
+                        <li><strong>Delimiter Polish:</strong> Standardized "•" delimiters across the UI.</li>
                     </ul>
                 </div>
             </div>
