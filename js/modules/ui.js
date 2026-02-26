@@ -903,11 +903,11 @@ const openGpsModal = (device = null, vehicles = []) => {
     if (!overlay || !content) return;
 
     const isEdit = !!device;
-    title.textContent = isEdit ? `?? Edit Device \u00ef\u00bf\u00bd ${device.id}` : '?? Add GPS Device';
+    title.textContent = isEdit ? `\u{270F}\u{FE0F} Edit Device` : '\u{1F4E1} Add GPS Device';
 
     const vehicleOptions = [
         `<option value="">Unassigned</option>`,
-        ...vehicles.map(v => `<option value="${v.id}" ${isEdit && device.vehicleId === v.id ? 'selected' : ''}>${v.id} \u00ef\u00bf\u00bd ${v.plate}</option>`)
+        ...vehicles.map(v => `<option value="${v.id}" ${isEdit && device.vehicleId === v.id ? 'selected' : ''}>${v.id} • ${v.plate}</option>`)
     ].join('');
 
     content.innerHTML = `
@@ -1033,7 +1033,7 @@ const renderVehicleListView = () => {
                     <div style="background:var(--s2); border-radius:8px; padding:12px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Program Scheme</div>
                         <div style="font-weight:700; color:var(--t1); margin-top:4px">${program?.name || 'N/A'}</div>
-                        <div style="font-size:var(--text-xs); color:var(--t3)">${program?.type || ''} ? ${v.programId || ''}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${program?.type || ''} • ${v.programId || ''}</div>
                     </div>
                     <div style="background:var(--s2); border-radius:8px; padding:12px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Daily Rate</div>
@@ -1056,7 +1056,7 @@ const renderVehicleListView = () => {
                     </div>
                     <div style="background:var(--s2); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Actions</div>
-                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openVehicleDrawer('${v.id}')">\u00f0\u0178\u201d\u008d Full Audit</button>
+                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openVehicleDrawer('${v.id}')">\u{1F50D} Full Audit</button>
                     </div>
                 </div>
             </td>
@@ -1159,7 +1159,7 @@ const renderUserListView = () => {
     const tableRows = paginated.map(u => {
         const initials = u.name.split(' ').map(n => n[0]).join('').substring(0, 2);
         const riskColor = getRiskColor(u.riskLabel);
-        const genderIcon = u.gender === 'Male' ? '\u00f0\u0178\u2018\u00a8' : '\u00f0\u0178\u2018\u00a9';
+        const genderIcon = u.gender === 'Male' ? '\u{1F468}' : '\u{1F469}';
         const genderColor = u.gender === 'Male' ? '#60A5FA' : '#F472B6';
 
         // Progress Bar for RTO users
@@ -1187,7 +1187,7 @@ const renderUserListView = () => {
                     <div style="background:var(--s2); border-radius:8px; padding:12px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Identity</div>
                         <div style="font-weight:700; color:var(--t1); margin-top:4px">${u.name}</div>
-                        <div style="font-size:var(--text-xs); color:var(--t3)">${u.gender || 'Unknown'} \u00ef\u00bf\u00bd ${u.age || '?'}y</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${genderIcon} ${u.gender || 'Unknown'} • ${u.age || '?'}y</div>
                         <div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">ID: ${u.userId}</div>
                     </div>
                     <div style="background:var(--s2); border-radius:8px; padding:12px">
@@ -1205,19 +1205,19 @@ const renderUserListView = () => {
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Risk Profile</div>
                         <div style="font-weight:800; font-size:var(--text-xl); color:${riskColor}; margin-top:4px">${u.riskScore}</div>
                         <div style="font-size:var(--text-xs); font-weight:700; color:${riskColor}">${u.riskLabel}</div>
-                        ${userVehicle ? `<div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">Lock: ${userVehicle.immobilizeLog?.length || 0}x \u00ef\u00bf\u00bd Grace: ${userVehicle.graceEncounters || 0}x</div>` : ''}
+                        ${userVehicle ? `<div style="font-size:var(--text-xs); color:var(--t3); margin-top:4px">Lock: ${userVehicle.immobilizeLog?.length || 0}x • Grace: ${userVehicle.graceEncounters || 0}x</div>` : ''}
                     </div>
                     <div style="background:var(--s2); border-radius:8px; padding:12px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Assigned Vehicle</div>
                         ${userVehicle ? `
                         <div style="font-weight:700; font-family:'IBM Plex Mono'; color:var(--t1); margin-top:4px">${userVehicle.id}</div>
-                        <div style="font-size:var(--text-xs); color:var(--t3)">${userVehicle.plate} \u00ef\u00bf\u00bd ${userVehicle.brand}</div>
+                        <div style="font-size:var(--text-xs); color:var(--t3)">${userVehicle.plate} • ${userVehicle.brand}</div>
                         <div style="font-size:var(--text-xs); color:var(--t3)">Credits: ${userVehicle.credits}d</div>
                         ` : '<div style="color:var(--t3); margin-top:4px; font-size:var(--text-sm)">No vehicle assigned</div>'}
                     </div>
                     <div style="background:var(--s2); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:6px">
                         <div style="font-size:var(--text-xs); color:var(--t3); text-transform:uppercase; font-weight:700">Actions</div>
-                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openUserDrawer('${u.userId}')">Full Profile \u00e2\u2020\u2019</button>
+                        <button class="vl-pill" style="font-size:var(--text-xs); padding:5px 12px; font-weight:700" onclick="event.stopPropagation(); window.openUserDrawer('${u.userId}')">Full Profile \u2192</button>
                     </div>
                 </div>
             </td>
@@ -1258,16 +1258,16 @@ const renderUserListView = () => {
                     <div style="display:flex; justify-content:center; gap:4px">
                         ${(() => {
                 const v = state.vehicles.find(veh => veh.userId === u.userId);
-                if (!v) return '<span style="color:var(--t3); opacity:0.3">\u00ef\u00bf\u00bd</span>';
+                if (!v) return '<span style="color:var(--t3); opacity:0.3">-</span>';
                 return `
                                 ${v.immobilizeLog?.length > 0 ? `
                                     <div class="vl-pill" style="background:rgba(239, 68, 68, 0.15); color:var(--c-danger); border-color:rgba(239, 68, 68, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.immobilizeLog.length} Immobilizations">
-                                        <span style="font-size:1.2em; vertical-align:middle;">\u00f0\u0178\u201d\u2019</span> LOCKED: ${v.immobilizeLog.length}
+                                        <span style="font-size:1.2em; vertical-align:middle;">\u{1F512}</span> LOCKED: ${v.immobilizeLog.length}
                                     </div>
-                                ` : '<span style="color:var(--t3); opacity:0.3">\u00ef\u00bf\u00bd</span>'}
+                                ` : '<span style="color:var(--t3); opacity:0.3">-</span>'}
                                 ${v.graceEncounters > 0 ? `
                                     <div class="vl-pill" style="background:rgba(245, 158, 11, 0.15); color:var(--c-warning); border-color:rgba(245, 158, 11, 0.3); padding:2px 6px; font-weight:800; font-size: var(--text-sm)" title="${v.graceEncounters} Grace Period Entries">
-                                        <span style="font-size:1.2em; vertical-align:middle;">\u00e2\u0161\u00a0\u00ef\u00b8\u008f</span> WARN: ${v.graceEncounters}
+                                        <span style="font-size:1.2em; vertical-align:middle;">\u{26A0}\u{FE0F}</span> WARN: ${v.graceEncounters}
                                     </div>
                                 ` : ''}
                             `;
@@ -1281,7 +1281,7 @@ const renderUserListView = () => {
                     </div>
                 </td>
                 <td style="padding:10px 12px">
-                    ${u.vehicleIds.length > 0 ? `<span style="font-size: var(--text-sm); background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size: var(--text-sm)">\u00ef\u00bf\u00bd</span>'}
+                    ${u.vehicleIds.length > 0 ? `<span style="font-size: var(--text-sm); background:var(--s3); padding:1px 6px; border-radius:3px; color:var(--t2); font-family:'IBM Plex Mono'; font-weight:700">${u.vehicleIds[0]}</span>` : '<span style="color:var(--t3); font-size: var(--text-sm)">-</span>'}
                 </td>
                 <td style="padding:10px 12px">
                     <div style="font-size: var(--text-base)">${u.phone}</div>
@@ -1392,14 +1392,14 @@ const renderUserListView = () => {
             <table class="vl-table">
                 <thead>
                     <tr>
-                        <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '\u00e2\u2020\u2018' : '\u00e2\u2020\u201c') : ''}</th>
+                        <th onclick="window.setUserSort('name')">USER ${userListFilter.sortBy === 'name' ? (userListFilter.sortDir === 'asc' ? '\u2191' : '\u2193') : ''}</th>
                         <th>PROGRAM</th>
                         <th>PROGRESS</th>
                         <th style="text-align:center">COLLECTION AUDIT</th>
                         <th onclick="window.setUserSort('riskScore')">RISK SCORE</th>
                         <th>VEHICLE</th>
                         <th>CONTACT</th>
-                        <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '\u00e2\u2020\u2018' : '\u00e2\u2020\u201c') : ''}</th>
+                        <th onclick="window.setUserSort('joinDate')">JOINED ${userListFilter.sortBy === 'joinDate' ? (userListFilter.sortDir === 'asc' ? '\u2191' : '\u2193') : ''}</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
@@ -1486,7 +1486,7 @@ window.openVehicleDrawer = (id, pushToStack = true) => {
             <div class="drawer-avatar" style="background:var(--g)">${initials}</div>
             <div style="flex:1">
                 <div class="drawer-name">${v.customer || 'No Active Rider'}</div>
-                <div class="drawer-sub">${v.plate}  ${v.id}</div>
+                <div class="drawer-sub">${v.plate} • ${v.id}</div>
                 <div style="font-size: var(--text-sm); color:var(--g); font-weight:800; font-family:'IBM Plex Mono'; margin-top:2px">${v.rtoId}</div>
             </div>
             <span class="vl-status" style="background:${(v.status === 'active' ? 'var(--c-success)' : 'var(--c-danger)')}22; color:${(v.status === 'active' ? 'var(--c-success)' : 'var(--c-danger)')}">${v.status.toUpperCase()}</span>
@@ -1630,7 +1630,7 @@ window.openUserDrawer = (userId, pushToStack = true) => {
                     ${u.name} 
                     <span style="font-size: var(--text-3xl); color:${genderColor}">${genderIcon}</span>
                 </div>
-                <div class="drawer-sub">${u.userId}  Joined ${new Date(u.joinDate).toLocaleDateString()}</div>
+                <div class="drawer-sub">${u.userId} • Joined ${new Date(u.joinDate).toLocaleDateString()}</div>
             </div>
             <div class="vl-risk-bar" style="background:${riskColor}22; color:${riskColor}">${u.riskLabel}</div>
         </div>
@@ -1902,7 +1902,7 @@ const renderProgramListView = () => {
                 onmouseout="this.style.background=''">
                 <td style="padding:10px 12px">
                     <div style="display:flex; align-items:center; gap:8px">
-                        <span style="color:var(--t3); font-size:var(--text-lg); flex-shrink:0">${isRenterExpanded ? '\u00e2\u2013\u00bc' : '\u00e2\u2013\u00b6'}</span>
+                        <span style="color:var(--t3); font-size:var(--text-lg); flex-shrink:0">${isRenterExpanded ? '\u25BC' : '\u25B6'}</span>
                         <div>
                             <div style="font-size: var(--text-sm); color:var(--p); font-weight:700; margin-bottom:2px">${programName}</div>
                             <div style="font-size: var(--text-md); font-weight:700; font-family:'IBM Plex Mono', monospace; color:var(--t1)">${v.rtoId}</div>
@@ -1949,8 +1949,8 @@ const renderProgramListView = () => {
                 </td>
                 <td style="text-align:right">
                     <div style="display:flex; gap:6px; justify-content:flex-end; align-items:center">
-                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openEditRenterModal('${v.id}')">\u00e2\u0153\u008f\u00ef\u00b8\u008f Edit</button>
-                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openVehicleDrawer('${v.id}')">\u00f0\u0178\u201d\u008d Audit</button>
+                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openEditRenterModal('${v.id}')">\u{270F}\u{FE0F} Edit</button>
+                        <button class="vl-pill" style="padding:4px 10px; font-weight:700; font-size:var(--text-sm)" onclick="window.openVehicleDrawer('${v.id}')">\u{1F50D} Audit</button>
                     </div>
                 </td>
             </tr>
@@ -2033,7 +2033,7 @@ const renderProgramListView = () => {
                     </div>
                     <div style="display:flex; gap:10px; align-items:center">
                         ${state.filter.program !== 'all' ? `
-                            <button class="vl-pill" onclick="window.rto.openProgramModal('${state.filter.program}')">Scheme Settings ??</button>
+                            <button class="vl-pill" onclick="window.rto.openProgramModal('${state.filter.program}')">Scheme Settings \u2699\uFE0F</button>
                         ` : ''}
                         <button onclick="window.openAddRenterModal()" style="background:var(--ac); color:#000; border:none; font-weight:800; font-size:var(--text-base); padding:10px 20px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 4px 14px rgba(0,229,195,0.3); transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ Add Renter</button>
                     </div>
@@ -3030,47 +3030,46 @@ window.openChangelogModal = () => {
 
     if (!elOverlay || !elTitle || !elContent) return;
 
-    elTitle.innerText = "Platform Updates  v1.9.0";
+    elTitle.innerText = "Platform Updates  v1.9.1";
     elContent.innerHTML = `
         <div style="padding:4px">
             <div style="background:var(--s3); border:1px solid var(--b1); border-radius:12px; padding:20px; margin-bottom:20px">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v1.9.0</h3>
+                    <h3 style="margin:0; font-size: var(--text-2xl); color:var(--ac)"> Latest Release: v1.9.1</h3>
                     <span style="font-size: var(--text-md); color:var(--t3); font-family:var(--font-mono)">2026-02-26</span>
                 </div>
-                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>UI Consistency & Stability</strong> update is live. This release finalizes the premium visual experience, resolves critical map/GPS rendering bugs, and standardizes data expansion across all modules.</p>
+                <p style="font-size: var(--text-base); color:var(--t2); line-height:1.6">The <strong>Emoji & UI Restoration</strong> update is live. This release fixes persistent Mojibake in the Programs tab, restores missing identity icons, and standardizes UI delimiters.</p>
             </div>
 
             <div style="display:flex; flex-direction:column; gap:20px">
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> UI/UX CONSISTENCY
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> EMOJI & UI RESTORATION
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Emoji Restoration:</strong> Fixed all broken icons and emoji placeholders in GPS and Maps.</li>
-                        <li><strong>Expandable Lists:</strong> Deep-dive details added to Users, Renters, and Vehicles.</li>
-                        <li><strong>Premium Polish:</strong> Standardized IBM Plex Mono typography and layout margins.</li>
+                        <li><strong>Programs Admin Fix:</strong> Cleaned malformed symbols from the management interface.</li>
+                        <li><strong>Gender Icons:</strong> Restored 👨/👩 icons in expanded user profile identity cards.</li>
+                        <li><strong>Delimiter Polish:</strong> Standardized "•" delimiters across programs and dropdowns.</li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t1); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> STABILITY & DATA
+                        <span style="width:6px; height:6px; background:var(--ac); border-radius:50%"></span> SYSTEM STABILITY
                     </h4>
                     <ul style="font-size: var(--text-base); color:var(--t2); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:8px">
-                        <li><strong>Map Syntax Fix:</strong> Resolved HTML corruption in vehicle markers and popups.</li>
-                        <li><strong>Initialization Hardening:</strong> Fixed race conditions during dashboard startup.</li>
-                        <li><strong>Currency Standardization:</strong> Unified Rp. formatting for all financial modules.</li>
+                        <li><strong>Init Hardening:</strong> Further race condition resolution for SPA state loading.</li>
+                        <li><strong>Component Margins:</strong> Refined grid spacing in high-density views.</li>
                     </ul>
                 </div>
 
                 <div style="border-top: 1px dashed var(--b1); padding-top: 20px; margin-top: 10px;">
                     <h4 style="font-size: var(--text-base); font-weight:700; color:var(--t3); margin-bottom:10px; display:flex; align-items:center; gap:8px">
-                         PREVIOUS: v1.8.0 (Commission & Renters)
+                         PREVIOUS: v1.9.0 (UI Consistency & Aesthetics)
                     </h4>
                     <ul style="font-size: var(--text-sm); color:var(--t3); padding-left:18px; margin:0; display:flex; flex-direction:column; gap:6px; opacity: 0.8">
-                        <li><strong>Dual Commissions:</strong> Support for % or Fixed Rp/day sharing.</li>
-                        <li><strong>Renters Overhaul:</strong> New manual onboarding and inline editing tools.</li>
+                        <li><strong>Premium Aesthetics:</strong> IBM Plex Mono & layout standardization.</li>
+                        <li><strong>Emoji Restoration:</strong> Fixed broken icons across GPS and Maps.</li>
                     </ul>
                 </div>
             </div>
@@ -3271,7 +3270,7 @@ window.openEditRenterModal = (vehicleId) => {
                 <div style="display:flex; gap:12px; align-items:center; padding:12px; background:var(--s3); border-radius:8px; border:1px solid var(--b1)">
                     <div>
                         <div style="font-family:'IBM Plex Mono'; font-weight:800; color:var(--t1)">${v.plate}</div>
-                        <div style="font-size:var(--text-sm); color:var(--t3)">${v.model} ? ${state.programs.find(p => p.id === v.programId)?.name || v.programId}</div>
+                        <div style="font-size:var(--text-sm); color:var(--t3)">${v.model} • ${state.programs.find(p => p.id === v.programId)?.name || v.programId}</div>
                     </div>
                     <div style="margin-left:auto">
                         <span style="padding:3px 10px; border-radius:4px; font-weight:800; font-size:var(--text-sm); background:${v.status === 'active' ? 'var(--c-success)22' : 'var(--c-warning)22'}; color:${v.status === 'active' ? 'var(--c-success)' : 'var(--c-warning)'}">${v.status.toUpperCase()}</span>
@@ -3518,7 +3517,7 @@ function renderProgramsTable() {
                     <div style="width:40px;height:40px;border-radius:10px;background:${prog.color || 'var(--dac)'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#000;flex-shrink:0">${(prog.name || prog.id || '?')[0]}</div>
                     <div style="min-width:0">
                         <div style="font-weight:800;color:var(--dt1);font-size:var(--text-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${prog.name || prog.id}</div>
-                        <div style="font-size:10px;color:var(--dt3);margin-top:1px">${prog.type || 'RTO'} ? ${prog.partnerName || prog.partnerId || '?'}</div>
+                        <div style="font-size:10px;color:var(--dt3);margin-top:1px">${prog.type || 'RTO'} • ${prog.partnerName || prog.partnerId || '?'}</div>
                     </div>
                 </div>
                 <!-- RTO Fleet Status -->
@@ -3576,9 +3575,9 @@ function renderProgramsTable() {
             </div>
             <!-- Actions Buttons -->
             <div style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;">
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramDetails('${prog.id}')">\u00e2\u0153\u008f\u00ef\u00b8\u008f Edit</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">\u00f0\u0178\u008f\u008d\u00ef\u00b8\u008f Fleet</button>
-                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">\u00f0\u0178\u201c\u00a6 Pool</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramDetails('${prog.id}')">\u{270F}\u{FE0F} Edit</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openProgramFleetModal('${prog.id}')">\u{1F3CD}\u{FE0F} Fleet</button>
+                <button class="btn btn-secondary" style="font-size:9px;padding:4px 10px;flex:1" onclick="window.openAssetPoolModal('${prog.id}')">\u{1F4E6} Pool</button>
             </div>
         </div>`;
     }).join('');
@@ -3595,7 +3594,7 @@ function renderProgramsTable() {
             <!-- Page Header -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
                 <div>
-                    <h2 style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);margin:0">\u00e2\u0161\u2122\u00ef\u00b8\u008f Programs Admin</h2>
+                    <h2 style="font-size:var(--text-xl);font-weight:800;color:var(--dt1);margin:0">\u{2699}\u{FE0F} Programs Admin</h2>
                     <div style="font-size:var(--text-xs);color:var(--dt3);margin-top:2px">Manage programs, fleet allocation &amp; assignment</div>
                 </div>
                 <button class="btn" style="font-size:var(--text-xs);background:var(--dac);color:#000;border:none;font-weight:800;padding:8px 18px" onclick="window.openCreateProgramModal()">
@@ -3614,7 +3613,7 @@ function renderProgramsTable() {
 
             <!-- Programs 2-column Grid -->
             ${programs.length === 0
-            ? `<div style="padding:60px;text-align:center;color:var(--dt3)"><div style="font-size:48px;margin-bottom:12px">\u00f0\u0178\u201c\u2039</div><div style="font-weight:700">No programs configured</div><button class="btn" style="margin-top:16px;background:var(--dac);color:#000;border:none;font-weight:800" onclick="window.openCreateProgramModal()">+ Create First Program</button></div>`
+            ? `<div style="padding:60px;text-align:center;color:var(--dt3)"><div style="font-size:48px;margin-bottom:12px">\u{1F4D9}</div><div style="font-weight:700">No programs configured</div><button class="btn" style="margin-top:16px;background:var(--dac);color:#000;border:none;font-weight:800" onclick="window.openCreateProgramModal()">+ Create First Program</button></div>`
             : `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">${programCards}</div>`
         }
         </div>`;
@@ -3718,7 +3717,7 @@ window.openCreateProgramModal = () => {
         </div>
     `;
 
-    document.getElementById('gpsModalTitle').innerHTML = `<span>\u00e2\u017e\u2022</span> Create New Program`;
+    document.getElementById('gpsModalTitle').innerHTML = `<span>\u{27A4}</span> Create New Program`;
     document.getElementById('gpsModalContent').innerHTML = html;
     document.getElementById('gpsModalOverlay').classList.add('active');
 };

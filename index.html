@@ -371,7 +371,7 @@
                                                     style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
                                                     <div
                                                         style="font-size: var(--text-base);font-weight:800;color:var(--dt1); display:flex; align-items:center; gap:8px">
-                                                        🛵 Pickup Queue
+                                                        &#x1F6F5; Pickup Queue
                                                         <select id="pu-prog-filter" class="form-select"
                                                             style="font-size:var(--text-xs); padding:4px 8px; background:var(--ds1); border:1px solid var(--db1); color:var(--dt1); border-radius:6px"
                                                             onchange="window.rto.setPUProgFlt(this.value)">
@@ -394,7 +394,8 @@
                                             <!-- Right: Detail / Scheduler -->
                                             <div class="pu-right" id="pu-detail">
                                                 <div style="padding:40px;text-align:center;color:var(--dt3)">
-                                                    <div style="font-size: var(--text-8xl);margin-bottom:8px">🛵</div>
+                                                    <div style="font-size: var(--text-8xl);margin-bottom:8px">&#x1F6F5;
+                                                    </div>
                                                     <div style="font-size: var(--text-md)">Pilih aplikasi di kiri untuk
                                                         setup pickup
                                                     </div>
@@ -411,7 +412,7 @@
                                             <div>
                                                 <div
                                                     style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:10px">
-                                                    ⚙️ Bobot
+                                                    &#x2699;&#xFE0F; Bobot
                                                     Dimensi Skor (Total 100 poin)</div>
                                                 <div class="sc-cfg-card">
                                                     <div class="sc-dim-list" id="sc-dim-list"></div>
@@ -425,7 +426,7 @@
                                                     </div>
                                                     <div style="padding:0 12px 12px;display:flex;gap:6px">
                                                         <button class="ov-btn" style="flex:1"
-                                                            onclick="window.rto.saveCfg()">💾
+                                                            onclick="window.rto.saveCfg()">&#x1F4BE;
                                                             Simpan
                                                             Config</button>
                                                         <button class="ov-btn" onclick="window.rto.resetCfg()">↺ Reset
@@ -498,7 +499,8 @@
                                                             onclick="window.rto.saveWA()">💾
                                                             Simpan
                                                             Template</button>
-                                                        <button class="ov-btn" onclick="window.rto.previewWA()">👁
+                                                        <button class="ov-btn"
+                                                            onclick="window.rto.previewWA()">&#x1F441;
                                                             Preview</button>
                                                         <button class="ov-btn" onclick="window.rto.resetWA()">↺
                                                             Reset</button>
@@ -528,7 +530,7 @@
                         style="padding:0; overflow-y: auto; flex:1; display:flex; flex-direction:column;">
                         <div class="vl-header" style="padding: 24px 32px; border-bottom: 1px solid var(--b1);">
                             <div>
-                                <h2 class="vl-title">⚙️ Programs</h2>
+                                <h2 class="vl-title">&#x2699;&#xFE0F; Programs</h2>
                                 <p style="font-size: var(--text-base); color:var(--t3); margin-top:4px">Configure and
                                     manage RTO specific schemes, partners, and business rules.</p>
                             </div>
@@ -557,14 +559,14 @@
     <!-- Modals -->
     <div id="paymentModalOverlay" class="modal-overlay">
         <div class="modal">
-            <h2>💰 Record Payment</h2>
+            <h2>&#x1F4B0; Record Payment</h2>
             <div id="paymentModalContent"></div>
         </div>
     </div>
 
     <div id="holidayModalOverlay" class="modal-overlay">
         <div class="modal">
-            <h2>🏖️ Holiday Pause</h2>
+            <h2>&#x1F3D6;&#xFE0F; Holiday Pause</h2>
             <div id="holidayModalContent"></div>
         </div>
     </div>
@@ -593,7 +595,7 @@
             <button
                 onclick="if(window.closeGPSModal) window.closeGPSModal(); else document.getElementById('gpsModalOverlay').classList.remove('active');"
                 style="position:absolute; top:12px; right:12px; background:transparent; border:none; font-size:20px; color:var(--t3); cursor:pointer;">✕</button>
-            <h2 id="gpsModalTitle">📡 Add GPS Device</h2>
+            <h2 id="gpsModalTitle">&#x1F4E1; Add GPS Device</h2>
             <div id="gpsModalContent"></div>
         </div>
     </div>

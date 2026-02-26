@@ -2,12 +2,16 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [1.9.1] - 2026-02-26
+
+### 🎨 Emoji & UI Rendering Restoration
+- **Programs Admin Fix:** Resolved malformed UNESCO character sequences (Mojibake) in the Programs Admin title and action buttons. 
+- **Gender Icon Restoration:** Restored missing gender icons (👨 / 👩) in the identity section of expanded user profiles.
+- **Delimiter Standardization:** Replaced stray "?" markers with clean "•" delimiters in program descriptions and vehicle selections for better readability.
+
 ## [1.9.0] - 2026-02-26
 
 ### 🎨 UI/UX Consistency Polish
-- **Emoji & Icon Restoration:** Fixed broken emoji placeholders and icons throughout the application (GPS, Maps, and Lists).
-- **Premium Aesthetics:** Standardized typography (IBM Plex Mono) and spacing for a more unified, state-of-the-art feel.
-- **Race Condition Resolution:** Fixed UI initialization failures that prevented the dashboard from loading correctly.
 
 ### 📡 GPS & Map Stability
 - **Syntax Integrity:** Fixed HTML syntax corruption in GPS lists and Map popups that caused rendering bugs.

@@ -72,19 +72,19 @@ const ADMIN_APPS = [
 
 const WA_SCENARIOS = [
     {
-        k: 'approved', ic: '', nm: 'Approved  Selamat', desc: 'Pengajuan disetujui, info serah terima',
+        k: 'approved', ic: '\u{2705}', nm: 'Approved \u00B7 Selamat', desc: 'Pengajuan disetujui, info serah terima',
         tmpl: `Halo {nama}! \n\nKabar baik dari tim CASAN!\n\nPengajuan motor listrik kamu telah *DISETUJUI*.\n\n App ID: *{app_id}*\n Program: *{program}*\n Skor: *{score}/100*\n Dealer: *{dealer}*\n\nLangkah selanjutnya:\n1. Konfirmasi jadwal serah terima\n2. Siapkan dokumen asli (KTP, SIM C, KK)\n3. Tanda tangan kontrak RTO\n\nHubungi kami untuk informasi lebih lanjut. Selamat bergabung! `
     },
     {
-        k: 'declined', ic: '', nm: 'Declined  Penolakan', desc: 'Pengajuan ditolak, saran perbaikan',
+        k: 'declined', ic: '\u{274C}', nm: 'Declined \u00B7 Penolakan', desc: 'Pengajuan ditolak, saran perbaikan',
         tmpl: `Halo {nama},\n\nTerima kasih sudah mendaftar di CASAN.\n\nSayang sekali, pengajuan kamu belum bisa kami setujui saat ini.\n\n App ID: *{app_id}*\n Skor: *{score}/100*\n\nAlasan utama & saran perbaikan:\n Lengkapi dokumen wajib (KTP, SIM C, Rekening)\n Tingkatkan skor dengan menambah penjamin\n Pastikan DSR di bawah 70%\n\nKamu bisa mendaftar kembali dalam 30 hari setelah melengkapi persyaratan. \n\nTim CASAN siap membantu: {dealer}`
     },
     {
-        k: 'review', ic: '', nm: 'Review/Pending  Proses', desc: 'Aplikasi masih dalam review manual',
+        k: 'review', ic: '\u{2696}\u{FE0F}', nm: 'Review/Pending \u00B7 Proses', desc: 'Aplikasi masih dalam review manual',
         tmpl: `Halo {nama}! \n\nPengajuan motor listrik kamu sudah kami terima.\n\n App ID: *{app_id}*\n Program: *{program}*\n Skor: *{score}/100*\n\nSaat ini aplikasimu sedang dalam proses *review manual* oleh tim analis kami.\n\n Estimasi: 13 hari kerja\n\nKamu akan kami hubungi kembali setelah proses selesai. Pastikan nomor WhatsApp aktif ya!\n\nTim CASAN  {dealer}`
     },
     {
-        k: 'missing_docs', ic: '', nm: 'Missing Docs  Reminder', desc: 'Pengingat dokumen yang masih kurang',
+        k: 'missing_docs', ic: '\u{1F4C4}', nm: 'Missing Docs \u00B7 Reminder', desc: 'Pengingat dokumen yang masih kurang',
         tmpl: `Halo {nama}! \n\nPengajuanmu (App ID: *{app_id}*) hampir lengkap!\n\nMasih ada beberapa dokumen yang perlu dilengkapi:\n\n{missing_docs}\n\nCara kirim:\n1. Foto/scan dokumen yang jelas\n2. Kirim via WhatsApp ke nomor ini\n3. Sebutkan App ID: *{app_id}*\n\nDokumen lengkap = proses lebih cepat! \n\nTim CASAN  {dealer}`
     },
 ];
@@ -567,25 +567,25 @@ function admSel(id) {
                 <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
                      onmouseover="this.style.borderColor='var(--dg)';this.style.background='var(--dg1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
                      onclick="window.rto.openApprovalConfirmation('${id}')">
-                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-size:18px;margin-bottom:3px">\u{2705}</div>
                     <div style="font-weight:800;color:var(--dg);font-size:var(--text-xs)">ACCEPT</div>
                 </div>
                 <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
                      onmouseover="this.style.borderColor='var(--dd)';this.style.background='var(--dd1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
                      onclick="window.rto.confirmReject('${id}')">
-                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-size:18px;margin-bottom:3px">\u{274C}</div>
                     <div style="font-weight:800;color:var(--dd);font-size:var(--text-xs)">REJECT</div>
                 </div>
                 <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
                      onmouseover="this.style.borderColor='var(--dw)';this.style.background='var(--dw1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
                      onclick="window.rto.confirmDocs('${id}')">
-                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-size:18px;margin-bottom:3px">\u{1F4C4}</div>
                     <div style="font-weight:800;color:var(--dw);font-size:var(--text-xs)">DOCS REQ.</div>
                 </div>
                 <div class="sc-cfg-card" style="padding:10px;cursor:pointer;text-align:center;border:1px solid var(--db1);transition:all 0.2s"
                      onmouseover="this.style.borderColor='var(--dp)';this.style.background='var(--dp1)'" onmouseout="this.style.borderColor='var(--db1)';this.style.background='transparent'"
                      onclick="window.rto.confirmReview('${id}')">
-                    <div style="font-size:18px;margin-bottom:3px"></div>
+                    <div style="font-size:18px;margin-bottom:3px">\u{2696}\u{FE0F}</div>
                     <div style="font-weight:800;color:var(--dp);font-size:var(--text-xs)">REVIEW</div>
                 </div>
             </div>
