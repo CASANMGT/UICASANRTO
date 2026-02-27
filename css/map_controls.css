@@ -1,0 +1,155 @@
+/* Map Controls Overlay */
+.mf {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-width: 300px;
+    justify-content: flex-end;
+    pointer-events: none;
+    /* Let clicks pass through container */
+}
+
+.mfb {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--b1);
+    background: rgba(7, 9, 14, 0.85);
+    backdrop-filter: blur(8px);
+    color: var(--t3);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.12s;
+    pointer-events: auto;
+    /* Enable clicks on buttons */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.mfb:hover {
+    border-color: var(--b2);
+    transform: translateY(-1px);
+}
+
+.mfb.on {
+    color: var(--t1);
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(12, 16, 24, 0.95);
+}
+
+.mfb .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0.4;
+}
+
+.mfb.on .dot {
+    opacity: 1;
+    box-shadow: 0 0 4px currentColor;
+}
+
+/* Map Legend */
+.mleg {
+    position: absolute;
+    bottom: 24px;
+    left: 10px;
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.lg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(7, 9, 14, 0.85);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    border: 1px solid var(--b1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.lg-d {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.lg span {
+    font-size: var(--text-md);
+    color: var(--t1);
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Status Guide Overlay */
+.mguide {
+    position: absolute;
+    bottom: 74px;
+    left: 10px;
+    z-index: 1010;
+    background: rgba(7, 9, 14, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--b2);
+    border-radius: 12px;
+    width: 260px;
+    padding: 16px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.2s ease-out;
+}
+
+.mguide.active {
+    display: flex;
+}
+
+.mguide-header {
+    font-size: var(--text-base);
+    font-weight: 800;
+    color: var(--p);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mguide-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: var(--text-sm);
+    color: var(--t1);
+    font-weight: 600;
+}
+
+.mguide-item .badge {
+    width: 90px;
+    justify-content: center;
+    flex-shrink: 0;
+    border: none;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

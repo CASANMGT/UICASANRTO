@@ -1,0 +1,412 @@
+/* App Layout */
+.hidden {
+    display: none !important;
+}
+
+.app-wrapper {
+    display: flex;
+    height: 100vh;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    background: var(--s0);
+}
+
+.global-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--s1);
+    border-right: 1px solid var(--b1);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transition: margin-left 0.3s ease, transform 0.3s ease;
+}
+
+.global-sidebar.collapsed {
+    margin-left: -250px;
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--t1);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 12px;
+}
+
+.main-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header Configs */
+.app-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    background: var(--s1);
+    border-bottom: 1px solid var(--b1);
+    z-index: 10;
+}
+
+
+
+.logo-box {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--ac), #06b6d4);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 900;
+    flex-shrink: 0;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.dealer-select {
+    background: var(--s2);
+    border: 1px solid var(--b1);
+    color: var(--t1);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: var(--text-lg);
+    cursor: pointer;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-base);
+    color: var(--g);
+    font-weight: 600;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--g);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+/* Nav Tabs - Now Vertical */
+.vertical-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 4px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.vertical-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tab {
+    padding: 0 16px;
+    margin: 2px 12px;
+    display: flex;
+    align-items: center;
+    height: 44px;
+    color: var(--t2);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-weight: 600;
+    font-size: var(--text-base);
+}
+
+.nav-tab:hover {
+    background: var(--ds2);
+    color: var(--t1);
+}
+
+.nav-tab.active {
+    background: var(--dw1) !important;
+    color: var(--dw) !important;
+}
+
+
+/* Main Content Area */
+.view-container {
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Dashboard Grid (Fleet View) */
+.dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.map-container {
+    position: relative;
+    background: #111;
+    height: 60%;
+    /* Map gets 60% of vertical space */
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.panel-sidebar {
+    background: var(--s1);
+    border-top: 1px solid var(--b1);
+    display: flex;
+    flex-direction: column;
+    height: 40%;
+    /* Sidebar gets 40% */
+    width: 100%;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--b1);
+    background: var(--s2);
+}
+
+.search-bar {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--s3);
+    border: 1px solid var(--b2);
+    border-radius: 10px;
+    color: var(--t1);
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: var(--ac);
+    background: var(--s2);
+    box-shadow: 0 0 0 3px rgba(0, 229, 195, 0.1);
+}
+
+.filter-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 4px 10px;
+    font-size: var(--text-md);
+    font-weight: 600;
+    border: 1px solid var(--b1);
+    border-radius: 20px;
+    /* Pill shape */
+    background: var(--s1);
+    color: var(--t2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--t3);
+    color: var(--t1);
+}
+
+.filter-btn.active {
+    background: var(--s3);
+    border-color: currentColor;
+    color: var(--t1);
+}
+
+/* Map Filters Overlay */
+.map-filters {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    pointer-events: none;
+    /* Let clicks pass through container */
+}
+
+.map-filters>* {
+    pointer-events: auto;
+}
+
+/* Re-enable buttons */
+
+.map-toggle {
+    background: rgba(12, 16, 24, 0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--b2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: var(--text-md);
+    color: var(--t2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.map-toggle.active {
+    border-color: var(--ac);
+    color: var(--t1);
+    background: rgba(12, 16, 24, 0.95);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50vh 1fr;
+    }
+
+    .panel-sidebar {
+        border-left: none;
+        border-top: 1px solid var(--b1);
+    }
+}
+
+@media (max-width: 768px) {
+    #app {
+        grid-template-rows: 50px 40px 68px 1fr;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .app-header {
+        height: auto;
+        padding: 8px 12px;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 900;
+        display: none;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    .global-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .global-sidebar.show-sidebar {
+        transform: translateX(0);
+    }
+
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .app-header-top {
+        padding: 0 12px;
+    }
+
+    .logo-area h1 {
+        font-size: var(--text-xl) !important;
+    }
+
+    .header-controls {
+        gap: 8px;
+    }
+
+    .dealer-select {
+        padding: 4px 6px;
+        font-size: var(--text-sm);
+        max-width: 80px;
+    }
+
+    .nav-tabs {
+        height: 40px;
+        padding: 0 8px;
+    }
+
+    .nav-tab {
+        padding: 0 8px;
+        font-size: var(--text-md);
+    }
+
+    .stats-bar {
+        max-height: 68px;
+        /* Prevent stats from growing too tall */
+        height: auto;
+        padding: 8px 10px;
+    }
+
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .map-container {
+        height: 30vh;
+        /* Reduced to give more room to list */
+        min-height: 180px;
+        flex-shrink: 0;
+    }
+
+    .panel-sidebar {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: var(--bg);
+        border-top: 1px solid var(--b1);
+        z-index: 10;
+        /* Ensure clickability */
+        position: relative;
+    }
+
+    .panel-header {
+        padding: 10px 12px;
+    }
+
+    .vehicle-list {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}

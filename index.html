@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASAN RTO | Vehicle & Renter Management</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/map_controls.css">
+    <link rel="stylesheet" href="css/credit_bar.css">
+    <link rel="stylesheet" href="css/finance_strip.css">
+    <link rel="stylesheet" href="css/vehicle_list.css">
+
+    <!-- External Libs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Specific overrides for Leaflet dark mode */
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out,
+        .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app" class="app-wrapper">
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebar-overlay" class="sidebar-overlay"
+            onclick="document.querySelector('.global-sidebar').classList.remove('show-sidebar'); this.classList.remove('show')">
+        </div>
+
+        <!-- GLOBAL SIDEBAR -->
+        <aside class="global-sidebar">
+            <div class="logo-area"
+                style="padding: 24px 20px; border-bottom: 1px solid var(--b1); margin-bottom: 12px; position: relative;">
+                <button class="mobile-menu-btn" style="position: absolute; top: 16px; right: 4px; font-size: 20px;"
+                    onclick="document.querySelector('.global-sidebar').classList.remove('show-sidebar'); document.getElementById('sidebar-overlay').classList.remove('show')">✕</button>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom: 8px;">
+                    <div class="logo-box">C</div>
+                    <div>
+                        <h1 style="font-size: var(--text-2xl); font-weight:800; line-height:1.2">CASAN
+                            Operations</h1>
+                    </div>
+                </div>
+                <div style="font-size: var(--text-xs); color:var(--t2); display:flex; align-items:center; gap:8px;">
+                    <span>RTO &amp; Rental</span>
+                    <div class="version-badge" onclick="window.openChangelogModal()">
+                        <span class="pulse-dot"></span>
+                        v2.0.0
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="nav-tabs vertical-nav">
+                <div class="nav-tab active" data-tab="users">👤 Users</div>
+                <div class="nav-tab" data-tab="programs">⚙️ Programs</div>
+                <div class="nav-tab" data-tab="rto-applications">📋 Applications</div>
+                <div class="nav-tab" data-tab="rto-fleet">🤝 Renter</div>
+                <div class="nav-tab" data-tab="finance">💰 Finance</div>
+                <div class="nav-tab" data-tab="vehicles">🏍️ Vehicles</div>
+                <div class="nav-tab" data-tab="fleet">🗺️ Maps</div>
+                <div class="nav-tab" data-tab="gps">📡 GPS</div>
+            </nav>
+        </aside>
+
+
+
+        <!-- MAIN WORKSPACE -->
+        <div class="main-workspace">
+            <!-- Top Controls Header -->
+            <header class="app-header-top"
+                style="display:flex; align-items:center; background:var(--s1); border-bottom:1px solid var(--b1);">
+                <button
+                    style="margin-left:12px; background: transparent; border: none; color: var(--t1); font-size: 24px; cursor: pointer; padding: 8px;"
+                    onclick="if(window.innerWidth<=768){document.querySelector('.global-sidebar').classList.add('show-sidebar'); document.getElementById('sidebar-overlay').classList.add('show');}else{document.querySelector('.global-sidebar').classList.toggle('collapsed');}">☰</button>
+                <div class="header-controls"
+                    style="display:flex; justify-content: flex-end; width:100%; padding: 12px 24px; align-items: center; gap: 20px;">
+                    <!-- Filters -->
+                    <div class="filter-group">
+                        <select id="partnerSelect" class="form-control" style="width:150px">
+                            <option value="all">All Partners</option>
+                            <option value="tangkas">Tangkas</option>
+                            <option value="maka">Maka</option>
+                            <option value="united">United</option>
+                        </select>
+                    </div>
+                    <div class="live-indicator">
+                        <div class="live-dot"></div>
+                        LIVE
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats Bar -->
+            <div id="statsBar" class="stats-bar">
+                <!-- Rendered by JS -->
+            </div>
+
+            <!-- Main Content -->
+            <main class="view-container">
+                <!-- Fleet Tab (Hidden by default) -->
+                <div id="fleetView" class="dashboard-grid hidden">
+                    <div id="map" class="map-container">
+                        <!-- Leaflet Map -->
+                        <!-- Map Filters Overlay -->
+                        <div class="map-filters" id="mapFilters">
+                            <!-- Map toggles rendered by JS -->
+                        </div>
+                    </div>
+
+                    <aside class="panel-sidebar">
+                        <div class="panel-header">
+                            <input type="text" id="searchInput" class="search-bar"
+                                placeholder="Search ID, Plate, Customer...">
+                            <div id="statusFilters" class="filter-row">
+                                <!-- Filters rendered by JS -->
+                            </div>
+                        </div>
+
+                        <div id="vehicleList" class="vehicle-list">
+                            <!-- Cards rendered by JS -->
+                        </div>
+                    </aside>
+                </div>
+
+                <!-- Finance Tab (Hidden by default) -->
+                <div id="financeView" class="view-container hidden">
+                    <div id="financeContent" style="overflow-y:auto; flex:1; min-height:0;">
+                        <!-- Injected via ui.js -->
+                    </div>
+                </div>
+
+                <!-- GPS Tab (Hidden by default) -->
+                <div id="gpsView" class="view-container hidden">
+                    <div id="gpsContent"
+                        style="overflow-y:auto; flex:1; min-height:0; padding:24px; box-sizing:border-box;">
+                        <!-- Injected via ui.js -->
+                    </div>
+                </div>
+
+                <!-- Assets Tab (Hidden by default) -->
+                <div id="vehicleListView" class="view-container hidden">
+                    <div id="vehicleListContent"
+                        style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- User List Tab (Visible by default) -->
+                <div id="userListView" class="view-container">
+                    <div id="userListContent"
+                        style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- Programs Admin Tab -->
+                <div id="programsView" class="view-container hidden">
+                    <div id="programsContent"
+                        style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- Fleet Tab (Formerly Programs) -->
+                <div id="rto-fleetView" class="view-container hidden">
+                    <div id="rto-fleetContent"
+                        style="overflow-y:auto; flex:1; min-height:0; padding:0; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- RTO Layout Container (Formerly rto-applicationsView) -->
+                <div id="rto-layout-view" class="view-container hidden">
+                    <div class="adm"
+                        style="flex:1; width:100%; height:100%; border-radius:0; flex-direction: column; display: flex;">
+                        <!-- Admin Top Nav (Formerly Sidebar) -->
+                        <div class="adm-top-nav" style="flex-shrink: 0;">
+                            <div class="adm-nav horizontal-adm">
+                                <div class="adm-ni on" id="adm-ni-apps" onclick="window.rto.switchRtoTab('apps', this)">
+                                    <div class="adm-ni-l">📋 Applications</div>
+                                    <span class="adm-ni-b" id="side-cnt-apps"
+                                        style="background:var(--dw1); color:var(--dw); display:none">0</span>
+                                </div>
+                                <div class="adm-ni" id="adm-ni-pickup"
+                                    onclick="window.rto.switchRtoTab('pickup', this)">
+                                    <div class="adm-ni-l">🛵 Pickup Schedule</div>
+                                    <span class="adm-ni-b" id="side-cnt-pickup"
+                                        style="background:var(--dw1); color:var(--dw); display:none">0</span>
+                                </div>
+                                <div class="adm-ni" id="adm-ni-score" onclick="window.rto.switchRtoTab('score', this)">
+                                    <div class="adm-ni-l">⚙️ Score Config</div>
+                                </div>
+                                <div class="adm-ni" id="adm-ni-wa" onclick="window.rto.switchRtoTab('wa', this)">
+                                    <div class="adm-ni-l">💬 WA Templates</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Main Content -->
+                        <div class="adm-main" style="flex: 1; overflow-y: auto;">
+                            <div class="adm-cnt" style="padding: 24px; min-height: 100%;">
+                                <!-- Applications View -->
+                                <div class="av on" id="rto-applicationsView">
+                                    <div id="rto-applicationsContent"
+                                        style="display: flex; flex-direction: column; gap: 24px;">
+                                        <div class="kpi-row">
+                                            <div class="kpi">
+                                                <div class="kpi-l">Total</div>
+                                                <div class="kpi-v" style="color:var(--dt1)" id="kpi-tot">—</div>
+                                                <div class="kpi-d" style="color:var(--dac)">↑ +12 week</div>
+                                            </div>
+                                            <div class="kpi">
+                                                <div class="kpi-l">Pending</div>
+                                                <div class="kpi-v" style="color:var(--dw)" id="kpi-pnd">—</div>
+                                                <div class="kpi-d" style="color:var(--dt3)">Awaiting</div>
+                                            </div>
+                                            <div class="kpi">
+                                                <div class="kpi-l">Approved</div>
+                                                <div class="kpi-v" style="color:var(--dg)" id="kpi-apr">—</div>
+                                                <div class="kpi-d" style="color:var(--dg)">rate</div>
+                                            </div>
+                                            <div class="kpi">
+                                                <div class="kpi-l">Declined</div>
+                                                <div class="kpi-v" style="color:var(--dd)" id="kpi-dec">—</div>
+                                                <div class="kpi-d" style="color:var(--dt3)">rate</div>
+                                            </div>
+                                            <div class="kpi">
+                                                <div class="kpi-l">Avg Score</div>
+                                                <div class="kpi-v" style="color:var(--dac)" id="kpi-avg">—</div>
+                                                <div class="kpi-d" style="color:var(--dt3)">Last 30d</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Master-Detail Split Layout -->
+                                        <div style="display: flex; gap: 16px; flex: 1; min-height: 600px;">
+                                            <!-- LEFT: Compact App Card List -->
+                                            <div
+                                                style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--ds1); border: 1px solid var(--db1); border-radius: 12px; overflow: hidden;">
+                                                <!-- Search + Filters + Add Button -->
+                                                <div
+                                                    style="padding: 12px; border-bottom: 1px solid var(--db1); background: var(--ds2); display: flex; flex-direction: column; gap: 10px;">
+                                                    <div
+                                                        style="display: flex; justify-content: space-between; align-items: center;">
+                                                        <div
+                                                            style="font-size: var(--text-sm); font-weight: 800; color: var(--dt1);">
+                                                            APPLICATIONS</div>
+                                                        <button class="vl-pill"
+                                                            style="font-size:11px; padding:8px 16px; background:var(--ac); color:#000; border:none; font-weight:800; white-space:nowrap; border-radius:8px; display:flex; align-items:center; gap:4px"
+                                                            onclick="window.openAddApplicantModal()"><span>+</span> New
+                                                            Manual App</button>
+                                                    </div>
+                                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                                        <input class="adm-srch" placeholder="🔍 Search..."
+                                                            oninput="window.rto.admSrch(this.value)"
+                                                            style="flex:1.2; margin:0; font-size:var(--text-xs); padding:8px;">
+                                                        <select id="app-prog-filter" class="form-select"
+                                                            style="flex:1; margin:0; font-size:var(--text-xs); padding:6px; background:var(--ds1); border:1px solid var(--db1); color:var(--dt1); border-radius:8px"
+                                                            onchange="window.rto.setAdmProgFlt(this.value)">
+                                                            <option value="all">🌐 All Programs</option>
+                                                        </select>
+                                                    </div>
+                                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                        <button id="afb-all" class="afb on"
+                                                            onclick="window.rto.setAdmFlt('all',this)">All <span
+                                                                class="afb-cnt" id="cnt-all"></span></button>
+                                                        <button id="afb-pending" class="afb"
+                                                            onclick="window.rto.setAdmFlt('pending',this)">📋 Pending
+                                                            <span class="afb-cnt" id="cnt-pnd"></span></button>
+                                                        <button id="afb-review" class="afb"
+                                                            onclick="window.rto.setAdmFlt('review',this)">🔍 Review
+                                                            <span class="afb-cnt" id="cnt-rev"></span></button>
+                                                        <button id="afb-approved" class="afb"
+                                                            onclick="window.rto.setAdmFlt('approved',this)">✅ Approved
+                                                            <span class="afb-cnt" id="cnt-apr"></span></button>
+                                                        <button id="afb-declined" class="afb"
+                                                            onclick="window.rto.setAdmFlt('declined',this)">❌ <span
+                                                                class="afb-cnt" id="cnt-dec"></span></button>
+                                                    </div>
+                                                </div>
+                                                <!-- Scrollable Card List -->
+                                                <div id="adm-card-list" style="overflow-y: auto; flex: 1;"></div>
+                                                <!-- Pagination -->
+                                                <div id="adm-pagination"
+                                                    style="padding: 8px 12px; background: var(--ds2); border-top: 1px solid var(--db1); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                                                </div>
+                                            </div>
+
+                                            <!-- RIGHT: Fixed Detail Panel -->
+                                            <div class="dp" id="detail-panel"
+                                                style="flex: 1; display: flex; flex-direction: column; background: var(--ds1); border: 1px solid var(--db1); border-radius: 12px; overflow: hidden; min-height: 0;">
+                                                <div class="dp-hdr">
+                                                    <div class="dp-t" id="dp-t">Select an application</div><button
+                                                        class="dp-x"
+                                                        onclick="document.getElementById('detail-panel').classList.remove('show')">✕</button>
+                                                </div>
+                                                <!-- Tab Nav -->
+                                                <div id="dp-tabs"
+                                                    style="display:flex; gap:0; border-bottom:2px solid var(--db1); background:var(--ds1); flex-shrink:0;">
+                                                    <button id="dpt-overview" class="dp-tab on"
+                                                        onclick="window.rto.switchDpTab('overview')">📋
+                                                        Overview</button>
+                                                    <button id="dpt-docs" class="dp-tab"
+                                                        onclick="window.rto.switchDpTab('docs')">📁 Documents</button>
+                                                    <button id="dpt-score" class="dp-tab"
+                                                        onclick="window.rto.switchDpTab('score')">📊 Score</button>
+                                                </div>
+                                                <!-- Tab Bodies -->
+                                                <div id="dp-tab-overview" class="dp-tab-body"
+                                                    style="overflow-y:auto; flex:1;">
+                                                    <div id="dp-overview-content" style="padding:12px 14px;"></div>
+                                                    <div id="dp-miss-sec"
+                                                        style="display:none;padding:10px 12px;border-top:1px solid var(--db1);background:rgba(251,191,36,.025)">
+                                                        <div
+                                                            style="font-size:var(--text-xs);font-weight:800;color:var(--dw);margin-bottom:5px">
+                                                            ⚠ Missing Documents</div>
+                                                        <div id="dp-miss-items"
+                                                            style="display:flex;flex-wrap:wrap;gap:4px"></div>
+                                                    </div>
+                                                    <div class="ov-sec">
+                                                        <div class="ov-t">✏️ Manual Override</div>
+                                                        <div class="ov-row"><input class="ov-in" id="ov-note"
+                                                                placeholder="Analyst note..."><select
+                                                                class="ov-in ov-sel" id="ov-adj">
+                                                                <option value="0">Adj: 0</option>
+                                                                <option value="5">+5 pts</option>
+                                                                <option value="10">+10 pts</option>
+                                                                <option value="-5">-5 pts</option>
+                                                                <option value="-10">-10 pts</option>
+                                                            </select><button class="ov-btn"
+                                                                onclick="window.rto.saveOv()">Save</button>
+                                                        </div>
+                                                        <div class="ov-log" id="ov-log"></div>
+                                                    </div>
+                                                </div>
+                                                <div id="dp-tab-docs" class="dp-tab-body"
+                                                    style="display:none; overflow-y:auto; flex:1;">
+                                                    <div id="dp-docs-content" style="padding:12px 14px;"></div>
+                                                </div>
+                                                <div id="dp-tab-score" class="dp-tab-body"
+                                                    style="display:none; overflow-y:auto; flex:1;">
+                                                    <div class="sp-sec" style="margin:0;border:none;">
+                                                        <div class="sp-t">Score Breakdown</div>
+                                                        <div class="sp-grid" id="sp-grid"></div>
+                                                    </div>
+                                                </div>
+                                                <!-- Decision area always pinned at bottom -->
+                                                <div id="dp-decision-area"
+                                                    style="padding:16px; border-top:1px solid var(--db1); display:flex; flex-direction:column; gap:12px; background:var(--ds1); flex-shrink:0;">
+                                                    <!-- Dynamic Decision Cards will be injected by rto.js -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pickup Schedule View -->
+                                <div class="av" id="rto-pickupView">
+                                    <div id="rto-pickupContent" style="display:contents;">
+                                        <div class="pu-layout">
+                                            <!-- Left: Pickup queue -->
+                                            <div class="pu-left">
+                                                <div
+                                                    style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                                                    <div
+                                                        style="font-size: var(--text-base);font-weight:800;color:var(--dt1); display:flex; align-items:center; gap:8px">
+                                                        &#x1F6F5; Pickup Queue
+                                                        <select id="pu-prog-filter" class="form-select"
+                                                            style="font-size:var(--text-xs); padding:4px 8px; background:var(--ds1); border:1px solid var(--db1); color:var(--dt1); border-radius:6px"
+                                                            onchange="window.rto.setPUProgFlt(this.value)">
+                                                            <option value="all">🌐 All Programs</option>
+                                                        </select>
+                                                    </div>
+                                                    <div style="display:flex;gap:4px">
+                                                        <button class="afb on" id="puf-all"
+                                                            onclick="window.rto.setPUF('all',this)">All</button>
+                                                        <button class="afb" id="puf-waiting"
+                                                            onclick="window.rto.setPUF('waiting',this)">Waiting</button>
+                                                        <button class="afb" id="puf-scheduled"
+                                                            onclick="window.rto.setPUF('scheduled',this)">Scheduled</button>
+                                                        <button class="afb" id="puf-done"
+                                                            onclick="window.rto.setPUF('done',this)">Done</button>
+                                                    </div>
+                                                </div>
+                                                <div id="pu-list"></div>
+                                            </div>
+                                            <!-- Right: Detail / Scheduler -->
+                                            <div class="pu-right" id="pu-detail">
+                                                <div style="padding:40px;text-align:center;color:var(--dt3)">
+                                                    <div style="font-size: var(--text-8xl);margin-bottom:8px">&#x1F6F5;
+                                                    </div>
+                                                    <div style="font-size: var(--text-md)">Pilih aplikasi di kiri untuk
+                                                        setup pickup
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Score Config View -->
+                                <div class="av" id="rto-scoreView">
+                                    <div id="rto-scoreContent" style="display:contents;">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                                            <div>
+                                                <div
+                                                    style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:10px">
+                                                    &#x2699;&#xFE0F; Bobot
+                                                    Dimensi Skor (Total 100 poin)</div>
+                                                <div class="sc-cfg-card">
+                                                    <div class="sc-dim-list" id="sc-dim-list"></div>
+                                                    <div
+                                                        style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--db1);margin-top:4px">
+                                                        <span
+                                                            style="font-size: var(--text-sm);color:var(--dt3)">Total:</span>
+                                                        <span class="mono"
+                                                            style="font-size: var(--text-lg);font-weight:800;color:var(--dac)"
+                                                            id="sc-total-disp">100</span>
+                                                    </div>
+                                                    <div style="padding:0 12px 12px;display:flex;gap:6px">
+                                                        <button class="ov-btn" style="flex:1"
+                                                            onclick="window.rto.saveCfg()">&#x1F4BE;
+                                                            Simpan
+                                                            Config</button>
+                                                        <button class="ov-btn" onclick="window.rto.resetCfg()">↺ Reset
+                                                            Default</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div
+                                                    style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:10px">
+                                                    📐 Threshold
+                                                    Keputusan</div>
+                                                <div class="sc-cfg-card">
+                                                    <div id="sc-thresh-list"></div>
+                                                    <div style="padding:10px 12px;border-top:1px solid var(--db1)">
+                                                        <div
+                                                            style="font-size: var(--text-xs);font-weight:700;color:var(--dt1);margin-bottom:8px">
+                                                            📋
+                                                            Aturan DSR</div>
+                                                        <div id="sc-dsr-cfg"></div>
+                                                    </div>
+                                                </div>
+                                                <div
+                                                    style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin:12px 0 8px">
+                                                    🏢 Program
+                                                    Min. Income</div>
+                                                <div class="sc-cfg-card">
+                                                    <div id="sc-prog-cfg"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- WA Templates View -->
+                                <div class="av" id="rto-waView">
+                                    <div id="rto-waContent" style="display:contents;">
+                                        <div style="display:grid;grid-template-columns:280px 1fr;gap:10px;height:100%">
+                                            <div>
+                                                <div
+                                                    style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:8px">
+                                                    📱 Skenario
+                                                    Template</div>
+                                                <div id="wa-scen-list"></div>
+                                            </div>
+                                            <div>
+                                                <div
+                                                    style="font-size: var(--text-base);font-weight:800;color:var(--dt1);margin-bottom:8px">
+                                                    ✏️ Edit
+                                                    Template</div>
+                                                <div class="sc-cfg-card" id="wa-edit-panel" style="padding:14px">
+                                                    <div
+                                                        style="font-size: var(--text-xs);font-weight:700;color:var(--dt2);letter-spacing:.8px;margin-bottom:6px">
+                                                        TEMPLATE AKTIF: <span id="wa-scen-name"
+                                                            style="color:var(--dac)">—</span></div>
+                                                    <div
+                                                        style="font-size: var(--text-xs);color:var(--dt3);margin-bottom:8px">
+                                                        Variabel:
+                                                        <span class="mono" style="color:var(--dac)">{nama}</span> <span
+                                                            class="mono" style="color:var(--dp)">{app_id}</span> <span
+                                                            class="mono" style="color:var(--dg)">{program}</span> <span
+                                                            class="mono" style="color:var(--dw)">{score}</span> <span
+                                                            class="mono" style="color:var(--dbl)">{dealer}</span>
+                                                    </div>
+                                                    <textarea class="ov-in" id="wa-tmpl-txt"
+                                                        style="width:100%;height:200px;resize:vertical;font-size: var(--text-md);font-family:'IBM Plex Mono',monospace;line-height:1.6;padding:10px"
+                                                        placeholder="Pilih skenario..."></textarea>
+                                                    <div style="display:flex;gap:6px;margin-top:8px">
+                                                        <button class="ov-btn" style="flex:1"
+                                                            onclick="window.rto.saveWA()">💾
+                                                            Simpan
+                                                            Template</button>
+                                                        <button class="ov-btn"
+                                                            onclick="window.rto.previewWA()">&#x1F441;
+                                                            Preview</button>
+                                                        <button class="ov-btn" onclick="window.rto.resetWA()">↺
+                                                            Reset</button>
+                                                    </div>
+                                                    <div id="wa-preview"
+                                                        style="display:none;margin-top:10px;padding:12px;background:var(--ds3);border-radius:8px;border:1px solid var(--db1)">
+                                                        <div
+                                                            style="font-size: var(--text-xs);font-weight:700;color:var(--dac);margin-bottom:6px">
+                                                            PREVIEW (sample data)</div>
+                                                        <div id="wa-preview-txt"
+                                                            style="font-size: var(--text-md);color:var(--dt1);white-space:pre-line;line-height:1.6">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- closes adm-cnt -->
+                        </div> <!-- closes adm-main -->
+                    </div> <!-- closes adm -->
+                </div> <!-- closes rto-layout-view -->
+
+                <!-- Programs Management Tab (Formerly Program Settings) -->
+                <div id="programsView" class="view-container hidden">
+                    <div id="programsContent"
+                        style="padding:0; overflow-y: auto; flex:1; display:flex; flex-direction:column;">
+                        <div class="vl-header" style="padding: 24px 32px; border-bottom: 1px solid var(--b1);">
+                            <div>
+                                <h2 class="vl-title">&#x2699;&#xFE0F; Programs</h2>
+                                <p style="font-size: var(--text-base); color:var(--t3); margin-top:4px">Configure and
+                                    manage RTO specific schemes, partners, and business rules.</p>
+                            </div>
+                            <button class="btn btn-primary" style="border-radius:6px; padding: 10px 20px;"
+                                onclick="window.rto.openProgramModal()">+ Create New Program</button>
+                        </div>
+
+                        <div id="programs-table-wrapper" style="flex:1; overflow-y:auto; padding: 0 32px 32px;">
+                            <!-- Administrative Table Rendered via ui.js -->
+                        </div>
+                    </div>
+                </div> <!-- closes programsView -->
+
+            </main> <!-- closes .view-container -->
+
+            <!-- Detail Drawer -->
+            <div id="drawerBackdrop" class="drawer-backdrop"></div>
+            <div id="detailDrawer" class="detail-drawer">
+                <div id="drawerContent"></div>
+            </div>
+
+        </div> <!-- Close .main-workspace -->
+    </div> <!-- Close .app-wrapper -->
+
+
+    <!-- Modals -->
+    <div id="paymentModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2>&#x1F4B0; Record Payment</h2>
+            <div id="paymentModalContent"></div>
+        </div>
+    </div>
+
+    <div id="holidayModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2>&#x1F3D6;&#xFE0F; Holiday Pause</h2>
+            <div id="holidayModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Command Palette Overlay -->
+    <div id="commandPaletteOverlay" class="modal-overlay">
+        <div class="command-palette">
+            <div class="cp-header">
+                <input type="text" id="cpInput" placeholder="Search vehicles, riders, RTO IDs... (Esc to close)"
+                    autocomplete="off">
+            </div>
+            <div id="cpResults" class="cp-results">
+                <div class="cp-hint">Type to search the fleet...</div>
+            </div>
+            <div class="cp-footer">
+                <span><b>↵</b> to select</span>
+                <span><b>↑↓</b> to navigate</span>
+                <span><b>esc</b> to close</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPS CRUD Modal -->
+    <div id="gpsModalOverlay" class="modal-overlay">
+        <div class="modal" style="max-width:540px; width:90%; position:relative;">
+            <button
+                onclick="if(window.closeGPSModal) window.closeGPSModal(); else document.getElementById('gpsModalOverlay').classList.remove('active');"
+                style="position:absolute; top:12px; right:12px; background:transparent; border:none; font-size:20px; color:var(--t3); cursor:pointer;">✕</button>
+            <h2 id="gpsModalTitle">&#x1F4E1; Add GPS Device</h2>
+            <div id="gpsModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastContainer"
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 3000; display: flex; flex-direction: column; gap: 10px;">
+    </div>
+
+    <!-- Admin Toast -->
+    <div id="adm-toast" class="adm-toast"></div>
+
+    <!-- Fullscreen WA Modal -->
+    <div id="wa-modal"></div>
+
+    <!-- Image Preview Modal -->
+    <div id="img-modal" class="img-modal" onclick="window.rto.closePreview()">
+        <span class="img-close" onclick="window.rto.closePreview()">&times;</span>
+        <img class="img-modal-content" id="img-preview-src">
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+
+    <script src="js/modules/utils.js"></script>
+    <script src="js/modules/store.js"></script>
+    <script src="js/modules/vehicle.js"></script>
+    <script src="js/modules/users.js"></script>
+    <script src="js/modules/finance.js"></script>
+    <script src="js/modules/gps.js"></script>
+    <script src="js/modules/map.js"></script>
+    <script src="js/modules/ui.js"></script>
+    <script src="js/modules/rto.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
