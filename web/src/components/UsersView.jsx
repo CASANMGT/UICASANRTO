@@ -1,14 +1,20 @@
 import { useMemo, useState } from 'react'
 import { getPrograms, getUsers } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
+import { Input } from './ui/input'
+import { DataPanel, FilterBar, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { Select } from './ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 function scoreTone(score) {
   const value = Number(score || 0)
-  if (value >= 80) return { bg: 'var(--dg1)', color: 'var(--dg)' }
-  if (value >= 60) return { bg: 'var(--dac1)', color: 'var(--dac)' }
-  if (value >= 41) return { bg: 'var(--dw1)', color: 'var(--dw)' }
-  if (value >= 21) return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C' }
-  return { bg: 'var(--dd1)', color: 'var(--dd)' }
+  if (value >= 80) return 'bg-emerald-100 text-emerald-700'
+  if (value >= 60) return 'bg-cyan-100 text-cyan-700'
+  if (value >= 41) return 'bg-amber-100 text-amber-700'
+  if (value >= 21) return 'bg-orange-100 text-orange-700'
+  return 'bg-rose-100 text-rose-700'
 }
 
 export function UsersView() {
@@ -18,6 +24,7 @@ export function UsersView() {
   const [program, setProgram] = useState('all')
   const [sortBy, setSortBy] = useState('joinDate')
   const [sortDir, setSortDir] = useState('desc')
+  const [profileUser, setProfileUser] = useState(null)
   const programs = useMemo(() => {
     void tick
     return getPrograms()
@@ -41,149 +48,225 @@ export function UsersView() {
   const [page, setPage] = useState(1)
   const currentPage = Math.min(page, totalPages)
   const pageRows = users.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const userStats = useMemo(() => {
+    return {
+      total: users.length,
+      lowRisk: users.filter((user) => Number(user.riskScore || 0) >= 80).length,
+      medRisk: users.filter((user) => {
+        const score = Number(user.riskScore || 0)
+        return score >= 60 && score < 80
+      }).length,
+      highRisk: users.filter((user) => Number(user.riskScore || 0) < 60).length,
+    }
+  }, [users])
 
   return (
-    <section className="vl-container">
-      <div className="vl-header">
+    <PageShell>
+      <PageHeader>
         <div>
-          <h2 className="vl-title">Rider KYC & Profiles</h2>
-          <div style={{ fontSize: 'var(--text-md)', color: 'var(--t3)', marginTop: 2 }}>Operational Behavioral Auditing</div>
+          <PageTitle>Rider KYC & Profiles</PageTitle>
+          <div className="mt-0.5 text-sm text-slate-500">Operational Behavioral Auditing</div>
         </div>
-        <div className="vl-count">{users.length} Riders Displayed</div>
-      </div>
+        <PageMeta>{users.length} Riders Displayed</PageMeta>
+      </PageHeader>
+      <StatsGrid>
+        <StatCard label="Total Riders" value={userStats.total} />
+        <StatCard label="Low Risk" value={userStats.lowRisk} valueClassName="text-emerald-700" />
+        <StatCard label="Medium Risk" value={userStats.medRisk} valueClassName="text-amber-700" />
+        <StatCard label="High Risk" value={userStats.highRisk} valueClassName="text-rose-700" />
+      </StatsGrid>
 
-      <div className="fns" style={{ marginBottom: 20 }}>
-        <div
-          className={`pc ${program === 'all' ? 'active' : ''}`}
-          style={{ cursor: 'pointer', borderLeft: '4px solid var(--t3)' }}
-          onClick={() => {
-            setProgram('all')
+      <FilterBar className="lg:grid-cols-5">
+        <Input
+          variant="legacy"
+          placeholder="Search name, phone, NIK..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
+        />
+        <Select
+          variant="legacy"
+          value={program}
+          onChange={(e) => {
+            setProgram(e.target.value)
             setPage(1)
           }}
         >
-          <h4 style={{ margin: '0 0 8px' }}>
-            All Programs <span style={{ fontSize: 'var(--text-sm)', opacity: 0.7, background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: 4 }}>GLOBAL</span>
-          </h4>
-          <div style={{ fontSize: 'var(--text-5xl)', fontWeight: 700, fontFamily: "'IBM Plex Mono'" }}>{users.length}</div>
-        </div>
-        {programs.map((p) => (
-          <div
-            key={p.id}
-            className={`pc ${program === p.id ? 'active' : ''}`}
-            style={{ cursor: 'pointer' }}
-          onClick={() => {
-            setProgram(p.id)
+          <option value="all">All Programs</option>
+          {programs.map((p) => (
+            <option key={p.id} value={p.id}>
+              {`${p.name || p.shortName || p.id} • ${p.type || '-'}`} ({countsByProgram[p.id] || 0})
+            </option>
+          ))}
+        </Select>
+        <Select
+          variant="legacy"
+          value={risk}
+          onChange={(e) => {
+            setRisk(e.target.value)
             setPage(1)
           }}
-          >
-            <h4 style={{ margin: '0 0 8px' }}>{p.shortName || p.name}</h4>
-            <div style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, fontFamily: "'IBM Plex Mono'" }}>
-            {countsByProgram[p.id] || 0}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="vl-controls" style={{ marginBottom: 16, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8 }}>
-        <input className="vl-search" placeholder="Search name, phone, NIK..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
-        <select className="form-control" value={risk} onChange={(e) => { setRisk(e.target.value); setPage(1) }}>
+        >
           <option value="all">All Risk</option>
           <option value="Low">Low</option>
           <option value="Medium">Medium</option>
           <option value="High">High</option>
-        </select>
-        <select className="form-control" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+        </Select>
+        <Select
+          variant="legacy"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+        >
           <option value="joinDate">Join Date</option>
           <option value="name">Name</option>
           <option value="riskScore">Risk Score</option>
           <option value="totalPaid">Total Paid</option>
-        </select>
-        <select className="form-control" value={sortDir} onChange={(e) => setSortDir(e.target.value)}>
+        </Select>
+        <Select
+          variant="legacy"
+          value={sortDir}
+          onChange={(e) => setSortDir(e.target.value)}
+        >
           <option value="desc">Desc</option>
           <option value="asc">Asc</option>
-        </select>
-      </div>
+        </Select>
+      </FilterBar>
 
-      <table className="vl-table">
-        <thead>
-          <tr>
-            <th>USER</th>
-            <th>PROGRAM</th>
-            <th>PROGRESS</th>
-            <th style={{ textAlign: 'center' }}>COLLECTION AUDIT</th>
-            <th>RISK SCORE</th>
-            <th>VEHICLE</th>
-            <th>CONTACT</th>
-            <th>JOINED</th>
-            <th>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
+      <DataPanel>
+        <Table density="legacy" className="min-w-[900px]">
+          <TableHeader tone="legacy">
+            <TableRow tone="legacy">
+              <TableHead>USER</TableHead>
+              <TableHead>PROGRAM</TableHead>
+              <TableHead>PROGRESS</TableHead>
+              <TableHead className="text-center">COLLECTION AUDIT</TableHead>
+              <TableHead>RISK SCORE</TableHead>
+              <TableHead>VEHICLE</TableHead>
+              <TableHead>CONTACT</TableHead>
+              <TableHead>JOINED</TableHead>
+              <TableHead>ACTIONS</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
           {pageRows.length > 0 ? (
             pageRows.map((user) => (
-              <tr key={user.userId}>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{user.name}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{user.userId}</div>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              <TableRow key={user.userId} tone="legacy">
+                <TableCell>
+                  <div className="font-bold text-slate-900">{user.name}</div>
+                  <div className="text-xs text-slate-500">{user.userId}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
                     {(user.vehicleIds || []).map((id) => (
-                      <span key={`${user.userId}-${id}`} className="vl-pill" style={{ fontSize: 'var(--text-sm)', padding: '2px 6px' }}>
+                      <span
+                        key={`${user.userId}-${id}`}
+                        className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700"
+                      >
                         {id}
                       </span>
                     ))}
                   </div>
-                </td>
-                <td>{(user.vehicleIds || []).length > 0 ? <span>{Math.min(100, user.riskScore)}%</span> : <span style={{ color: 'var(--t3)' }}>—</span>}</td>
-                <td style={{ textAlign: 'center' }}>
-                  <span className="vl-pill" style={{ fontSize: 'var(--text-sm)', padding: '2px 6px' }}>
+                </TableCell>
+                <TableCell>
+                  {(user.vehicleIds || []).length > 0 ? (
+                    <span>{Math.min(100, user.riskScore)}%</span>
+                  ) : (
+                    <span className="text-slate-400">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-center">
+                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
                     {Math.max(0, user.missedPayments || 0)}
                   </span>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <span
-                    className="vl-status"
-                    style={{
-                      background: scoreTone(user.riskScore).bg,
-                      color: scoreTone(user.riskScore).color,
-                    }}
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(user.riskScore)}`}
                   >
                     {user.riskLabel} ({user.riskScore})
                   </span>
-                </td>
-                <td>{user.vehicleIds?.[0] || '-'}</td>
-                <td>
+                </TableCell>
+                <TableCell>{user.vehicleIds?.[0] || '-'}</TableCell>
+                <TableCell>
                   <div>{user.phone}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>NIK: {user.nik || '-'}</div>
-                </td>
-                <td>{new Date(user.joinDate).toLocaleDateString('id-ID')}</td>
-                <td>
-                  <button className="vl-pill" type="button">
+                  <div className="text-xs text-slate-500">NIK: {user.nik || '-'}</div>
+                </TableCell>
+                <TableCell>{new Date(user.joinDate).toLocaleDateString('id-ID')}</TableCell>
+                <TableCell>
+                  <Button variant="legacyPill" size="legacy" type="button" onClick={() => setProfileUser(user)}>
                     Profile
-                  </button>
-                </td>
-              </tr>
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))
           ) : (
-            <tr>
-              <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+            <TableRow tone="legacy">
+              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
                 No users found for current filters.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+          </TableBody>
+        </Table>
+      </DataPanel>
 
-      <div className="vl-pagination">
-        <button className="vl-page-btn" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+      <PageFooter>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+        >
           Prev
-        </button>
-        <div className="vl-page-info">Page {currentPage} of {totalPages}</div>
-        <button className="vl-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+        </Button>
+        <div className="text-sm font-semibold text-slate-600">
+          Page {currentPage} of {totalPages}
+        </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+        >
           Next
-        </button>
-      </div>
-    </section>
+        </Button>
+      </PageFooter>
+      <Dialog open={!!profileUser} onOpenChange={(open) => !open && setProfileUser(null)}>
+        <DialogContent tone="legacy">
+          <DialogHeader>
+            <DialogTitle>{profileUser?.name || 'Rider Profile'}</DialogTitle>
+            <DialogDescription>Operational profile snapshot</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2 text-sm text-slate-700">
+            <div>
+              <strong>User ID:</strong> {profileUser?.userId || '-'}
+            </div>
+            <div>
+              <strong>Phone:</strong> {profileUser?.phone || '-'}
+            </div>
+            <div>
+              <strong>NIK:</strong> {profileUser?.nik || '-'}
+            </div>
+            <div>
+              <strong>Risk:</strong> {profileUser?.riskLabel || '-'} ({profileUser?.riskScore ?? '-'})
+            </div>
+            <div>
+              <strong>Vehicles:</strong> {(profileUser?.vehicleIds || []).join(', ') || '-'}
+            </div>
+            <div>
+              <strong>Joined:</strong>{' '}
+              {profileUser?.joinDate ? new Date(profileUser.joinDate).toLocaleDateString('id-ID') : '-'}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="legacyGhost" onClick={() => setProfileUser(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageShell>
   )
 }

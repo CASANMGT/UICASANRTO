@@ -1,6 +1,9 @@
 import { Fragment, useMemo, useState } from 'react'
 import { createProgram, editProgram, getPrograms, getState, removeProgram } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { FilterBar, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
 
 function makeId(shortName) {
   const token = (shortName || 'PRG').slice(0, 2).toUpperCase()
@@ -23,6 +26,7 @@ export function ProgramsView() {
     grace: '7',
     commissionType: 'percentage',
     commissionValue: '10',
+    pickupLocation: '',
   })
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [rentersModal, setRentersModal] = useState({ open: false, programId: '' })
@@ -123,6 +127,7 @@ export function ProgramsView() {
       grace: '7',
       commissionType: 'percentage',
       commissionValue: '10',
+      pickupLocation: '',
     })
   }
 
@@ -139,6 +144,7 @@ export function ProgramsView() {
       grace: String(program.grace || 7),
       commissionType: program.commissionType || 'percentage',
       commissionValue: String(program.commissionType === 'fixed' ? program.commissionFixed || 0 : Math.round((program.commissionRate || 0) * 100)),
+      pickupLocation: program.pickupLocation || '',
     })
   }
 
@@ -155,6 +161,7 @@ export function ProgramsView() {
       commissionType: programModal.commissionType,
       commissionRate: programModal.commissionType === 'percentage' ? Number(programModal.commissionValue || 0) / 100 : 0,
       commissionFixed: programModal.commissionType === 'fixed' ? Number(programModal.commissionValue || 0) : 0,
+      pickupLocation: programModal.pickupLocation.trim() || 'Program Pickup Point',
       eligibleModels: [],
       minSalary: 0,
       promotions: [],
@@ -170,36 +177,31 @@ export function ProgramsView() {
     setProgramModal((prev) => ({ ...prev, open: false }))
   }
 
+  const selectedVehicleProgram = programs.find((item) => item.id === vehicleModal.programId)
+  const selectedRentersProgram = programs.find((item) => item.id === rentersModal.programId)
+  const inputCls =
+    'w-full rounded-xl border border-[color:var(--b1)] bg-white px-3 py-2 text-[13px] text-[color:var(--t1)] outline-none ring-[color:var(--ac)] focus:ring-2'
+  const actionBtnCls =
+    'rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100'
 
   return (
-    <section className="vl-container">
-      <div className="vl-header">
-        <h2 className="vl-title">Program Management</h2>
-        <div className="vl-count">{programs.length} Programs</div>
-      </div>
+    <PageShell>
+      <PageHeader>
+        <PageTitle>Program Management</PageTitle>
+        <PageMeta>{programs.length} Programs</PageMeta>
+      </PageHeader>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 8, marginBottom: 10 }}>
-        <div className="card" style={{ padding: 10 }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Programs</div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>{programStats.totalPrograms}</div>
-        </div>
-        <div className="card" style={{ padding: 10 }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Assigned Vehicles</div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>{programStats.totalAssignedVehicles}</div>
-        </div>
-        <div className="card" style={{ padding: 10 }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Active Renters</div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>{programStats.totalRenters}</div>
-        </div>
-        <div className="card" style={{ padding: 10 }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Avg Commission (%)</div>
-          <div style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>{programStats.avgCommissionPct}%</div>
-        </div>
-      </div>
+      <StatsGrid className="xl:grid-cols-4">
+        <StatCard label="Programs" value={programStats.totalPrograms} />
+        <StatCard label="Assigned Vehicles" value={programStats.totalAssignedVehicles} />
+        <StatCard label="Active Renters" value={programStats.totalRenters} />
+        <StatCard label="Avg Commission (%)" value={`${programStats.avgCommissionPct}%`} />
+      </StatsGrid>
 
-      <div className="vl-controls" style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 1fr 1fr', gap: 8 }}>
-        <input
-          className="vl-search"
+      <FilterBar className="lg:grid-cols-5">
+        <Input
+          variant="legacy"
+          className="lg:col-span-2"
           placeholder="Search program..."
           value={search}
           onChange={(e) => {
@@ -207,232 +209,218 @@ export function ProgramsView() {
             setPage(1)
           }}
         />
-        <div style={{ gridColumn: '2 / span 4', display: 'flex', justifyContent: 'flex-end' }}>
-          <button className="btn btn-primary" type="button" onClick={openCreateModal}>
+        <div className="flex justify-end lg:col-span-3">
+          <Button variant="legacyPrimary" onClick={openCreateModal}>
             + New Program
-          </button>
+          </Button>
         </div>
-      </div>
+      </FilterBar>
 
-      <table className="vl-table">
-        <thead>
-          <tr>
-            <th>PROGRAM</th>
-            <th>PARTNER</th>
-            <th>TYPE</th>
-            <th>VEHICLES ASSIGNED</th>
-            <th>RENTERS</th>
-            <th>PRICE / DAY</th>
-            <th>COMMISSION</th>
-            <th>ACTIONS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageRows.length > 0 ? (
-            pageRows.map((program) => (
-              <tr key={program.id}>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{program.name}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', fontFamily: 'var(--font-mono)' }}>{program.id}</div>
-                </td>
-                <td>{program.partnerId}</td>
-                <td>{program.type}</td>
-                <td>{vehiclesByProgram[program.id] || 0}</td>
-                <td>{rentersByProgram[program.id] || 0}</td>
-                <td>Rp {Math.round(program.price || 0).toLocaleString('id-ID')}</td>
-                <td>
-                  {program.commissionType === 'fixed'
-                    ? `Fixed Rp ${Math.round(program.commissionFixed || 0).toLocaleString('id-ID')}`
-                    : `${Math.round(Number(program.commissionRate || 0) * 100)}%`}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      className="vl-pill"
-                      type="button"
-                      onClick={() => openEditModal(program)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="vl-pill"
-                      type="button"
-                      onClick={() => setDeleteTarget(program)}
-                    >
-                      Delete
-                    </button>
-                    <button
-                      className="vl-pill"
-                      type="button"
-                      onClick={() => {
-                        setExpandedRenterVehicleId('')
-                        setRentersModal({ open: true, programId: program.id })
-                      }}
-                    >
-                      Renters List
-                    </button>
-                    <button
-                      className="vl-pill"
-                      type="button"
-                      onClick={() => setVehicleModal({ open: true, programId: program.id })}
-                    >
-                      Vehicle List
-                    </button>
-                  </div>
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <table className="min-w-[1080px] w-full border-collapse text-sm text-slate-700">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-3 py-2 text-left">PROGRAM</th>
+              <th className="px-3 py-2 text-left">PARTNER</th>
+              <th className="px-3 py-2 text-left">TYPE</th>
+              <th className="px-3 py-2 text-left">VEHICLES ASSIGNED</th>
+              <th className="px-3 py-2 text-left">RENTERS</th>
+              <th className="px-3 py-2 text-left">PRICE / DAY</th>
+              <th className="px-3 py-2 text-left">COMMISSION</th>
+              <th className="px-3 py-2 text-left">PICKUP LOCATION</th>
+              <th className="px-3 py-2 text-left">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length > 0 ? (
+              pageRows.map((program) => (
+                <tr key={program.id} className="border-t border-slate-100">
+                  <td className="px-3 py-2">
+                    <div className="font-bold text-slate-900">{program.name}</div>
+                    <div className="font-mono text-xs text-slate-500">{program.id}</div>
+                  </td>
+                  <td className="px-3 py-2">{program.partnerId}</td>
+                  <td className="px-3 py-2">{program.type}</td>
+                  <td className="px-3 py-2">{vehiclesByProgram[program.id] || 0}</td>
+                  <td className="px-3 py-2">{rentersByProgram[program.id] || 0}</td>
+                  <td className="px-3 py-2">Rp {Math.round(program.price || 0).toLocaleString('id-ID')}</td>
+                  <td className="px-3 py-2">
+                    {program.commissionType === 'fixed'
+                      ? `Fixed Rp ${Math.round(program.commissionFixed || 0).toLocaleString('id-ID')}`
+                      : `${Math.round(Number(program.commissionRate || 0) * 100)}%`}
+                  </td>
+                  <td className="px-3 py-2">{program.pickupLocation || 'Program Pickup Point'}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button className={actionBtnCls} type="button" onClick={() => openEditModal(program)}>
+                        Edit
+                      </button>
+                      <button className={actionBtnCls} type="button" onClick={() => setDeleteTarget(program)}>
+                        Delete
+                      </button>
+                      <button
+                        className={actionBtnCls}
+                        type="button"
+                        onClick={() => {
+                          setExpandedRenterVehicleId('')
+                          setRentersModal({ open: true, programId: program.id })
+                        }}
+                      >
+                        Renters List
+                      </button>
+                      <button
+                        className={actionBtnCls}
+                        type="button"
+                        onClick={() => setVehicleModal({ open: true, programId: program.id })}
+                      >
+                        Vehicle List
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+                  No programs found.
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
-                No programs found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      <div className="vl-pagination">
-        <div className="vl-page-info">
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-sm font-semibold text-slate-600">
           Page {currentPage} / {totalPages} ({programs.length} rows)
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="vl-page-btn" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+        <div className="flex gap-2">
+          <button
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-100"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
             Prev
           </button>
-          <button className="vl-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          <button
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-100"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
             Next
           </button>
         </div>
       </div>
 
-      <div className={`modal-overlay ${programModal.open ? 'active' : ''}`}>
-        <div className="modal">
-          <h2>{programModal.mode === 'create' ? 'Launch New Program' : 'Update Program Scheme'}</h2>
-          <div className="form-group">
-            <label>Display Name</label>
-            <input
-              className="form-control"
-              value={programModal.name}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))}
-            />
+      <div className={`${programModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+            {programModal.mode === 'create' ? 'Launch New Program' : 'Update Program Scheme'}
+          </h2>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Display Name</label>
+            <input className={inputCls} value={programModal.name} onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))} />
           </div>
-          <div className="form-group">
-            <label>Short Name</label>
-            <input
-              className="form-control"
-              value={programModal.shortName}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, shortName: e.target.value }))}
-            />
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Short Name</label>
+            <input className={inputCls} value={programModal.shortName} onChange={(e) => setProgramModal((prev) => ({ ...prev, shortName: e.target.value }))} />
           </div>
-          <div className="form-group">
-            <label>Partner</label>
-            <select
-              className="form-control"
-              value={programModal.partnerId}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, partnerId: e.target.value }))}
-            >
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Partner</label>
+            <select className={inputCls} value={programModal.partnerId} onChange={(e) => setProgramModal((prev) => ({ ...prev, partnerId: e.target.value }))}>
               <option value="tangkas">Tangkas</option>
               <option value="maka">Maka</option>
               <option value="united">United</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>Program Intent</label>
-            <select
-              className="form-control"
-              value={programModal.type}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, type: e.target.value }))}
-            >
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Program Intent</label>
+            <select className={inputCls} value={programModal.type} onChange={(e) => setProgramModal((prev) => ({ ...prev, type: e.target.value }))}>
               <option value="RTO">Rent To Own (RTO)</option>
               <option value="Rental">Daily Rental</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>Daily Price (IDR)</label>
-            <input
-              className="form-control"
-              value={programModal.price}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, price: e.target.value }))}
-            />
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Daily Price (IDR)</label>
+            <input className={inputCls} value={programModal.price} onChange={(e) => setProgramModal((prev) => ({ ...prev, price: e.target.value }))} />
           </div>
-          <div className="form-group">
-            <label>Grace Period (Days)</label>
-            <input
-              className="form-control"
-              value={programModal.grace}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, grace: e.target.value }))}
-            />
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Grace Period (Days)</label>
+            <input className={inputCls} value={programModal.grace} onChange={(e) => setProgramModal((prev) => ({ ...prev, grace: e.target.value }))} />
           </div>
-          <div className="form-group">
-            <label>Commission Type</label>
-            <select
-              className="form-control"
-              value={programModal.commissionType}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionType: e.target.value }))}
-            >
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Commission Type</label>
+            <select className={inputCls} value={programModal.commissionType} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionType: e.target.value }))}>
               <option value="percentage">Percentage (%)</option>
               <option value="fixed">Fixed Amount (IDR)</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>{programModal.commissionType === 'fixed' ? 'Commission Fixed (IDR)' : 'Commission Rate (%)'}</label>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">
+              {programModal.commissionType === 'fixed' ? 'Commission Fixed (IDR)' : 'Commission Rate (%)'}
+            </label>
+            <input className={inputCls} value={programModal.commissionValue} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionValue: e.target.value }))} />
+          </div>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Location</label>
             <input
-              className="form-control"
-              value={programModal.commissionValue}
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionValue: e.target.value }))}
+              className={inputCls}
+              value={programModal.pickupLocation}
+              placeholder="Program pickup point"
+              onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupLocation: e.target.value }))}
             />
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}>
+          <div className="flex justify-end gap-2">
+            <button
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              type="button"
+              onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}
+            >
               Cancel
             </button>
-            <button className="btn btn-primary" type="button" onClick={submitProgramModal}>
+            <button className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700" type="button" onClick={submitProgramModal}>
               {programModal.mode === 'create' ? 'Initialize Program' : 'Save Changes'}
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`modal-overlay ${vehicleModal.open ? 'active' : ''}`}>
-        <div className="modal" style={{ maxWidth: 980, width: '94vw' }}>
-          <h2>
-            Vehicle List for{' '}
-            {programs.find((item) => item.id === vehicleModal.programId)?.shortName ||
-              programs.find((item) => item.id === vehicleModal.programId)?.name ||
-              'Program'}
+      <div className={`${vehicleModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-[94vw] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+            Vehicle List for {selectedVehicleProgram?.shortName || selectedVehicleProgram?.name || 'Program'}
           </h2>
-          <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--b1)', borderRadius: 10 }}>
-            <table className="vl-table">
-              <thead>
+          <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
+            <table className="w-full border-collapse text-sm text-slate-700">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th>VEHICLE ID</th>
-                  <th>PLATE</th>
-                  <th>RENTER</th>
-                  <th>STATUS</th>
-                  <th>CREDITS</th>
-                  <th>GPS</th>
+                  <th className="px-3 py-2 text-left">VEHICLE ID</th>
+                  <th className="px-3 py-2 text-left">PLATE</th>
+                  <th className="px-3 py-2 text-left">RENTER</th>
+                  <th className="px-3 py-2 text-left">STATUS</th>
+                  <th className="px-3 py-2 text-left">CREDITS</th>
+                  <th className="px-3 py-2 text-left">GPS</th>
                 </tr>
               </thead>
               <tbody>
                 {vehicleRows.length > 0 ? (
                   vehicleRows.map((vehicle) => (
-                    <tr key={`program-vehicle-${vehicle.id}`}>
-                      <td>{vehicle.id}</td>
-                      <td>{vehicle.plate || '-'}</td>
-                      <td>{vehicle.customer || 'Unassigned'}</td>
-                      <td>
-                        <span className="vl-status" style={{ textTransform: 'uppercase' }}>
+                    <tr key={`program-vehicle-${vehicle.id}`} className="border-t border-slate-100">
+                      <td className="px-3 py-2">{vehicle.id}</td>
+                      <td className="px-3 py-2">{vehicle.plate || '-'}</td>
+                      <td className="px-3 py-2">{vehicle.customer || 'Unassigned'}</td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
                           {vehicle.status}
                         </span>
                       </td>
-                      <td>{vehicle.credits !== undefined ? `${vehicle.credits}d` : '-'}</td>
-                      <td>{vehicle.isOnline ? 'ON' : 'OFF'}</td>
+                      <td className="px-3 py-2">{vehicle.credits !== undefined ? `${vehicle.credits}d` : '-'}</td>
+                      <td className="px-3 py-2">{vehicle.isOnline ? 'ON' : 'OFF'}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ padding: 20, textAlign: 'center', color: 'var(--t3)' }}>
+                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
                       No vehicles assigned to this program yet.
                     </td>
                   </tr>
@@ -440,34 +428,35 @@ export function ProgramsView() {
               </tbody>
             </table>
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setVehicleModal({ open: false, programId: '' })}>
+          <div className="mt-3 flex justify-end">
+            <button
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              type="button"
+              onClick={() => setVehicleModal({ open: false, programId: '' })}
+            >
               Close
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`modal-overlay ${rentersModal.open ? 'active' : ''}`}>
-        <div className="modal" style={{ maxWidth: 1100, width: '95vw' }}>
-          <h2>
-            Renter Details for{' '}
-            {programs.find((item) => item.id === rentersModal.programId)?.shortName ||
-              programs.find((item) => item.id === rentersModal.programId)?.name ||
-              'Program'}
+      <div className={`${rentersModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-[95vw] max-w-6xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+            Renter Details for {selectedRentersProgram?.shortName || selectedRentersProgram?.name || 'Program'}
           </h2>
-          <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--b1)', borderRadius: 10 }}>
-            <table className="vl-table">
-              <thead>
+          <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
+            <table className="w-full border-collapse text-sm text-slate-700">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th>RENTER INFO</th>
-                  <th>RISK AUDIT</th>
-                  <th>STATUS</th>
-                  <th>PROGRESS</th>
-                  <th>ACTIVE ADDRESS</th>
-                  <th>GPS</th>
-                  <th>NOPOL / ID</th>
-                  <th>CREDITS</th>
+                  <th className="px-3 py-2 text-left">RENTER INFO</th>
+                  <th className="px-3 py-2 text-left">RISK AUDIT</th>
+                  <th className="px-3 py-2 text-left">STATUS</th>
+                  <th className="px-3 py-2 text-left">PROGRESS</th>
+                  <th className="px-3 py-2 text-left">ACTIVE ADDRESS</th>
+                  <th className="px-3 py-2 text-left">GPS</th>
+                  <th className="px-3 py-2 text-left">NOPOL / ID</th>
+                  <th className="px-3 py-2 text-left">CREDITS</th>
                 </tr>
               </thead>
               <tbody>
@@ -477,67 +466,63 @@ export function ProgramsView() {
                     return (
                       <Fragment key={`renters-group-${vehicle.id}`}>
                         <tr
-                          style={{ cursor: 'pointer' }}
+                          className="cursor-pointer border-t border-slate-100"
                           onClick={() => setExpandedRenterVehicleId((prev) => (prev === vehicle.id ? '' : vehicle.id))}
                         >
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ color: 'var(--t3)', fontSize: 13 }}>{expanded ? '▼' : '▶'}</span>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-500">{expanded ? '▼' : '▶'}</span>
                               <div>
-                                <div style={{ fontWeight: 700 }}>{vehicle.customer || 'Unknown'}</div>
-                                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', fontFamily: 'var(--font-mono)' }}>
-                                  {vehicle.userId || ''}
-                                </div>
+                                <div className="font-bold text-slate-900">{vehicle.customer || 'Unknown'}</div>
+                                <div className="font-mono text-xs text-slate-500">{vehicle.userId || ''}</div>
                               </div>
                             </div>
                           </td>
-                          <td>
-                            <div style={{ fontWeight: 700 }}>{user?.riskLabel || '-'}</div>
-                            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Score: {user?.riskScore ?? '-'}</div>
+                          <td className="px-3 py-2">
+                            <div className="font-bold text-slate-900">{user?.riskLabel || '-'}</div>
+                            <div className="text-xs text-slate-500">Score: {user?.riskScore ?? '-'}</div>
                           </td>
-                          <td>
-                            <span className="vl-status">{String(vehicle.status || '').toUpperCase()}</span>
+                          <td className="px-3 py-2">
+                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                              {String(vehicle.status || '').toUpperCase()}
+                            </span>
                           </td>
-                          <td>
-                            <div style={{ fontWeight: 700 }}>{progressPct}%</div>
+                          <td className="px-3 py-2">
+                            <div className="font-bold text-slate-900">{progressPct}%</div>
                           </td>
-                          <td>
-                            <div style={{ color: 'var(--t3)' }}>{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
+                          <td className="px-3 py-2">
+                            <div className="text-slate-500">{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
                           </td>
-                          <td>{vehicle.isOnline ? 'ON' : 'OFF'}</td>
-                          <td>
-                            <div style={{ fontWeight: 700 }}>{vehicle.plate || vehicle.id}</div>
-                            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{vehicle.model || ''}</div>
+                          <td className="px-3 py-2">{vehicle.isOnline ? 'ON' : 'OFF'}</td>
+                          <td className="px-3 py-2">
+                            <div className="font-bold text-slate-900">{vehicle.plate || vehicle.id}</div>
+                            <div className="text-xs text-slate-500">{vehicle.model || ''}</div>
                           </td>
-                          <td>{vehicle.credits !== undefined ? `${vehicle.credits}d` : '--'}</td>
+                          <td className="px-3 py-2">{vehicle.credits !== undefined ? `${vehicle.credits}d` : '--'}</td>
                         </tr>
                         {expanded ? (
-                          <tr style={{ background: 'var(--s2)' }}>
-                            <td colSpan={8}>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 16, padding: '10px 6px' }}>
+                          <tr className="bg-slate-50">
+                            <td colSpan={8} className="px-3 py-2">
+                              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                 <div>
-                                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 4 }}>Rider Info</div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>NIK: {user?.nik || '--'}</div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>Phone: {user?.phone || vehicle.phone || '--'}</div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>
+                                  <div className="mb-1 text-xs font-semibold text-slate-500">Rider Info</div>
+                                  <div className="text-sm">NIK: {user?.nik || '--'}</div>
+                                  <div className="text-sm">Phone: {user?.phone || vehicle.phone || '--'}</div>
+                                  <div className="text-sm">
                                     Join: {user?.joinDate ? new Date(user.joinDate).toLocaleDateString('id-ID') : '--'}
                                   </div>
                                 </div>
                                 <div>
-                                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 4 }}>Performance</div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>
+                                  <div className="mb-1 text-xs font-semibold text-slate-500">Performance</div>
+                                  <div className="text-sm">
                                     Total Paid: Rp {Math.round(user?.totalPaid || 0).toLocaleString('id-ID')}
                                   </div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>Missed: {user?.missedPayments ?? 0}</div>
+                                  <div className="text-sm">Missed: {user?.missedPayments ?? 0}</div>
                                 </div>
                                 <div>
-                                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 4 }}>Emergency</div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>
-                                    Name: {user?.emergencyContacts?.[0]?.name || '--'}
-                                  </div>
-                                  <div style={{ fontSize: 'var(--text-sm)' }}>
-                                    Phone: {user?.emergencyContacts?.[0]?.phone || '--'}
-                                  </div>
+                                  <div className="mb-1 text-xs font-semibold text-slate-500">Emergency</div>
+                                  <div className="text-sm">Name: {user?.emergencyContacts?.[0]?.name || '--'}</div>
+                                  <div className="text-sm">Phone: {user?.emergencyContacts?.[0]?.phone || '--'}</div>
                                 </div>
                               </div>
                             </td>
@@ -548,7 +533,7 @@ export function ProgramsView() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} style={{ padding: 20, textAlign: 'center', color: 'var(--t3)' }}>
+                    <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
                       No renters in this program yet
                     </td>
                   </tr>
@@ -556,9 +541,9 @@ export function ProgramsView() {
               </tbody>
             </table>
           </div>
-          <div className="modal-actions">
+          <div className="mt-3 flex justify-end">
             <button
-              className="btn btn-secondary"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               type="button"
               onClick={() => {
                 setExpandedRenterVehicleId('')
@@ -571,18 +556,22 @@ export function ProgramsView() {
         </div>
       </div>
 
-      <div className={`modal-overlay ${deleteTarget ? 'active' : ''}`}>
-        <div className="modal">
-          <h2>Delete Program</h2>
-          <div style={{ color: 'var(--t2)', fontSize: 'var(--text-md)' }}>
+      <div className={`${deleteTarget ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h2 className="mb-2 text-lg font-extrabold text-slate-900">Delete Program</h2>
+          <div className="text-sm text-slate-600">
             Delete <b>{deleteTarget?.name}</b>? This cannot be undone.
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setDeleteTarget(null)}>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+            >
               Cancel
             </button>
             <button
-              className="btn btn-danger"
+              className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
               type="button"
               onClick={() => {
                 if (deleteTarget) removeProgram(deleteTarget.id)
@@ -594,6 +583,6 @@ export function ProgramsView() {
           </div>
         </div>
       </div>
-    </section>
+    </PageShell>
   )
 }

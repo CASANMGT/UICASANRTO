@@ -39,6 +39,9 @@ Turn any flag off to keep that tab in legacy-fallback mode during parity testing
 - Navigation is left-sidebar first (desktop collapse + mobile drawer).
 - Changelog access is now near the `CASAN Operations` sidebar title.
 - GPS table uses merged observability columns for denser operational scanning.
+- Applications review flow is simplified to a single clear review action with runtime guardrails.
+- Pickup board includes location/slot/status filters and pickup lifecycle badges.
+- Decision terminology is normalized to `approved`, `rejected`, `pending_docs`, `review`.
 
 # React + Vite
 

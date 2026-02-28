@@ -10,6 +10,9 @@ import {
   scheduleRtoPickup,
 } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Input } from './ui/input'
+import { PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { Select } from './ui/select'
 
 const UI_KEY = 'casan_rto_ui'
 const DEFAULT_PICKUP_BY_PARTNER = {
@@ -19,28 +22,37 @@ const DEFAULT_PICKUP_BY_PARTNER = {
 }
 
 function decisionTone(decision) {
-  if (decision === 'approved') return { bg: 'var(--dg1)', color: 'var(--dg)', label: 'ACCEPTED' }
-  if (decision === 'declined') return { bg: 'var(--dd1)', color: 'var(--dd)', label: 'REJECTED' }
-  if (decision === 'review') return { bg: 'var(--dw1)', color: 'var(--dw)', label: 'REVIEW' }
-  if (decision === 'pending_docs') return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C', label: 'NEEDS DOCS' }
-  return { bg: 'var(--s3)', color: 'var(--t2)', label: 'PENDING' }
+  if (decision === 'approved') return { tone: 'bg-emerald-100 text-emerald-700', label: 'ACCEPTED' }
+  if (decision === 'rejected') return { tone: 'bg-rose-100 text-rose-700', label: 'REJECTED' }
+  if (decision === 'review') return { tone: 'bg-amber-100 text-amber-700', label: 'REVIEW' }
+  if (decision === 'pending_docs') return { tone: 'bg-orange-100 text-orange-700', label: 'NEEDS DOCS' }
+  return { tone: 'bg-slate-100 text-slate-700', label: 'PENDING' }
+}
+
+function pickupStatusTone(status) {
+  if (status === 'confirmed') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'rescheduled') return 'bg-cyan-100 text-cyan-700'
+  if (status === 'planned') return 'bg-amber-100 text-amber-700'
+  if (status === 'completed') return 'bg-indigo-100 text-indigo-700'
+  if (status === 'no_show') return 'bg-rose-100 text-rose-700'
+  return 'bg-slate-100 text-slate-700'
 }
 
 function scoreTone(score) {
   const value = Number(score || 0)
-  if (value >= 80) return { bg: 'var(--dg1)', color: 'var(--dg)' }
-  if (value >= 60) return { bg: 'var(--dac1)', color: 'var(--dac)' }
-  if (value >= 41) return { bg: 'var(--dw1)', color: 'var(--dw)' }
-  if (value >= 21) return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C' }
-  return { bg: 'var(--dd1)', color: 'var(--dd)' }
+  if (value >= 80) return 'bg-emerald-100 text-emerald-700'
+  if (value >= 60) return 'bg-cyan-100 text-cyan-700'
+  if (value >= 41) return 'bg-amber-100 text-amber-700'
+  if (value >= 21) return 'bg-orange-100 text-orange-700'
+  return 'bg-rose-100 text-rose-700'
 }
 
 function docTone(status) {
-  if (status === 'submitted') return { bg: 'var(--dg1)', color: 'var(--dg)' }
-  if (status === 'review') return { bg: 'var(--dw1)', color: 'var(--dw)' }
-  if (status === 'missing') return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C' }
-  if (status === 'rejected') return { bg: 'var(--dd1)', color: 'var(--dd)' }
-  return { bg: 'var(--s3)', color: 'var(--t2)' }
+  if (status === 'submitted') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'review') return 'bg-amber-100 text-amber-700'
+  if (status === 'missing') return 'bg-orange-100 text-orange-700'
+  if (status === 'rejected') return 'bg-rose-100 text-rose-700'
+  return 'bg-slate-100 text-slate-700'
 }
 
 function plusDaysISO(baseDate, days) {
@@ -70,7 +82,7 @@ function buildWATemplate(app, decision, options = {}) {
   if (decision === 'approved') {
     return `Hi ${applicant}, pengajuan ${appId} untuk ${program} sudah DISETUJUI (score ${score}).\nSilakan pilih jadwal pickup (tanggal & jam) melalui tim CASAN hari ini agar unit bisa disiapkan.`
   }
-  if (decision === 'declined') {
+  if (decision === 'rejected') {
     return `Hi ${applicant}, mohon maaf pengajuan ${appId} belum dapat disetujui saat ini.\nAlasan: ${options.rejectReason || 'dokumen / kelayakan belum memenuhi'}.\nSilakan perbaiki dan ajukan kembali setelah lengkap.`
   }
   if (decision === 'pending_docs') {
@@ -82,6 +94,13 @@ function buildWATemplate(app, decision, options = {}) {
 
 function clampScore(value) {
   return Math.max(0, Math.min(100, Number(value || 0)))
+}
+
+function appAgeDays(app) {
+  const raw = app?.createdAt || app?.updatedAt || null
+  if (!raw) return '-'
+  const days = Math.floor((Date.now() - Date.parse(raw)) / (24 * 60 * 60 * 1000))
+  return Number.isFinite(days) ? Math.max(0, days) : '-'
 }
 
 export function RtoView() {
@@ -99,6 +118,14 @@ export function RtoView() {
   const [waJson, setWaJson] = useState(JSON.stringify(snapshot.waCfg || {}, null, 2))
   const [appFilter, setAppFilter] = useState(initialUi.appFilter || 'all')
   const [appSearch, setAppSearch] = useState(initialUi.appSearch || '')
+  const [appScoreBand, setAppScoreBand] = useState('all')
+  const [appDocsFilter, setAppDocsFilter] = useState('all')
+  const [appReviewerFilter, setAppReviewerFilter] = useState('all')
+  const [appSlaFilter, setAppSlaFilter] = useState('all')
+  const [pickupFilter, setPickupFilter] = useState('all')
+  const [pickupLocationFilter, setPickupLocationFilter] = useState('all')
+  const [pickupSlotFilter, setPickupSlotFilter] = useState('all')
+  const [pickupStatusFilter, setPickupStatusFilter] = useState('all')
   const [appPage, setAppPage] = useState(initialUi.appPage || 1)
   const [pickupPage, setPickupPage] = useState(initialUi.pickupPage || 1)
   const pageSize = 10
@@ -134,6 +161,7 @@ export function RtoView() {
     date: new Date().toISOString().slice(0, 10),
     time: '10:00',
     location: '',
+    status: 'planned',
   })
   const programs = useMemo(() => {
     void tick
@@ -173,6 +201,36 @@ export function RtoView() {
   const filteredApps = useMemo(() => {
     let list = [...(snapshot.apps || [])]
     if (appFilter !== 'all') list = list.filter((app) => app.decision === appFilter)
+    if (appScoreBand !== 'all') {
+      list = list.filter((app) => {
+        const score = Number(app.score || 0)
+        if (appScoreBand === 'high') return score >= 80
+        if (appScoreBand === 'medium') return score >= 60 && score < 80
+        if (appScoreBand === 'low') return score < 60
+        return true
+      })
+    }
+    if (appDocsFilter !== 'all') {
+      list = list.filter((app) => {
+        const missingCount = (app.documents || []).filter((doc) => doc.status === 'missing').length
+        return appDocsFilter === 'complete' ? missingCount === 0 : missingCount > 0
+      })
+    }
+    if (appReviewerFilter !== 'all') {
+      list = list.filter((app) => {
+        const latest = (app.reviewLog || []).slice().reverse()[0]
+        return (latest?.by || 'Unassigned') === appReviewerFilter
+      })
+    }
+    if (appSlaFilter !== 'all') {
+      list = list.filter((app) => {
+        const age = Number(appAgeDays(app))
+        if (!Number.isFinite(age)) return false
+        if (appSlaFilter === 'overdue') return age > 3
+        if (appSlaFilter === 'today') return age <= 1
+        return true
+      })
+    }
     if (appSearch.trim()) {
       const q = appSearch.toLowerCase()
       list = list.filter(
@@ -183,14 +241,51 @@ export function RtoView() {
       )
     }
     return list
-  }, [snapshot.apps, appFilter, appSearch])
+  }, [snapshot.apps, appFilter, appSearch, appScoreBand, appDocsFilter, appReviewerFilter, appSlaFilter])
   const pickup = snapshot.pickup || []
+  const filteredPickup = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    return pickup.filter((app) => {
+      const dateValue = app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(0, 10) : '')
+      const locationValue = String(app.pickupSchedule?.location || getProgramLocation(app.programId) || '').trim()
+      const slotValue = app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '')
+      const statusValue = app.pickupSchedule?.status || (dateValue ? 'planned' : 'unscheduled')
+      if (pickupFilter === 'today' && dateValue !== today) return false
+      if (pickupFilter === 'overdue' && dateValue >= today) return false
+      if (pickupFilter === 'upcoming' && dateValue <= today) return false
+      if (pickupLocationFilter !== 'all' && locationValue !== pickupLocationFilter) return false
+      if (pickupSlotFilter !== 'all' && slotValue !== pickupSlotFilter) return false
+      if (pickupStatusFilter !== 'all' && statusValue !== pickupStatusFilter) return false
+      return dateValue !== ''
+    })
+  }, [pickup, pickupFilter, pickupLocationFilter, pickupSlotFilter, pickupStatusFilter, programs])
+  const pickupLocations = useMemo(
+    () =>
+      [...new Map((pickup || [])
+        .map((app) => String(app.pickupSchedule?.location || getProgramLocation(app.programId) || '').trim())
+        .filter(Boolean)
+        .map((value) => [value.toLowerCase(), value])).values()],
+    [pickup, programs],
+  )
+  const pickupSlots = useMemo(
+    () => [...new Set((pickup || []).map((app) => app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '')).filter(Boolean))].sort(),
+    [pickup],
+  )
   const appTotalPages = Math.max(1, Math.ceil(filteredApps.length / pageSize))
-  const pickupTotalPages = Math.max(1, Math.ceil(pickup.length / pageSize))
+  const pickupTotalPages = Math.max(1, Math.ceil(filteredPickup.length / pageSize))
   const currentAppPage = Math.min(appPage, appTotalPages)
   const currentPickupPage = Math.min(pickupPage, pickupTotalPages)
   const appRows = filteredApps.slice((currentAppPage - 1) * pageSize, currentAppPage * pageSize)
-  const pickupRows = pickup.slice((currentPickupPage - 1) * pageSize, currentPickupPage * pageSize)
+  const pickupRows = filteredPickup.slice((currentPickupPage - 1) * pageSize, currentPickupPage * pageSize)
+  const appStats = useMemo(() => {
+    const allApps = snapshot.apps || []
+    return {
+      total: allApps.length,
+      pending: allApps.filter((app) => app.decision === 'pending' || app.decision === 'review' || app.decision === 'pending_docs').length,
+      approved: allApps.filter((app) => app.decision === 'approved').length,
+      rejected: allApps.filter((app) => app.decision === 'rejected').length,
+    }
+  }, [snapshot.apps])
   const timeSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00']
   const dateChoices = useMemo(() => {
     const base = scheduleModal.date || new Date().toISOString().slice(0, 10)
@@ -222,15 +317,15 @@ export function RtoView() {
     setMessage('Application config saved to compatibility keys.')
   }
 
-  const getProgramLocation = (programId) => {
+  function getProgramLocation(programId) {
     const program = programs.find((item) => item.id === programId)
-    return DEFAULT_PICKUP_BY_PARTNER[program?.partnerId] || 'Program Pickup Point'
+    return program?.pickupLocation || DEFAULT_PICKUP_BY_PARTNER[program?.partnerId] || 'Program Pickup Point'
   }
 
   const openReview = (app) => {
     const docs = Array.isArray(app.documents) ? app.documents : []
     const requiredDocs = docs.filter((d) => d.status === 'missing' || d.status === 'rejected').map((d) => d.name)
-    const nextDecision = app.decision === 'approved' ? 'approved' : app.decision === 'declined' ? 'declined' : 'review'
+    const nextDecision = app.decision === 'approved' ? 'approved' : app.decision === 'rejected' ? 'rejected' : 'review'
     setReviewModal({
       open: true,
       appId: app.id,
@@ -251,8 +346,20 @@ export function RtoView() {
   const submitReview = () => {
     const reviewApp = (snapshot.apps || []).find((item) => item.id === reviewModal.appId)
     if (!reviewApp) return
+    if (!String(reviewModal.reviewer || '').trim()) {
+      setMessage('Reviewer name is required.')
+      return
+    }
     if (reviewModal.nextDecision === 'approved' && !reviewModal.assignedVehicleId) {
       setMessage('Assign vehicle is required before approving application.')
+      return
+    }
+    if (reviewModal.nextDecision === 'pending_docs' && (reviewModal.requiredDocs || []).length === 0) {
+      setMessage('Select at least one required document for "Needs More Docs".')
+      return
+    }
+    if (reviewModal.nextDecision === 'rejected' && !String(reviewModal.rejectReason || '').trim()) {
+      setMessage('Reject reason is required before rejecting application.')
       return
     }
     const finalScore = clampScore(Number(reviewApp.score || 0) + Number(reviewModal.scoreAdjust || 0))
@@ -271,6 +378,8 @@ export function RtoView() {
       notes: finalNote,
       documents: reviewModal.documents,
       score: finalScore,
+      requiredDocs: reviewModal.requiredDocs,
+      rejectReason: reviewModal.rejectReason,
       reviewEntry: {
         at: new Date().toISOString(),
         by: reviewModal.reviewer || 'Ops Reviewer',
@@ -280,6 +389,7 @@ export function RtoView() {
     })
     setReviewModal((prev) => ({ ...prev, open: false }))
     setSelectedAppId(reviewApp.id)
+    setMessage('Review saved.')
   }
   const markAllMissing = () => {
     setReviewModal((prev) => ({
@@ -298,18 +408,6 @@ export function RtoView() {
       waTemplate: buildWATemplate(selectedReviewApp, prev.nextDecision, { requiredDocs: [] }),
     }))
   }
-  const setReviewDecision = (nextDecision) => {
-    setReviewModal((prev) => ({
-      ...prev,
-      nextDecision,
-      waTemplate: buildWATemplate(selectedReviewApp, nextDecision, {
-        requiredDocs: prev.requiredDocs,
-        rejectReason: prev.rejectReason,
-        reviewEtaDays: prev.reviewEtaDays,
-      }),
-    }))
-  }
-
   const onSchedule = (id) => {
     const app = (snapshot.apps || []).find((item) => item.id === id)
     if (!app || app.decision !== 'approved') {
@@ -323,17 +421,20 @@ export function RtoView() {
       date: schedule.date || new Date().toISOString().slice(0, 10),
       time: schedule.time || '10:00',
       location: schedule.location || getProgramLocation(app?.programId),
+      status: schedule.status || (schedule.date ? 'planned' : 'unscheduled'),
     })
   }
 
   const submitCreate = () => {
     if (!createModal.userName.trim()) return
+    const selectedProgram = programs.find((item) => item.id === createModal.programId)
     createRtoApplication({
       userName: createModal.userName.trim(),
       programId: createModal.programId || '',
       score: Number(createModal.score || 0),
       decision: createModal.decision,
       assignedVehicleId: createModal.assignedVehicleId || null,
+      pickupLocation: selectedProgram?.pickupLocation || getProgramLocation(createModal.programId),
       pickupDate:
         createModal.decision === 'approved' ? new Date(`${new Date().toISOString().slice(0, 10)}T08:00:00`).toISOString() : null,
     })
@@ -346,35 +447,54 @@ export function RtoView() {
       date: scheduleModal.date,
       time: scheduleModal.time,
       location: scheduleModal.location || 'Program Pickup Point',
+      status: scheduleModal.status || 'confirmed',
     })
     setScheduleModal((prev) => ({ ...prev, open: false }))
   }
 
-  return (
-    <section className="vl-container">
-      <div className="vl-header">
-        <h2 className="vl-title">Application Operations</h2>
-        <div className="vl-count">{snapshot.apps?.length || 0} Applications</div>
-      </div>
+  const formControlCls =
+    'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-indigo-200 focus:ring-2'
+  const ghostBtnCls =
+    'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100'
+  const primaryBtnCls =
+    'rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700'
+  const pillCls =
+    'inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100'
 
-      <div className="vl-filter-pills" style={{ marginBottom: 8 }}>
+  return (
+    <PageShell>
+      <PageHeader>
+        <PageTitle>Application Operations</PageTitle>
+        <PageMeta>{snapshot.apps?.length || 0} Applications</PageMeta>
+      </PageHeader>
+      <StatsGrid>
+        <StatCard label="Total Applications" value={appStats.total} />
+        <StatCard label="Pending Review" value={appStats.pending} valueClassName="text-amber-700" />
+        <StatCard label="Approved" value={appStats.approved} valueClassName="text-emerald-700" />
+        <StatCard label="Rejected" value={appStats.rejected} valueClassName="text-rose-700" />
+      </StatsGrid>
+
+      <div className="mb-2 flex flex-wrap gap-2">
         {['applications', 'pickup', 'score', 'wa'].map((key) => (
           <button
             key={key}
-            className={`vl-pill ${tab === key ? 'active' : ''}`}
+            className={`${pillCls} ${
+              tab === key ? 'border-[color:var(--ac)] bg-[color:var(--ac)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]' : ''
+            }`}
             onClick={() => setTab(key)}
           >
             {key}
           </button>
         ))}
       </div>
-      {message ? <div style={{ marginBottom: 8, fontSize: 'var(--text-sm)', color: 'var(--dw)' }}>{message}</div> : null}
+      {message ? <div className="mb-2 text-sm text-amber-700">{message}</div> : null}
 
       {tab === 'applications' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div className="vl-controls" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <input
-              className="vl-search"
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-6">
+            <Input
+              variant="legacy"
+              className="lg:col-span-2"
               placeholder="Search app, applicant, program..."
               value={appSearch}
               onChange={(e) => {
@@ -382,8 +502,8 @@ export function RtoView() {
                 setAppPage(1)
               }}
             />
-            <select
-              className="form-control"
+            <Select
+              variant="legacy"
               value={appFilter}
               onChange={(e) => {
                 setAppFilter(e.target.value)
@@ -395,56 +515,105 @@ export function RtoView() {
               <option value="review">Review</option>
               <option value="pending_docs">Needs Docs</option>
               <option value="approved">Approved</option>
-              <option value="declined">Declined</option>
-            </select>
+              <option value="rejected">Rejected</option>
+            </Select>
+            <Select
+              variant="legacy"
+              value={appScoreBand}
+              onChange={(e) => {
+                setAppScoreBand(e.target.value)
+                setAppPage(1)
+              }}
+            >
+              <option value="all">All Scores</option>
+              <option value="high">High (80+)</option>
+              <option value="medium">Medium (60-79)</option>
+              <option value="low">Low (&lt;60)</option>
+            </Select>
+            <Select
+              variant="legacy"
+              value={appDocsFilter}
+              onChange={(e) => {
+                setAppDocsFilter(e.target.value)
+                setAppPage(1)
+              }}
+            >
+              <option value="all">All Docs</option>
+              <option value="complete">Docs Complete</option>
+              <option value="missing">Missing Docs</option>
+            </Select>
+            <Select
+              variant="legacy"
+              value={appSlaFilter}
+              onChange={(e) => {
+                setAppSlaFilter(e.target.value)
+                setAppPage(1)
+              }}
+            >
+              <option value="all">All SLA</option>
+              <option value="today">Fresh (0-1d)</option>
+              <option value="overdue">Overdue (&gt;3d)</option>
+            </Select>
+            <Select
+              variant="legacy"
+              value={appReviewerFilter}
+              onChange={(e) => {
+                setAppReviewerFilter(e.target.value)
+                setAppPage(1)
+              }}
+            >
+              <option value="all">All Reviewers</option>
+              <option value="Unassigned">Unassigned</option>
+              <option value="Ops Reviewer">Ops Reviewer</option>
+              <option value="Risk Analyst">Risk Analyst</option>
+            </Select>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: true }))}>
+          <div className="flex justify-end">
+            <button className={primaryBtnCls} type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: true }))}>
               + Add Renter
             </button>
           </div>
-          <table className="vl-table">
-            <thead>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="min-w-[1220px] w-full border-collapse text-sm text-slate-700">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th>APP</th>
-                <th>APPLICANT</th>
-                <th>PROGRAM</th>
-                <th>SCORE</th>
-                <th>DOCUMENT REVIEW</th>
-                <th>DECISION</th>
-                <th>ACTIONS</th>
+                <th className="px-3 py-2 text-left">APP</th>
+                <th className="px-3 py-2 text-left">APPLICANT</th>
+                <th className="px-3 py-2 text-left">PROGRAM</th>
+                <th className="px-3 py-2 text-left">SCORE</th>
+                <th className="px-3 py-2 text-left">DOCUMENT REVIEW</th>
+                <th className="px-3 py-2 text-left">AGE</th>
+                <th className="px-3 py-2 text-left">REVIEWER</th>
+                <th className="px-3 py-2 text-left">LAST REVIEWED</th>
+                <th className="px-3 py-2 text-left">ASSIGNED VEHICLE</th>
+                <th className="px-3 py-2 text-left">PICKUP STATUS</th>
+                <th className="px-3 py-2 text-left">DECISION</th>
+                <th className="px-3 py-2 text-left">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {appRows.length > 0 ? (
                 appRows.map((app) => (
-                  <tr key={app.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedAppId(app.id)}>
-                    <td>{app.id}</td>
-                    <td>{app.userName}</td>
-                    <td>{app.programId}</td>
-                    <td>
+                  <tr key={app.id} className="cursor-pointer border-t border-slate-100" onClick={() => setSelectedAppId(app.id)}>
+                    <td className="px-3 py-2">{app.id}</td>
+                    <td className="px-3 py-2">{app.userName}</td>
+                    <td className="px-3 py-2">{app.programId}</td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          background: scoreTone(app.score).bg,
-                          color: scoreTone(app.score).color,
-                          minWidth: 56,
-                          display: 'inline-flex',
-                          justifyContent: 'center',
-                        }}
+                        className={`inline-flex min-w-14 justify-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(app.score)}`}
                       >
                         {app.score}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         {(app.documents || []).slice(0, 3).map((document) => (
                           <img
                             key={`${app.id}-${document.id}`}
                             src={document.img || buildDocPreviewSrc(document.name, document.status)}
                             alt={document.name}
                             title={document.name}
-                            style={{ width: 26, height: 26, borderRadius: 6, border: '1px solid var(--b1)', objectFit: 'cover' }}
+                            className="h-7 w-7 rounded-md border border-slate-200 object-cover"
                             onClick={(event) => {
                               event.stopPropagation()
                               setDocPreview({
@@ -455,34 +624,56 @@ export function RtoView() {
                             }}
                           />
                         ))}
-                        <span className="vl-pill">
+                        <span className={pillCls}>
                           {(app.documents || []).filter((d) => d.status === 'missing').length} missing
                         </span>
                       </div>
                     </td>
-                    <td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${Number(appAgeDays(app)) > 3 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {appAgeDays(app)}d
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      {(app.reviewLog || []).length > 0 ? (app.reviewLog || []).slice().reverse()[0]?.by || 'Unassigned' : 'Unassigned'}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-slate-500">
+                      {(app.reviewLog || []).length > 0
+                        ? new Date((app.reviewLog || []).slice().reverse()[0]?.at).toLocaleString('id-ID')
+                        : '-'}
+                    </td>
+                    <td className="px-3 py-2">
+                      {app.assignedVehicleId ? (
+                        <span className="inline-flex rounded-full bg-cyan-100 px-2 py-1 text-xs font-bold text-cyan-700">
+                          {app.assignedVehicleId}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500">Unassigned</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'unscheduled')}`}>
+                        {String(app.pickupSchedule?.status || 'unscheduled').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          textTransform: 'uppercase',
-                          background: decisionTone(app.decision).bg,
-                          color: decisionTone(app.decision).color,
-                        }}
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${decisionTone(app.decision).tone}`}
                       >
                         {decisionTone(app.decision).label}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
                         <button
-                          className="vl-pill"
+                          className={pillCls}
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation()
                             openReview(app)
                           }}
                         >
-                          Open Review
+                          Review
                         </button>
                       </div>
                     </td>
@@ -490,83 +681,63 @@ export function RtoView() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+                  <td colSpan={12} className="px-6 py-8 text-center text-sm text-slate-500">
                     No applications found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
 
           {selectedApp && (
-            <div className="card" style={{ padding: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="flex flex-wrap justify-between gap-3">
                 <div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>Selected Application</div>
-                  <div style={{ fontWeight: 800 }}>{selectedApp.id} - {selectedApp.userName}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }}>
+                  <div className="text-xs text-slate-500">Selected Application</div>
+                  <div className="font-extrabold text-slate-900">{selectedApp.id} - {selectedApp.userName}</div>
+                  <div className="text-sm text-slate-600">
                     Program: {selectedApp.programId} | Score:{' '}
                     <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        background: scoreTone(selectedApp.score).bg,
-                        color: scoreTone(selectedApp.score).color,
-                        fontWeight: 700,
-                      }}
+                      className={`rounded-full px-2 py-1 text-xs font-bold ${scoreTone(selectedApp.score)}`}
                     >
                       {selectedApp.score}
                     </span>{' '}
                     | Status:{' '}
                     <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        background: decisionTone(selectedApp.decision).bg,
-                        color: decisionTone(selectedApp.decision).color,
-                        fontWeight: 700,
-                      }}
+                      className={`rounded-full px-2 py-1 text-xs font-bold ${decisionTone(selectedApp.decision).tone}`}
                     >
                       {decisionTone(selectedApp.decision).label}
                     </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn btn-secondary" type="button" onClick={() => openReview(selectedApp)}>
-                    Document Review
+                <div className="flex flex-wrap gap-2">
+                  <button className={primaryBtnCls} type="button" onClick={() => openReview(selectedApp)}>
+                    Review Application
                   </button>
                   <button
-                    className="btn btn-primary"
+                    className={ghostBtnCls}
                     type="button"
                     disabled={selectedApp.decision !== 'approved'}
                     onClick={() => onSchedule(selectedApp.id)}
                   >
-                    Schedule Pickup
-                  </button>
-                  <button className="btn btn-secondary" type="button" onClick={() => openReview(selectedApp)}>
-                    Assign Vehicle
+                    {selectedApp.pickupSchedule?.date ? 'Edit Pickup Slot' : 'Set Pickup Slot'}
                   </button>
                 </div>
               </div>
-              <div style={{ marginTop: 8, fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>
+              <div className="mt-2 text-sm text-slate-500">
                 {selectedApp.decision === 'approved'
                   ? 'Application approved - pickup scheduling enabled.'
                   : 'Select review outcome first. Pickup scheduling is disabled until application is approved.'}
               </div>
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 6 }}>Review Acknowledgement Trail</div>
+              <div className="mt-2.5">
+                <div className="mb-1.5 text-xs text-slate-500">Review Acknowledgement Trail</div>
                 {(selectedApp.reviewLog || []).length > 0 ? (
                   (selectedApp.reviewLog || []).slice().reverse().slice(0, 5).map((item, idx) => (
-                    <div key={`${selectedApp.id}-review-${idx}`} style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)', padding: '4px 0' }}>
+                    <div key={`${selectedApp.id}-review-${idx}`} className="py-1 text-sm text-slate-600">
                       {new Date(item.at).toLocaleString('id-ID')} - {item.by} -{' '}
                       <span
-                        style={{
-                          padding: '1px 6px',
-                          borderRadius: 6,
-                          background: decisionTone(item.decision).bg,
-                          color: decisionTone(item.decision).color,
-                          fontWeight: 700,
-                        }}
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${decisionTone(item.decision).tone}`}
                       >
                         {decisionTone(item.decision).label}
                       </span>{' '}
@@ -574,26 +745,26 @@ export function RtoView() {
                     </div>
                   ))
                 ) : (
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>No reviews yet.</div>
+                  <div className="text-sm text-slate-500">No reviews yet.</div>
                 )}
               </div>
             </div>
           )}
 
-          <div className="vl-pagination">
-            <span className="vl-page-info">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-600">
               Page {currentAppPage} / {appTotalPages} ({filteredApps.length} apps)
             </span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <button
-                className="vl-page-btn"
+                className={ghostBtnCls}
                 disabled={currentAppPage <= 1}
                 onClick={() => setAppPage((p) => Math.max(1, Math.min(currentAppPage, p) - 1))}
               >
                 Prev
               </button>
               <button
-                className="vl-page-btn"
+                className={ghostBtnCls}
                 disabled={currentAppPage >= appTotalPages}
                 onClick={() => setAppPage((p) => Math.min(appTotalPages, Math.min(currentAppPage, p) + 1))}
               >
@@ -605,60 +776,128 @@ export function RtoView() {
       )}
 
       {tab === 'pickup' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <table className="vl-table">
-            <thead>
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-4">
+            <Select
+              variant="legacy"
+              value={pickupFilter}
+              onChange={(e) => {
+                setPickupFilter(e.target.value)
+                setPickupPage(1)
+              }}
+            >
+              <option value="all">All Pickup Dates</option>
+              <option value="today">Today</option>
+              <option value="overdue">Overdue</option>
+              <option value="upcoming">Upcoming</option>
+            </Select>
+            <Select
+              variant="legacy"
+              value={pickupLocationFilter}
+              onChange={(e) => {
+                setPickupLocationFilter(e.target.value)
+                setPickupPage(1)
+              }}
+            >
+              <option value="all">All Locations</option>
+              {pickupLocations.map((location) => (
+                <option key={location} value={location}>
+                  {location}
+                </option>
+              ))}
+            </Select>
+            <Select
+              variant="legacy"
+              value={pickupSlotFilter}
+              onChange={(e) => {
+                setPickupSlotFilter(e.target.value)
+                setPickupPage(1)
+              }}
+            >
+              <option value="all">All Time Slots</option>
+              {pickupSlots.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
+                </option>
+              ))}
+            </Select>
+            <Select
+              variant="legacy"
+              value={pickupStatusFilter}
+              onChange={(e) => {
+                setPickupStatusFilter(e.target.value)
+                setPickupPage(1)
+              }}
+            >
+              <option value="all">All Pickup Status</option>
+              <option value="planned">Planned</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="rescheduled">Rescheduled</option>
+              <option value="completed">Completed</option>
+              <option value="no_show">No Show</option>
+            </Select>
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="min-w-[900px] w-full border-collapse text-sm text-slate-700">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th>APP</th>
-                <th>APPLICANT</th>
-                <th>VEHICLE</th>
-                <th>DATE</th>
-                <th>TIME</th>
-                <th>LOCATION</th>
-                <th>ACTIONS</th>
+                <th className="px-3 py-2 text-left">APP</th>
+                <th className="px-3 py-2 text-left">APPLICANT</th>
+                <th className="px-3 py-2 text-left">VEHICLE</th>
+                <th className="px-3 py-2 text-left">DATE</th>
+                <th className="px-3 py-2 text-left">TIME</th>
+                <th className="px-3 py-2 text-left">LOCATION</th>
+                <th className="px-3 py-2 text-left">STATUS</th>
+                <th className="px-3 py-2 text-left">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
               {pickupRows.length > 0 ? (
                 pickupRows.map((app) => (
-                  <tr key={app.id}>
-                    <td>{app.id}</td>
-                    <td>{app.userName}</td>
-                    <td>{app.assignedVehicleId || '-'}</td>
-                    <td>{app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toLocaleDateString('id-ID') : '-')}</td>
-                    <td>{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</td>
-                    <td>{app.pickupSchedule?.location || getProgramLocation(app.programId)}</td>
-                    <td>
-                      <button className="vl-pill" type="button" onClick={() => onSchedule(app.id)}>
-                        Confirm Slot
+                  <tr key={app.id} className="border-t border-slate-100">
+                    <td className="px-3 py-2">{app.id}</td>
+                    <td className="px-3 py-2">{app.userName}</td>
+                    <td className="px-3 py-2">{app.assignedVehicleId || '-'}</td>
+                    <td className="px-3 py-2">{app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toLocaleDateString('id-ID') : '-')}</td>
+                    <td className="px-3 py-2">{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</td>
+                    <td className="px-3 py-2">{app.pickupSchedule?.location || getProgramLocation(app.programId)}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'planned')}`}>
+                        {String(app.pickupSchedule?.status || 'planned').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <button className={pillCls} type="button" onClick={() => onSchedule(app.id)}>
+                        {app.pickupSchedule?.date ? 'Edit Slot' : 'Set Slot'}
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
                     No pickups scheduled yet.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+          </div>
 
-          <div className="vl-pagination">
-            <span className="vl-page-info">
-              Page {currentPickupPage} / {pickupTotalPages} ({pickup.length} pickups)
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-600">
+              Page {currentPickupPage} / {pickupTotalPages} ({filteredPickup.length} pickups)
             </span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="flex gap-2">
               <button
-                className="vl-page-btn"
+                className={ghostBtnCls}
                 disabled={currentPickupPage <= 1}
                 onClick={() => setPickupPage((p) => Math.max(1, Math.min(currentPickupPage, p) - 1))}
               >
                 Prev
               </button>
               <button
-                className="vl-page-btn"
+                className={ghostBtnCls}
                 disabled={currentPickupPage >= pickupTotalPages}
                 onClick={() => setPickupPage((p) => Math.min(pickupTotalPages, Math.min(currentPickupPage, p) + 1))}
               >
@@ -671,79 +910,74 @@ export function RtoView() {
 
       {(tab === 'score' || tab === 'wa') && (
         <>
-          <p style={{ fontSize: 'var(--text-base)', color: 'var(--t2)' }}>
+          <p className="text-sm text-slate-600">
             This migration-safe RTO panel preserves legacy keys while writing a versioned payload.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div>
-              <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)', marginBottom: 6 }}>Score Config</h3>
+              <h3 className="mb-1.5 text-sm text-slate-600">Score Config</h3>
               <textarea
-                className="form-control"
-                style={{ height: 280, fontFamily: 'var(--font-mono)' }}
+                className={`${formControlCls} h-[280px] font-mono`}
                 value={scoreJson}
                 onChange={(e) => setScoreJson(e.target.value)}
               />
             </div>
             <div>
-              <h3 style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)', marginBottom: 6 }}>WA Templates</h3>
+              <h3 className="mb-1.5 text-sm text-slate-600">WA Templates</h3>
               <textarea
-                className="form-control"
-                style={{ height: 280, fontFamily: 'var(--font-mono)' }}
+                className={`${formControlCls} h-[280px] font-mono`}
                 value={waJson}
                 onChange={(e) => setWaJson(e.target.value)}
               />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              className="btn btn-primary"
-              onClick={save}
-            >
+          <div className="flex items-center gap-2.5">
+            <button className={primaryBtnCls} onClick={save}>
               Save Compatibility Config
             </button>
-            <span style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }}>{message}</span>
+            <span className="text-sm text-slate-600">{message}</span>
           </div>
         </>
       )}
 
-      <div className={`modal-overlay ${createModal.open ? 'active' : ''}`}>
-        <div className="modal">
+      <div className={`${createModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
           <h2>Add New Renter</h2>
-          <div className="form-group">
-            <label>Applicant Name</label>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Applicant Name</label>
             <input
-              className="form-control"
+              className={formControlCls}
               value={createModal.userName}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, userName: e.target.value }))}
             />
           </div>
-          <div className="form-group">
-            <label>Program / Scheme</label>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Program / Scheme</label>
             <select
-              className="form-control"
+              className={formControlCls}
               value={createModal.programId}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, programId: e.target.value }))}
             >
               <option value="">Select Program</option>
               {programs.map((program) => (
                 <option key={program.id} value={program.id}>
-                  {program.name} ({program.id})
+                  {`${program.name || program.shortName || program.id} • ${program.type || '-'} (${program.id})`}
                 </option>
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Score</label>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Score</label>
             <input
-              className="form-control"
+              className={formControlCls}
               value={createModal.score}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, score: e.target.value }))}
             />
           </div>
-          <div className="form-group">
-            <label>Decision</label>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Decision</label>
             <select
-              className="form-control"
+              className={formControlCls}
               value={createModal.decision}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, decision: e.target.value }))}
             >
@@ -751,13 +985,13 @@ export function RtoView() {
               <option value="review">Review</option>
               <option value="pending_docs">Needs Docs</option>
               <option value="approved">Approved</option>
-              <option value="declined">Declined</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>Assigned Vehicle (optional)</label>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Assigned Vehicle (optional)</label>
             <select
-              className="form-control"
+              className={formControlCls}
               value={createModal.assignedVehicleId}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, assignedVehicleId: e.target.value }))}
             >
@@ -769,49 +1003,50 @@ export function RtoView() {
               ))}
             </select>
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: false }))}>
+          <div className="flex justify-end gap-2">
+            <button className={ghostBtnCls} type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: false }))}>
               Cancel
             </button>
-            <button className="btn btn-primary" type="button" onClick={submitCreate}>
+            <button className={primaryBtnCls} type="button" onClick={submitCreate}>
               Add Renter
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`modal-overlay ${reviewModal.open ? 'active' : ''}`}>
-        <div className="modal" style={{ maxWidth: 900, width: '95vw' }}>
+      <div className={`${reviewModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-[95vw] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
           <h2>Application Review</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div className="form-group">
-              <label>Reviewer</label>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-semibold text-slate-600">Reviewer</label>
               <input
-                className="form-control"
+                className={formControlCls}
                 value={reviewModal.reviewer}
                 onChange={(e) => setReviewModal((prev) => ({ ...prev, reviewer: e.target.value }))}
               />
             </div>
-            <div className="form-group">
-              <label>Review Decision</label>
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-semibold text-slate-600">Review Decision</label>
               <select
-                className="form-control"
+                className={formControlCls}
                 value={reviewModal.nextDecision}
                 onChange={(e) => setReviewModal((prev) => ({ ...prev, nextDecision: e.target.value }))}
               >
                 <option value="review">In Review</option>
                 <option value="pending_docs">Needs More Docs</option>
                 <option value="approved">Accept</option>
-                <option value="declined">Reject</option>
+                <option value="rejected">Reject</option>
               </select>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Assign Vehicle (if accepted)</label>
+          <div className={`mb-3 ${reviewModal.nextDecision === 'approved' ? '' : 'opacity-60'}`}>
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Assign Vehicle (if accepted)</label>
             <select
-              className="form-control"
+              className={formControlCls}
               value={reviewModal.assignedVehicleId}
+              disabled={reviewModal.nextDecision !== 'approved'}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, assignedVehicleId: e.target.value }))}
             >
               <option value="">Select Vehicle</option>
@@ -823,40 +1058,44 @@ export function RtoView() {
                   </option>
                 ))}
             </select>
+            {reviewModal.nextDecision !== 'approved' ? (
+              <div className="mt-1 text-xs text-slate-500">Vehicle assignment is enabled only for approved applications.</div>
+            ) : null}
           </div>
 
-          <div className="form-group">
-            <label>Documents Viewer</label>
-            <div style={{ marginBottom: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <span className="vl-pill" style={{ background: 'var(--dw1)', color: 'var(--dw)' }}>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Documents Viewer</label>
+            <div className="mb-2 flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">
                 Missing Docs: {(reviewModal.documents || []).filter((item) => item.status === 'missing').length}
               </span>
-              <button className="vl-pill" type="button" onClick={markAllMissing}>
+              <button className={pillCls} type="button" onClick={markAllMissing}>
                 Mark Missing Docs
               </button>
-              <button className="vl-pill" type="button" onClick={markAllSubmitted}>
+              <button className={pillCls} type="button" onClick={markAllSubmitted}>
                 Mark All Submitted
               </button>
             </div>
-            <table className="vl-table">
-              <thead>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="min-w-[740px] w-full border-collapse text-sm text-slate-700">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th>DOCUMENT</th>
-                  <th>PREVIEW</th>
-                  <th>STATUS</th>
-                  <th>REVIEW</th>
+                  <th className="px-3 py-2 text-left">DOCUMENT</th>
+                  <th className="px-3 py-2 text-left">PREVIEW</th>
+                  <th className="px-3 py-2 text-left">STATUS</th>
+                  <th className="px-3 py-2 text-left">REVIEW</th>
                 </tr>
               </thead>
               <tbody>
                 {(reviewModal.documents || []).map((document, idx) => (
-                  <tr key={`${reviewModal.appId}-${document.id}`}>
-                    <td>{document.name}</td>
-                    <td>
+                  <tr key={`${reviewModal.appId}-${document.id}`} className="border-t border-slate-100">
+                    <td className="px-3 py-2">{document.name}</td>
+                    <td className="px-3 py-2">
                       <img
                         src={document.img || buildDocPreviewSrc(document.name, document.status)}
                         alt={document.name}
                         title={`Open ${document.name}`}
-                        style={{ width: 66, height: 44, borderRadius: 6, border: '1px solid var(--b1)', objectFit: 'cover', cursor: 'pointer' }}
+                        className="h-11 w-16 cursor-pointer rounded-md border border-slate-200 object-cover"
                         onClick={() =>
                           setDocPreview({
                             open: true,
@@ -866,21 +1105,16 @@ export function RtoView() {
                         }
                       />
                     </td>
-                    <td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          textTransform: 'uppercase',
-                          background: docTone(document.status).bg,
-                          color: docTone(document.status).color,
-                        }}
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${docTone(document.status)}`}
                       >
                         {document.status}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-3 py-2">
                       <select
-                        className="form-control"
+                        className={formControlCls}
                         value={document.status}
                         onChange={(e) =>
                           setReviewModal((prev) => ({
@@ -905,52 +1139,35 @@ export function RtoView() {
                 ))}
               </tbody>
             </table>
-          </div>
-
-          <div className="card" style={{ padding: 10, marginBottom: 10 }}>
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 6 }}>Legacy Review Quick Actions</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button className="vl-pill" type="button" onClick={() => setReviewDecision('review')}>
-                Move to Review
-              </button>
-              <button className="vl-pill" type="button" onClick={() => setReviewDecision('pending_docs')}>
-                Needs More Docs
-              </button>
-              <button className="vl-pill" type="button" onClick={() => setReviewDecision('declined')}>
-                Reject Application
-              </button>
-              <button className="vl-pill" type="button" onClick={() => setReviewDecision('approved')}>
-                Accept Application
-              </button>
             </div>
           </div>
 
-          <div className="card" style={{ padding: 10, marginBottom: 10 }}>
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', marginBottom: 6 }}>Score Review (Legacy-style Manual Override)</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 6, marginBottom: 8 }}>
-              <div className="vl-pill">Base: {selectedReviewApp?.score ?? '-'}</div>
-              <div className="vl-pill">Docs: {(reviewModal.documents || []).filter((d) => d.status === 'submitted').length}</div>
-              <div className="vl-pill">Missing: {(reviewModal.documents || []).filter((d) => d.status === 'missing').length}</div>
-              <div className="vl-pill">
+          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-1.5 text-xs text-slate-500">Score Review (Legacy-style Manual Override)</div>
+            <div className="mb-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <div className={pillCls}>Base: {selectedReviewApp?.score ?? '-'}</div>
+              <div className={pillCls}>Docs: {(reviewModal.documents || []).filter((d) => d.status === 'submitted').length}</div>
+              <div className={pillCls}>Missing: {(reviewModal.documents || []).filter((d) => d.status === 'missing').length}</div>
+              <div className={pillCls}>
                 Final: {clampScore(Number(selectedReviewApp?.score || 0) + Number(reviewModal.scoreAdjust || 0))}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 8 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Manual Score Adj.</label>
+            <div className="grid grid-cols-1 gap-2 lg:grid-cols-[180px_minmax(0,1fr)]">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-600">Manual Score Adj.</label>
                 <input
                   type="number"
-                  className="form-control"
+                  className={formControlCls}
                   min={-30}
                   max={30}
                   value={reviewModal.scoreAdjust}
                   onChange={(e) => setReviewModal((prev) => ({ ...prev, scoreAdjust: Number(e.target.value || 0) }))}
                 />
               </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label>Score Override Note</label>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-600">Score Override Note</label>
                 <input
-                  className="form-control"
+                  className={formControlCls}
                   value={reviewModal.scoreNote}
                   onChange={(e) => setReviewModal((prev) => ({ ...prev, scoreNote: e.target.value }))}
                   placeholder="Reason for score adjustment."
@@ -959,12 +1176,11 @@ export function RtoView() {
             </div>
           </div>
 
-          {reviewModal.nextDecision === 'declined' && (
-            <div className="form-group">
-              <label>Reject Reason</label>
+          {reviewModal.nextDecision === 'rejected' && (
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-semibold text-slate-600">Reject Reason</label>
               <textarea
-                className="form-control"
-                style={{ minHeight: 80 }}
+                className={`${formControlCls} min-h-20`}
                 value={reviewModal.rejectReason}
                 onChange={(e) =>
                   setReviewModal((prev) => ({
@@ -983,13 +1199,13 @@ export function RtoView() {
           )}
 
           {reviewModal.nextDecision === 'pending_docs' && (
-            <div className="form-group">
-              <label>Documents to Re-submit</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6 }}>
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-semibold text-slate-600">Documents to Re-submit</label>
+              <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-2">
                 {(reviewModal.documents || []).map((document) => {
                   const checked = (reviewModal.requiredDocs || []).includes(document.name)
                   return (
-                    <label key={`required-${document.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--text-sm)' }}>
+                    <label key={`required-${document.id}`} className="flex items-center gap-2 text-sm text-slate-700">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -1019,12 +1235,12 @@ export function RtoView() {
           )}
 
           {reviewModal.nextDecision === 'review' && (
-            <div className="form-group">
-              <label>Extra Review Time (days)</label>
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-semibold text-slate-600">Extra Review Time (days)</label>
               <input
                 type="number"
                 min={1}
-                className="form-control"
+                className={formControlCls}
                 value={reviewModal.reviewEtaDays}
                 onChange={(e) =>
                   setReviewModal((prev) => ({
@@ -1041,18 +1257,17 @@ export function RtoView() {
             </div>
           )}
 
-          <div className="form-group">
-            <label>WhatsApp Template Preview</label>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">WhatsApp Template Preview</label>
             <textarea
-              className="form-control"
-              style={{ minHeight: 120, fontFamily: 'var(--font-mono)' }}
+              className={`${formControlCls} min-h-[120px] font-mono`}
               value={reviewModal.waTemplate}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, waTemplate: e.target.value }))}
             />
             {reviewApplicantPhone ? (
-              <div style={{ marginTop: 8 }}>
+              <div className="mt-2">
                 <a
-                  className="vl-pill"
+                  className={pillCls}
                   href={`https://wa.me/${reviewApplicantPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(reviewModal.waTemplate || '')}`}
                   target="_blank"
                   rel="noreferrer"
@@ -1063,78 +1278,62 @@ export function RtoView() {
             ) : null}
           </div>
 
-          <div className="form-group">
-            <label>Review Notes / Acknowledgement</label>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Review Notes / Acknowledgement</label>
             <textarea
-              className="form-control"
-              style={{ minHeight: 90 }}
+              className={`${formControlCls} min-h-[90px]`}
               value={reviewModal.note}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, note: e.target.value }))}
               placeholder="Acknowledge review process, findings, and required next steps."
             />
           </div>
 
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setReviewModal((prev) => ({ ...prev, open: false }))}>
+          <div className="flex justify-end gap-2">
+            <button className={ghostBtnCls} type="button" onClick={() => setReviewModal((prev) => ({ ...prev, open: false }))}>
               Cancel
             </button>
-            <button className="btn btn-primary" type="button" onClick={submitReview}>
+            <button className={primaryBtnCls} type="button" onClick={submitReview}>
               Save Review
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`modal-overlay ${docPreview.open ? 'active' : ''}`}>
-        <div className="modal" style={{ maxWidth: 980, width: '95vw' }}>
+      <div className={`${docPreview.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="w-[95vw] max-w-5xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
           <h2>Document Preview - {docPreview.title}</h2>
-          <div style={{ border: '1px solid var(--b1)', borderRadius: 10, overflow: 'hidden', background: '#111' }}>
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-black">
             <img src={docPreview.src} alt={docPreview.title} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setDocPreview({ open: false, src: '', title: '' })}>
+          <div className="mt-3 flex justify-end">
+            <button className={ghostBtnCls} type="button" onClick={() => setDocPreview({ open: false, src: '', title: '' })}>
               Close
             </button>
           </div>
         </div>
       </div>
 
-      <div className={`modal-overlay ${scheduleModal.open ? 'active' : ''}`}>
-        <div className="modal">
+      <div className={`${scheduleModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
           <h2>Schedule Pickup Confirmation</h2>
 
-          <div
-            className="card"
-            style={{
-              padding: 12,
-              border: '2px solid color-mix(in srgb, var(--ac) 30%, transparent)',
-              background: 'var(--s2)',
-              marginBottom: 12,
-            }}
-          >
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--ac)', fontWeight: 800, marginBottom: 6 }}>
+          <div className="mb-3 rounded-xl border-2 border-cyan-200 bg-slate-50 p-3">
+            <div className="mb-1.5 text-sm font-extrabold text-cyan-700">
               ADMIN SCHEDULING ASSISTANT
             </div>
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)', marginBottom: 10 }}>
+            <div className="mb-2 text-sm text-slate-600">
               Help driver select pickup date & time.
             </div>
 
-            <div style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--t3)', marginBottom: 6 }}>PICKUP DATE</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,minmax(0,1fr))', gap: 6, marginBottom: 12 }}>
+            <div className="mb-1 text-xs font-extrabold text-slate-500">PICKUP DATE</div>
+            <div className="mb-3 grid grid-cols-2 gap-1.5 md:grid-cols-5">
               {dateChoices.map((date) => {
                 const active = date === scheduleModal.date
                 return (
                   <button
                     key={date}
                     type="button"
-                    className="vl-pill"
-                    style={{
-                      justifyContent: 'center',
-                      fontSize: 'var(--text-xs)',
-                      border: active ? '1px solid var(--ac)' : undefined,
-                      background: active ? 'color-mix(in srgb, var(--ac) 20%, transparent)' : undefined,
-                      color: active ? 'var(--ac)' : undefined,
-                    }}
+                    className={`${pillCls} justify-center text-xs ${active ? 'border-cyan-300 bg-cyan-50 text-cyan-700' : ''}`}
                     onClick={() => setScheduleModal((prev) => ({ ...prev, date }))}
                   >
                     {dateChipLabel(date)}
@@ -1143,22 +1342,15 @@ export function RtoView() {
               })}
             </div>
 
-            <div style={{ fontSize: 'var(--text-xs)', fontWeight: 800, color: 'var(--t3)', marginBottom: 6 }}>AVAILABLE SLOTS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 6 }}>
+            <div className="mb-1 text-xs font-extrabold text-slate-500">AVAILABLE SLOTS</div>
+            <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
               {timeSlots.map((slot) => {
                 const active = slot === scheduleModal.time
                 return (
                   <button
                     key={slot}
                     type="button"
-                    className="vl-pill"
-                    style={{
-                      justifyContent: 'center',
-                      fontSize: 'var(--text-xs)',
-                      border: active ? '1px solid var(--ac)' : undefined,
-                      background: active ? 'color-mix(in srgb, var(--ac) 20%, transparent)' : undefined,
-                      color: active ? 'var(--ac)' : undefined,
-                    }}
+                    className={`${pillCls} justify-center text-xs ${active ? 'border-cyan-300 bg-cyan-50 text-cyan-700' : ''}`}
                     onClick={() => setScheduleModal((prev) => ({ ...prev, time: slot }))}
                   >
                     {slot}
@@ -1168,24 +1360,38 @@ export function RtoView() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Pickup Location (by program)</label>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Location (by program)</label>
             <input
-              className="form-control"
+              className={formControlCls}
               value={scheduleModal.location}
               onChange={(e) => setScheduleModal((prev) => ({ ...prev, location: e.target.value }))}
             />
           </div>
-          <div className="modal-actions">
-            <button className="btn btn-secondary" type="button" onClick={() => setScheduleModal((prev) => ({ ...prev, open: false }))}>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Status</label>
+            <select
+              className={formControlCls}
+              value={scheduleModal.status}
+              onChange={(e) => setScheduleModal((prev) => ({ ...prev, status: e.target.value }))}
+            >
+              <option value="planned">Planned</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="rescheduled">Rescheduled</option>
+              <option value="completed">Completed</option>
+              <option value="no_show">No Show</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button className={ghostBtnCls} type="button" onClick={() => setScheduleModal((prev) => ({ ...prev, open: false }))}>
               Cancel
             </button>
-            <button className="btn btn-primary" type="button" onClick={submitSchedule}>
+            <button className={primaryBtnCls} type="button" onClick={submitSchedule}>
               Confirm Schedule: {scheduleModal.date} @ {scheduleModal.time}
             </button>
           </div>
         </div>
       </div>
-    </section>
+    </PageShell>
   )
 }

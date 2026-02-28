@@ -1,41 +1,64 @@
-# CASAN RTO — Operator Skills & Capabilities
+# CASAN Operations - Skills Matrix
 
-This document defines the core skills and operational capabilities enabled by the CASAN RTO Dashboard. It serves as a competency framework for platform operators.
+This document defines operator competencies for effective daily usage of the dashboard.
 
----
+## 1) Core Operational Skills
 
-## 🛠️ Operational Skill Domains
+### Application Review Operations
 
-### 🗺️ 1. Vehicle Monitoring & Telemetry
-Operators maintain real-time situational awareness of the entire vehicle inventory.
-- **Skill (Industrial Grade):** Vehicle Inventory Management — Auditing high-density vehicle logs and unit health with standardized 10-item precision.
-- **Skill (Renter Management):** Manual Onboarding — Registering new renters via the prominent "Add Renter" workflow with unique identity enforcement.
-- **Skill (Telemetry):** Maps & Observability — Interpreting bearing, speed, and movement states via the vertical panoramic interface.
+- Evaluate document completeness and quality.
+- Apply correct review decision (`approved`, `rejected`, `pending_docs`, `review`).
+- Record review note and score adjustment rationale.
+- Enforce review guardrails before finalizing decision:
+  - approved -> assigned vehicle required
+  - pending docs -> required docs list required
+  - rejected -> reason required
+- Schedule pickup only for approved applications.
+- Maintain pickup lifecycle updates (`planned`, `confirmed`, `rescheduled`, `completed`, `no_show`).
 
-### ⚖️ 2. KYC & Risk Management
-Operators use data correlation to vet riders and minimize asset exposure.
-- **Skill:** Profile Auditing — Reviewing rider behavioral history against risk labels.
-- **Skill:** Behavioral Correlation — Linking incidents (e.g., unauthorized movement) to user risk profiles.
-- **Skill:** NIK/Identity Verification — Managing the funnel of new user onboarding and validation.
+### Program Administration
 
-### 🏗️ 3. Infrastructure & IoT Control
-Operators manage the health of the physical charging network and connected devices.
-- **Skill:** Hierarchical Vehicle Monitoring — Navigating from Station → Device → Socket views.
-- **Skill:** Connectivity Auditing — Troubleshooting IMEI/SIM status and carrier data consumption.
-- **Skill:** IoT Troubleshooting — Identifying hardware-level downtime vs. network-level latency.
+- Configure program economics (price, grace, commission type/value).
+- Interpret program-level renter and vehicle distribution.
+- Maintain accurate assignment and eligibility context.
 
-### 💰 4. Financial & Collection Oversight
-Operators manage the revenue lifecycle and the hire-purchase (RTO) progress.
-- **Skill:** Revenue Auditing — Monitoring paid vs. pending vs. failed transaction streams with exact CASAN Fee attribution.
-- **Skill:** Collection Maturity Tracking — Analyzing fleet-wide equity recovery and RTO progress.
-- **Skill:** Program Logic Governance — Managing price-per-day, grace periods, and dual-mode commission settings (% vs Fixed).
+### GPS and Fleet Control
 
----
+- Register and maintain GPS devices with or without SIM.
+- Assign GPS to the correct unbound vehicle.
+- Monitor SIM lifecycle (number, expiry, assignment state).
+- Use filters for assignment, brand, model, and operational status.
 
-## 🎓 Skill Progression Levels
+### Map and Movement Monitoring
 
-| Level | Profile | Key Responsibility |
-|-------|---------|--------------------|
-| **L1: Observer** | Read-only access | General fleet status monitoring and reporting. |
-| **L2: Operator** | Standard Write access | Managing KYC, handling collections, and GPS CRUD. |
-| **L3: Controller** | Advanced Admin access | Modifying program terms, financial rules, and system logic. |
+- Reconcile map markers with bottom movement list.
+- Investigate stale pings and status anomalies.
+- Validate immobilized behavior and flag movement violations.
+
+### Finance and Collections Visibility
+
+- Track transaction outcomes and CASAN fee signals.
+- Review trend shifts per program and take operational follow-up actions.
+
+## 2) Proficiency Levels
+
+| Level | Role | Capability |
+|---|---|---|
+| L1 | Viewer | Reads dashboards and escalates anomalies. |
+| L2 | Operator | Handles daily CRUD, review workflows, and scheduling. |
+| L3 | Senior Operator | Manages policy decisions, exceptions, and recovery flows. |
+| L4 | Admin | Owns program configuration and release readiness checks. |
+
+## 3) Operational Guardrails
+
+- Never schedule pickup for non-approved applications.
+- Never bind one vehicle to multiple GPS devices.
+- Always provide reviewer identity and decision context.
+- Treat missing user/program links as integrity incidents and fix immediately.
+
+## 4) Suggested Enablement
+
+- Weekly review calibration for application decisions.
+- Monthly drill for GPS incident response and stale telemetry handling.
+- Quarterly refresher for program economics and commission governance.
+

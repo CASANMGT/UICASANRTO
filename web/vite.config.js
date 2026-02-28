@@ -8,10 +8,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/react/jsx-runtime.js'),
+    },
+  },
   server: {
     fs: {
       // Allow loading legacy scripts from the project root during migration.
-      allow: [path.resolve(__dirname, '..')],
+      allow: [path.resolve(__dirname, '..'), path.resolve('C:/Users/claux/Koslock')],
     },
   },
 })

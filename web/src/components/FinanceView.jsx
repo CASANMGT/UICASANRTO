@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 import { getFinanceSnapshot } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
+import { DataPanel, FilterBar, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { Select } from './ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 function formatCurrency(value) {
   return `Rp ${Math.round(value || 0).toLocaleString('id-ID')}`
@@ -25,111 +29,119 @@ export function FinanceView() {
   }
 
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+    <PageShell className="flex flex-col gap-4">
+      <PageHeader className="mb-1 items-center">
         <div>
-          <h2 style={{ margin: '0 0 4px' }}>Finance Overview</h2>
-          <div style={{ color: 'var(--t3)', fontSize: 'var(--text-lg)' }}>Revenue streams and transaction history</div>
+          <PageTitle className="mb-1">Finance Overview</PageTitle>
+          <div className="text-sm text-slate-500">Revenue streams and transaction history</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <label htmlFor="programFilter" style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>
+        <PageMeta>{data.transactions.length} Records</PageMeta>
+      </PageHeader>
+
+      <StatsGrid>
+        <StatCard label="Total Revenue" value={formatCurrency(data.stats.revenue)} valueClassName="text-emerald-600" />
+        <StatCard label="Partner Payout" value={formatCurrency(data.stats.partner)} valueClassName="text-violet-600" />
+        <StatCard label="CASAN Fees" value={formatCurrency(data.stats.casan)} valueClassName="text-cyan-600" />
+        <StatCard label="Outstanding" value={formatCurrency(data.stats.outstanding)} valueClassName="text-rose-600" />
+      </StatsGrid>
+
+      <FilterBar className="lg:grid-cols-4">
+        <div className="flex items-center gap-2 lg:col-span-2">
+          <label htmlFor="programFilter" className="text-sm text-slate-500">
             Filter by Program:
           </label>
-          <select id="programFilter" className="form-control" style={{ width: 220 }} value={programFilter} onChange={(e) => onProgramChange(e.target.value)}>
+          <Select
+            id="programFilter"
+            variant="legacy"
+            className="w-[220px]"
+            value={programFilter}
+            onChange={(e) => onProgramChange(e.target.value)}
+          >
             <option value="all">All Programs</option>
             {data.programs.map((program) => (
               <option key={program.id} value={program.id}>
-                {program.name}
+                {`${program.name || program.shortName || program.id} • ${program.type || '-'}`}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
-      </div>
+      </FilterBar>
 
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-        <Card label="Total Revenue" value={formatCurrency(data.stats.revenue)} color="var(--g)" sub="Gross Volume" />
-        <Card label="Partner Payout" value={formatCurrency(data.stats.partner)} color="var(--p)" sub="After Fees" />
-        <Card label="CASAN Fees" value={formatCurrency(data.stats.casan)} color="var(--ac)" sub="Platform Share" />
-        <Card label="Outstanding" value={formatCurrency(data.stats.outstanding)} color="var(--c-danger)" sub="Potential Loss" />
-      </div>
-
-      <div className="card" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>Recent Transactions</h3>
-          <span style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>{data.transactions.length} records</span>
+      <DataPanel className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <h3 className="m-0 text-base font-bold text-slate-900">Recent Transactions</h3>
+          <span className="text-sm text-slate-500">{data.transactions.length} records</span>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-base)', minWidth: 520 }}>
-            <thead style={{ background: 'var(--s2)', color: 'var(--t3)' }}>
-              <tr style={{ textAlign: 'left' }}>
-                <th style={{ padding: '10px 12px' }}>TX ID</th>
-                <th style={{ padding: '10px 12px' }}>DATE & TIME</th>
-                <th style={{ padding: '10px 12px' }}>VEHICLE</th>
-                <th style={{ padding: '10px 12px' }}>USER / PHONE</th>
-                <th style={{ padding: '10px 12px' }}>PROGRAM</th>
-                <th style={{ padding: '10px 12px' }}>METHOD</th>
-                <th style={{ padding: '10px 12px', color: 'var(--ac)' }}>CASAN FEE</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right' }}>AMOUNT</th>
-                <th style={{ padding: '10px 12px' }}>STATUS</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="overflow-x-auto">
+          <Table density="legacy" className="min-w-[920px]">
+            <TableHeader tone="legacy" className="text-left">
+              <TableRow tone="legacy">
+                <TableHead>TX ID</TableHead>
+                <TableHead>DATE & TIME</TableHead>
+                <TableHead>VEHICLE</TableHead>
+                <TableHead>USER / PHONE</TableHead>
+                <TableHead>PROGRAM</TableHead>
+                <TableHead>METHOD</TableHead>
+                <TableHead className="text-cyan-700">CASAN FEE</TableHead>
+                <TableHead className="text-right">AMOUNT</TableHead>
+                <TableHead>STATUS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pageRows.length > 0 ? (
                 pageRows.map((tx) => (
-                  <tr key={tx.id + tx.date} style={{ borderBottom: '1px solid var(--s3)' }}>
-                    <td style={{ padding: '10px 12px', fontFamily: "'IBM Plex Mono'" }}>{tx.id}</td>
-                    <td style={{ padding: '10px 12px' }}>{new Date(tx.date).toLocaleString('id-ID')}</td>
-                    <td style={{ padding: '10px 12px' }}>{tx.vehicleId}</td>
-                    <td style={{ padding: '10px 12px' }}>
+                  <TableRow key={tx.id + tx.date} tone="legacy">
+                    <TableCell className="font-mono text-xs">{tx.id}</TableCell>
+                    <TableCell>{new Date(tx.date).toLocaleString('id-ID')}</TableCell>
+                    <TableCell>{tx.vehicleId}</TableCell>
+                    <TableCell>
                       <div>{tx.customer || '-'}</div>
-                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{tx.customerPhone || '-'}</div>
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>{tx.program || tx.type || '-'}</td>
-                    <td style={{ padding: '10px 12px' }}>{tx.method || '-'}</td>
-                    <td style={{ padding: '10px 12px', color: 'var(--ac)' }}>{formatCurrency(tx.casanShare || 0)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: "'IBM Plex Mono'", fontWeight: 700 }}>
+                      <div className="text-xs text-slate-500">{tx.customerPhone || '-'}</div>
+                    </TableCell>
+                    <TableCell>{tx.program || tx.type || '-'}</TableCell>
+                    <TableCell>{tx.method || '-'}</TableCell>
+                    <TableCell className="font-semibold text-cyan-700">{formatCurrency(tx.casanShare || 0)}</TableCell>
+                    <TableCell className="text-right font-mono font-bold">
                       {formatCurrency(tx.amount)}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}>{(tx.status || '-').toUpperCase()}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell>{(tx.status || '-').toUpperCase()}</TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+                <TableRow tone="legacy">
+                  <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
                     No transactions for selected filter.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </DataPanel>
 
-      <div className="vl-pagination" style={{ borderTop: '1px solid var(--s3)', marginTop: 0 }}>
-        <span className="vl-page-info">
+      <PageFooter className="mt-1 border-t border-slate-200 pt-3">
+        <span className="text-sm font-semibold text-slate-600">
           Page {currentPage} / {totalPages} ({data.transactions.length} rows)
         </span>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="vl-page-btn" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}>
+        <div className="flex gap-2">
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
+          >
             Prev
-          </button>
-          <button className="vl-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}>
+          </Button>
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
+          >
             Next
-          </button>
+          </Button>
         </div>
-      </div>
-    </section>
-  )
-}
-
-function Card({ label, value, color, sub }) {
-  return (
-    <div className="card stat-card">
-      <h3>{label}</h3>
-      <div className="value" style={{ color }}>
-        {value}
-      </div>
-      <div className="sub">{sub}</div>
-    </div>
+      </PageFooter>
+    </PageShell>
   )
 }

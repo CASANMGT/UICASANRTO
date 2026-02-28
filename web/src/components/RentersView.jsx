@@ -1,23 +1,28 @@
 import { useMemo, useState } from 'react'
 import { getPrograms, getState } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { FilterBar, DataPanel, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { Select } from './ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 function scoreTone(score) {
   const value = Number(score || 0)
-  if (value >= 80) return { bg: 'var(--dg1)', color: 'var(--dg)' }
-  if (value >= 60) return { bg: 'var(--dac1)', color: 'var(--dac)' }
-  if (value >= 41) return { bg: 'var(--dw1)', color: 'var(--dw)' }
-  if (value >= 21) return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C' }
-  return { bg: 'var(--dd1)', color: 'var(--dd)' }
+  if (value >= 80) return 'bg-emerald-100 text-emerald-700'
+  if (value >= 60) return 'bg-cyan-100 text-cyan-700'
+  if (value >= 41) return 'bg-amber-100 text-amber-700'
+  if (value >= 21) return 'bg-orange-100 text-orange-700'
+  return 'bg-rose-100 text-rose-700'
 }
 
 function vehicleStatusTone(status) {
-  if (status === 'active') return { bg: 'var(--dg1)', color: 'var(--dg)', label: 'ACTIVE' }
-  if (status === 'grace') return { bg: 'var(--dw1)', color: 'var(--dw)', label: 'GRACE' }
-  if (status === 'immobilized') return { bg: 'var(--dd1)', color: 'var(--dd)', label: 'IMMOBILIZED' }
-  if (status === 'paused') return { bg: 'var(--dac1)', color: 'var(--dac)', label: 'PAUSED' }
-  if (status === 'available') return { bg: 'var(--s3)', color: 'var(--t2)', label: 'AVAILABLE' }
-  return { bg: 'var(--s3)', color: 'var(--t2)', label: String(status || '-').toUpperCase() }
+  if (status === 'active') return { tone: 'bg-emerald-100 text-emerald-700', label: 'ACTIVE' }
+  if (status === 'grace') return { tone: 'bg-amber-100 text-amber-700', label: 'GRACE' }
+  if (status === 'immobilized') return { tone: 'bg-rose-100 text-rose-700', label: 'IMMOBILIZED' }
+  if (status === 'paused') return { tone: 'bg-cyan-100 text-cyan-700', label: 'PAUSED' }
+  if (status === 'available') return { tone: 'bg-slate-100 text-slate-700', label: 'AVAILABLE' }
+  return { tone: 'bg-slate-100 text-slate-700', label: String(status || '-').toUpperCase() }
 }
 
 export function RentersView() {
@@ -63,17 +68,32 @@ export function RentersView() {
   const totalPages = Math.max(1, Math.ceil(renters.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   const pageRows = renters.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const statusStats = useMemo(() => {
+    const counts = { total: renters.length, active: 0, grace: 0, immobilized: 0 }
+    for (const item of renters) {
+      if (item.vehicle.status === 'active') counts.active += 1
+      if (item.vehicle.status === 'grace') counts.grace += 1
+      if (item.vehicle.status === 'immobilized') counts.immobilized += 1
+    }
+    return counts
+  }, [renters])
 
   return (
-    <section className="vl-container">
-      <div className="vl-header">
-        <h2 className="vl-title">Renters List</h2>
-        <div className="vl-count">{renters.length} Renters</div>
-      </div>
+    <PageShell>
+      <PageHeader>
+        <PageTitle>Renters List</PageTitle>
+        <PageMeta>{renters.length} Renters</PageMeta>
+      </PageHeader>
+      <StatsGrid>
+        <StatCard label="Total Renters" value={statusStats.total} />
+        <StatCard label="Active" value={statusStats.active} valueClassName="text-emerald-700" />
+        <StatCard label="Grace" value={statusStats.grace} valueClassName="text-amber-700" />
+        <StatCard label="Immobilized" value={statusStats.immobilized} valueClassName="text-rose-700" />
+      </StatsGrid>
 
-      <div className="vl-controls" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8 }}>
-        <input
-          className="vl-search"
+      <FilterBar>
+        <Input
+          variant="legacy"
           placeholder="Search renter, vehicle, phone, NIK..."
           value={search}
           onChange={(e) => {
@@ -81,8 +101,8 @@ export function RentersView() {
             setPage(1)
           }}
         />
-        <select
-          className="form-control"
+        <Select
+          variant="legacy"
           value={program}
           onChange={(e) => {
             setProgram(e.target.value)
@@ -92,12 +112,12 @@ export function RentersView() {
           <option value="all">All Programs</option>
           {programs.map((item) => (
             <option key={item.id} value={item.id}>
-              {item.shortName || item.name}
+              {`${item.name || item.shortName || item.id} • ${item.type || '-'}`}
             </option>
           ))}
-        </select>
-        <select
-          className="form-control"
+        </Select>
+        <Select
+          variant="legacy"
           value={status}
           onChange={(e) => {
             setStatus(e.target.value)
@@ -110,87 +130,87 @@ export function RentersView() {
           <option value="immobilized">Immobilized</option>
           <option value="paused">Paused</option>
           <option value="available">Available</option>
-        </select>
-      </div>
+        </Select>
+      </FilterBar>
 
-      <table className="vl-table">
-        <thead>
-          <tr>
-            <th>RENTER</th>
-            <th>PROGRAM</th>
-            <th>VEHICLE</th>
-            <th>STATUS</th>
-            <th>PHONE</th>
-            <th>NIK</th>
-          </tr>
-        </thead>
-        <tbody>
+      <DataPanel>
+        <Table density="legacy" className="min-w-[860px]">
+          <TableHeader tone="legacy">
+            <TableRow tone="legacy">
+              <TableHead>RENTER</TableHead>
+              <TableHead>PROGRAM</TableHead>
+              <TableHead>VEHICLE</TableHead>
+              <TableHead>STATUS</TableHead>
+              <TableHead>PHONE</TableHead>
+              <TableHead>NIK</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
           {pageRows.length > 0 ? (
             pageRows.map(({ vehicle, user, matchedProgram }) => (
-              <tr key={`renter-${vehicle.id}`}>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{vehicle.customer || user?.name || 'Unknown'}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', fontFamily: 'var(--font-mono)' }}>
+              <TableRow key={`renter-${vehicle.id}`} tone="legacy">
+                <TableCell>
+                  <div className="font-bold text-slate-900">{vehicle.customer || user?.name || 'Unknown'}</div>
+                  <div className="font-mono text-xs text-slate-500">
                     {vehicle.userId || user?.userId || ''}
                   </div>
-                  <div style={{ marginTop: 4 }}>
-                    <span
-                      className="vl-status"
-                      style={{
-                        background: scoreTone(user?.riskScore).bg,
-                        color: scoreTone(user?.riskScore).color,
-                      }}
-                    >
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(user?.riskScore)}`}>
                       SCORE {user?.riskScore ?? '-'}
                     </span>
                   </div>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   <div>{matchedProgram?.shortName || matchedProgram?.name || '-'}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{vehicle.programId || '-'}</div>
-                </td>
-                <td>
-                  <div style={{ fontWeight: 700 }}>{vehicle.id}</div>
-                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{vehicle.plate || '-'}</div>
-                </td>
-                <td>
-                  <span
-                    className="vl-status"
-                    style={{
-                      background: vehicleStatusTone(vehicle.status).bg,
-                      color: vehicleStatusTone(vehicle.status).color,
-                    }}
-                  >
+                  <div className="text-xs text-slate-500">{vehicle.programId || '-'}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="font-bold text-slate-900">{vehicle.id}</div>
+                  <div className="text-xs text-slate-500">{vehicle.plate || '-'}</div>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${vehicleStatusTone(vehicle.status).tone}`}>
                     {vehicleStatusTone(vehicle.status).label}
                   </span>
-                </td>
-                <td>{user?.phone || vehicle.phone || '-'}</td>
-                <td>{user?.nik || '-'}</td>
-              </tr>
+                </TableCell>
+                <TableCell>{user?.phone || vehicle.phone || '-'}</TableCell>
+                <TableCell>{user?.nik || '-'}</TableCell>
+              </TableRow>
             ))
           ) : (
-            <tr>
-              <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+            <TableRow tone="legacy">
+              <TableCell colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
                 No renters found for selected filters.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+          </TableBody>
+        </Table>
+      </DataPanel>
 
-      <div className="vl-pagination">
-        <div className="vl-page-info">
+      <PageFooter>
+        <div className="text-sm font-semibold text-slate-600">
           Page {currentPage} / {totalPages} ({renters.length} rows)
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="vl-page-btn" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+        <div className="flex gap-2">
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentPage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
             Prev
-          </button>
-          <button className="vl-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          </Button>
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
             Next
-          </button>
+          </Button>
         </div>
-      </div>
-    </section>
+      </PageFooter>
+    </PageShell>
   )
 }

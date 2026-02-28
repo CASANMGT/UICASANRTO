@@ -1,253 +1,166 @@
-# CASAN RTO — Vehicle & Renter Management Dashboard
+# CASAN Operations Dashboard
 
-A web-based operations dashboard for managing EV motorcycles on **RTO (Rent-to-Own)** and **Rental** programs. Built for CASAN platform operators, OEM dealers, and GPS partners. Supports **Vehicle Inventory** management and **Renter Program** administration in a unified interface.
+Operations dashboard for CASAN RTO and Rental programs.  
+This repository contains the legacy SPA and the active React migration app used for feature-parity rollout.
 
----
+## Live
 
-## 🌐 Live Demo
+- Production: `https://casanrto.vercel.app`
 
-**[https://uicasanrto.vercel.app/](https://uicasanrto.vercel.app/)**
+## Current Stack
 
----
+- UI: React + Vite
+- Styling: Tailwind utilities + shared shadcn-style component primitives
+- Runtime bridge: `web/src/bridge/legacyRuntime.js`
+- Map: Leaflet
+- Hosting: Vercel
 
-## 📁 Project Structure
+## Plan: Fully Tailwind-Native
 
-```
+Goal: remove legacy CSS dependencies and make all React views use a consistent Tailwind design system without visual regressions.
+
+### Phase 1 - Audit and Baseline (1-2 days)
+
+- Inventory all legacy style imports and class usage from `web/src/legacy-theme.css` and legacy `css/` files.
+- Tag components by migration complexity: low (`Users`, `Finance`) / medium (`Programs`, `Vehicles`, `GPS`) / high (`Applications`, `Map`).
+- Freeze current parity baseline using `web/scripts/visual-parity.mjs` output.
+
+### Phase 2 - Design Tokens and UI Primitives (2-3 days)
+
+- Define Tailwind tokens in `web/tailwind.config.*` for color, spacing, radius, typography, and state badges.
+- Build shared primitives (`Badge`, `Table`, `Modal`, `FormField`, `Tabs`, `EmptyState`) in React.
+- Map old semantic styles (`active`, `grace`, `immobilized`, score bands) to tokenized Tailwind variants.
+
+### Phase 3 - Component-by-Component Refactor (1-2 weeks)
+
+- Migrate one view at a time and remove legacy classes as each view passes parity checks.
+- Suggested order: `Users` -> `Finance` -> `Vehicles` -> `Programs` -> `GPS` -> `Applications` -> `Map`.
+- Keep behavior unchanged; only refactor styling and layout structure.
+
+### Phase 4 - Cutover and Cleanup (2-3 days)
+
+- Remove `web/src/legacy-theme.css` and obsolete legacy CSS imports from React path.
+- Keep legacy app files only as archive/reference, not as runtime dependency for React UI.
+- Update docs and changelog with final cutover notes.
+
+### Exit Criteria (Definition of Done)
+
+- No React view depends on legacy CSS imports.
+- Shared UI primitives are used across all tabs.
+- Visual parity diff is within agreed threshold for every migrated tab.
+- Responsive behavior (desktop + mobile drawer) remains intact.
+- Build and smoke tests pass before release.
+
+### Immediate Next Sprint
+
+- Deliver token system + shared primitives.
+- Fully Tailwind-migrate `Users` and `Finance` as pilot modules.
+- Publish parity-before/after screenshots and diff metrics in `web/artifacts/visual-parity`.
+
+### Migration Progress
+
+- Tailwind-native pilot complete for:
+  - `web/src/components/UsersView.jsx`
+  - `web/src/components/FinanceView.jsx`
+- Tailwind-native migration complete for:
+  - `web/src/components/VehiclesView.jsx`
+  - `web/src/components/RentersView.jsx`
+- Tailwind-native migration complete for:
+  - `web/src/components/ProgramsView.jsx`
+- Tailwind-native migration complete for:
+  - `web/src/components/GpsView.jsx`
+- Tailwind-native migration complete for:
+  - `web/src/components/RtoView.jsx`
+- Tailwind-native migration complete for:
+  - `web/src/components/MapView.jsx`
+- shadcn-style UI component setup complete:
+  - `web/src/components/ui/button.jsx`
+  - `web/src/components/ui/input.jsx`
+  - `web/src/components/ui/select.jsx`
+  - `web/src/components/ui/dialog.jsx`
+  - `web/src/components/ui/table.jsx`
+- legacy-compatible shadcn variants added:
+  - `legacyPrimary`, `legacyGhost`, `legacyDanger`, `legacyPill` (Button)
+  - `legacy` variant (Input/Select), `legacy` tone/density (Table/Dialog)
+- GPS is now component-driven via shadcn-style primitives:
+  - `web/src/components/GpsView.jsx`
+- Remaining views pending full Tailwind-native refactor:
+  - none (all main views migrated)
+
+## Repo Layout
+
+```text
 casan_rto/
-├── index.html                  # Main app shell (SPA)
-├── netlify.toml                # Netlify deployment config
-├── server.ps1                  # Local dev server (PowerShell)
-├── css/
-│   ├── layout.css              # 60/40 Vertical Panoramic Grid
-│   ├── components.css          # High-density Cards, Expandable Status Guide
-│   ├── style.css               # Global design tokens & IBM Plex Mono
-│   ├── finance_strip.css       # Finance program earnings strip
-│   ├── credit_bar.css          # Unified progress bars (RTO & KYC)
-│   └── map_controls.css        # Map filter overlay & legend
-└── js/
-    ├── app.js                  # Simulation Loop & Event Bus
-    ├── debug.js                # Dev helper utilities
-    └── modules/
-        ├── store.js            # Movement Simulation Engine (v2.0.0)
-        ├── ui.js               # Render functions (v2.0.0)
-        ├── map.js              # Leaflet 1:1 directional markers
-        ├── finance.js          # Revenue analytics
-        ├── gps.js              # GPS hardware auditing
-        ├── rto.js              # RTO Applications & Pickup
-        └── utils.js            # Shared formatters & helpers
+├─ web/                    # Primary app (React migration)
+│  ├─ src/
+│  ├─ scripts/
+│  └─ README.md
+├─ index.html              # Legacy app shell
+├─ js/ css/                # Legacy modules/styles
+├─ PRD.md                  # Product requirements
+├─ ARCHITECTURE.md         # System architecture
+├─ ROADMAP.md              # Delivery roadmap
+├─ Skills.md               # Operator capability matrix
+└─ CHANGELOG.md            # Release log
 ```
 
----
+## Local Development
 
-## ✨ Features
+### React App (recommended)
 
-### 🗺️ Live Fleet Map
-| Feature | Status |
-|---------|--------|
-| Dark tile map (CartoDB, no API key) | ✅ |
-| All markers shown individually (no clustering) | ✅ |
-| **Directional arrow markers** rotating by bearing | ✅ |
-| **Running 🏃** vehicles → glowing SVG arrow | ✅ |
-| **Stopped 🅿️** vehicles → colored circle with glow | ✅ |
-| **Real-time Movement Engine** (3s updates) | ✅ |
-| **Vertical Panoramic Layout** (60/40 Split) | ✅ |
-| **Expandable Status Guide** (Top-aligned) | ✅ |
-| **Status filter buttons** with emoji icons | ✅ |
-| **Available** vehicle filter in sidebar | ✅ |
-| **☑️ All / 🚫 None** quick-select filter toggles | ✅ |
-| Popup: credit days remaining + cycle days | ✅ |
-| Popup: Running / Stopped / Offline status | ✅ |
-| Legend: Real-time unit counts per state | ✅ |
-| Focus on vehicle from sidebar | ✅ |
-
-### 👤 Rider KYC & Profiles
-| Feature | Status |
-|---------|--------|
-| **High-Density Program Strip:** Filter by cards (consistent with Finance) | ✅ |
-| **Program-Level KPI Detail:** Live active/grace/immob counts per scheme | ✅ |
-| **Behavioral Summary Card:** Contextual health stats for active filter | ✅ |
-| **Unified Progress Design:** Linked to RTO Fleet progress bars | ✅ |
-| **Quick Filter Badges:** Click table Program → filter list instantly | ✅ |
-| Export CSV for filtered rider list | ✅ |
-| Global search (Name, Phone, NIK) | ✅ |
-| Sorting by Name, Risk, and Join Date | ✅ |
-
-### 🏢 Station & Infrastructure
-| Feature | Status |
-|---------|--------|
-| **Card-Based Station UX:** High-density monitoring cards | ✅ |
-| **Hierarchical Device List:** Devices & sockets grouped by station | ✅ |
-| **Live Connectivity Audit:** IMEI/SIM status per device | ✅ |
-| **Map Integration:** "View on Map" direct focus action | ✅ |
-
-### � Programs & Collections Management
-| Feature | Status |
-|---------|--------|
-| **Commission Dual-Mode:** Toggle between % or Fixed Rp/day | ✅ |
-| **Deep Program Insights:** Live breakdown stats (Active/Grace/Locked) | ✅ |
-| **Collection & Maturity KPIs:** Score-based progress bars | ✅ |
-| **Program Details Drawer:** High-density operational slide panel | ✅ |
-| **Promotions Management:** Integrated incentives engine with image support | ✅ |
-| **Full CRUD** for pricing, grace, and scheme details | ✅ |
-| **CSV Export** for fleet and scheme auditing | ✅ |
-
-### 📋 RTO Application Management
-| Feature | Status |
-|---------|--------|
-| **Consolidated Sidebar UI:** Applications, Pickup, Score, WA | ✅ |
-| **Unified Application Queue:** Real-time filtering and search | ✅ |
-| **Automated Point System:** Configurable score dimensions | ✅ |
-| **Pickup Scheduling:** Calendar-based driver appointments | ✅ |
-| **WA Template Persistence:** Editable scenarios with LocalStorage | ✅ |
-| **Interactive WA Preview:** Verification modal before sending | ✅ |
-
-### �📊 Executive Stats Bar
-| Feature | Status |
-|---------|--------|
-| High-density 6-column grid | ✅ |
-| **Context-Aware KPIs** switching per navigation tab | ✅ |
-| **Fleet Tracking:** Running, Stopped, No Signal, Risk, Idle | ✅ |
-| **RTO/Applications:** Approved, Pending, Scoring stats | ✅ |
-| **Finance:** Revenue, Arrears, Success Rate | ✅ |
-| Secondary trend indicators and coloring | ✅ |
-| Compact horizontal scroll on mobile | ✅ |
-
-### 💰 Finance Tab
-| Feature | Status |
-|---------|--------|
-| Paginated transactions (25/page) | ✅ |
-| **Transaction Summaries:** Paid, Pending, Failed KPI cards | ✅ |
-| **CASAN FEE column** (Replacing Credit Days for revenue clarity) | ✅ |
-| **Smart Program Strips:** Shows % or Rp/day per program mode | ✅ |
-| Payment method column | ✅ |
-| Program filter (per-program revenue & stats) | ✅ |
-| Clickable program earnings strip | ✅ |
-| Payment modal | ✅ |
-| Partner filter across fleet + finance | ✅ |
-
-### 📡 GPS Tab
-| Feature | Status |
-|---------|--------|
-| GPS device list with status | ✅ |
-| **Combined Column:** GPS ID + status + relative last ping in one cell | ✅ |
-| **Vehicle Identity Merge:** Plate plus brand/model in one cell | ✅ |
-| **Vehicle brand & model** shown per device | ✅ |
-| **IMEI number** shown in SIM column | ✅ |
-| SIM carrier, data usage %, status | ✅ |
-| Location with lat/lng + last ping time | ✅ |
-| Address lookup (mock) | ✅ |
-| Add / Edit / Delete GPS device modals | ✅ |
-| **Duplicate stats bar removal** (tab optimized) | ✅ |
-
-### 🎨 Navigation & Architecture
-| Feature | Status |
-|---------|--------|
-| **Terminology Split:** Vehicles (Inventory) vs. Renters (Program Participants) | ✅ |
-| **Sidebar:** Users → Programs (Admin) → Applications → Renters → Finance → Vehicles → Maps → GPS | ✅ |
-| **Sidebar Changelog:** Changelog surfaced near `CASAN Operations` title | ✅ |
-| **Renamed: Renters** (Active program participants — formerly Assets) | ✅ |
-| **Renters Overhaul:** Removed top KPI bar, added prominent "+ Add Renter" | ✅ |
-| **Inline Editing:** "Edit" button for renter profiles in row | ✅ |
-| **Renamed: Vehicles** (Physical motorcycle inventory) | ✅ |
-| **Renamed: Maps** (Fleet Tracking) | ✅ |
-| **Renamed: GPS** (GPS List) | ✅ |
-| **Vertical Viewports:** Maximized vertical height | ✅ |
-| **Sub-Nav Layout Fix:** No stats bar occlusion | ✅ |
-| **In-App Changelog Modal:** Versioned updates (v2.0.0) | ✅ |
-
----
-
-## 📈 Operational Intelligence
-
-The Programs dashboard uses data-driven logic to evaluate scheme performance.
-
-### ⚖️ Collection Health Logic
-Collection health represents the ratio of **performing** vs **non-performing** assets within a scheme.
-- **Formula:** `(Active Units / Total Assigned Units) × 100`
-- **[Performing] Healthy Active:** Assets with positive credit balance (`active`).
-- **[Non-Performing]:** Assets in `grace` (expired credit) or `immobilized` (locked/non-payment).
-
-**Executive Benchmarks:**
-- **● GOOD (>95%):** Operational Excellence. Payments are synchronized with daily usage.
-- **● WARNING (90-95%):** Risk Alert. Requires immediate collection rigor and rider follow-up.
-- **● CRITICAL (<90%):** Intervention Phase. Review rider risk profiles and consider asset recovery.
-
-### 🏗️ Fleet Maturity Logic
-Maturity reflects the average equity recovery across the program's lifecycle.
-- **Formula:** `Average(RTO Progress %)` across all assigned vehicles.
-- **0-25% (Early):** Growth & deployment phase. High upfront capital exposure.
-- **25-75% (Mid):** Operational stability phase. Positive cashflow recovery.
-- **>75% (High):** Impending ownership transfer. Final lifecycle stage.
-
----
-
-## 🗂️ Data Model (Mock / Generated)
-
-All data is generated client-side in `store.js` — no backend required.
-
-| Entity | Key Fields |
-|--------|-----------|
-| **Vehicle** *(Inventory)* | `id`, `status`, `programId`, `partnerId`, `credits`, `bearing`, `speed`, `isOnline`, `isRunning`, `rider`, `plate` |
-| **User** *(Renter/KYC)* | `userId`, `name`, `gender` (90% M / 10% F), `nik`, `phone`, `riskLabel`, `vehicleId` (Strict 1:1) |
-| **Transaction** | `id`, `vehicleId`, `date`, `amount`, `method`, `status`, `creditDays` (1, 2, 3, 5, 7, 15) |
-| **GPS Device** | `id`, `imei`, `vehicleId`, `vehiclePlate`, `sim`, `status`, `lat`, `lng` |
-| **Program** | `id`, `name`, `type` (RTO/Rent), `price/day`, `graceDays`, `commissionType` (%/Fixed), `commissionFixed`, `minSalary`, `targetScore`, `contractDuration`, `eligibleModels` |
-| **RTO Application** | `id`, `userId`, `programId`, `status`, `score`, `assignedVehicleId`, `pickupDate` |
-| **Partner** | `id`, `name`, `color` |
-
----
-
-## 🚀 Deployment (Vercel)
- 
-### GitHub → Vercel Auto-Deploy *(recommended)*
-1. Push your code to a GitHub repository.
-2. In Vercel: **Add New Project → Import Repository**.
-3. Vercel will automatically detect the static project.
-4. Set the **Output Directory** to `root` or leave default if using the folder structure.
-5. Every `git push` to `main` auto-deploys ✅
- 
-### Manual Deploy (Vercel CLI)
-1. Install Vercel CLI: `npm i -g vercel`
-2. Run `vercel` from the root directory.
-3. Follow the prompts to link and deploy.
-
-### Local Development
 ```powershell
-# From the casan_rto folder in PowerShell:
-.\server.ps1
-# Open: http://localhost:5501
+cd web
+npm install
+npm run dev -- --host --port 5173
 ```
 
----
+Then open `http://localhost:5173`.
 
-## 🛠️ Tech Stack
+### Legacy App (reference)
 
-- **Frontend:** Vanilla HTML, CSS, JavaScript (ES Modules — no build step)
-- **Map:** [Leaflet.js](https://leafletjs.com) — individual markers (no clustering)
-- **Map tiles:** CartoDB Dark Matter (free, no API key)
-- **Hosting:** Vercel (static deploy via GitHub)
-- **Fonts:** IBM Plex Mono (via CSS import)
+```powershell
+.\server.ps1
+```
 
----
+Then open `http://localhost:5501`.
 
-## 🔮 Roadmap
+## Build and Deploy
 
-The project follows a multi-phase evolution strategy focusing on scale, data-integrity, and industrial observability.
+### Production build
 
-**[View Detailed Roadmap →](roadmap.md)**
+```powershell
+cd web
+npm run build
+```
 
-- **Phase 1:** Feature Completion (Program Management, Dealer Portal).
-- **Phase 2:** Backend Migration (Real-time DB & Auth).
-- **Phase 3:** High-Density Analytics & Industrial Observability.
+### Deploy to Vercel
 
----
+```powershell
+vercel --prod
+```
 
-## 🛠️ Operator Skills
+`main` is the release branch and is connected to Vercel production.
 
-The system is designed for high-density operations. See **[Skills.md](Skills.md)** for the operator competency framework.
+## Product Scope (Current)
 
----
+- Sidebar-first operations UI: `Users, Programs, Applications, Renters, Finance, Vehicles, Maps, GPS`.
+- Applications review workflow with:
+  - single primary review action
+  - document thumbnails + enlarged preview modal
+  - manual score adjustments and reviewer notes
+  - decision guardrails for approve/reject/pending docs
+- Pickup scheduling workflow with approval-only gating and pickup lifecycle states (`planned`, `confirmed`, `rescheduled`, `completed`, `no_show`).
+- Program admin with commission modes (`%` or fixed amount), renters list, and vehicle list.
+- Program records include pickup location defaults and program filter labels using `Program Name • Type`.
+- GPS operations with assignment integrity (GPS assigned to vehicle only), SIM lifecycle fields, and filtered assignment flow.
+- Map observability with movement/status filters and paginated movement list.
+- Cross-tab badge consistency for status and score signals.
 
-## 📋 Repository
+## Documentation
 
-[github.com/CASANMGT/UICASANRTO](https://github.com/CASANMGT/UICASANRTO)
+- Product requirements: `PRD.md`
+- Architecture and data flow: `ARCHITECTURE.md`
+- Delivery plan: `ROADMAP.md`
+- Operator competencies: `Skills.md`
+- Release history: `CHANGELOG.md`
+

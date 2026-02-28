@@ -2,6 +2,26 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [2.8.0] - 2026-02-28
+
+### Applications Review UX
+- **Single Review Path:** Consolidated duplicated actions into one clear `Review` CTA in Applications to reduce operator confusion.
+- **Decision Guardrails:** Enforced inline and runtime validation for review decisions:
+  - `approved` requires assigned vehicle
+  - `pending_docs` requires required-doc selection
+  - `rejected` requires rejection reason
+- **Document Handling:** Kept thumbnail-first document review with enlarged preview modal for audit quality checks.
+
+### Pickup Scheduling Operations
+- **Pickup Lifecycle:** Added pickup status lifecycle (`planned`, `confirmed`, `rescheduled`, `completed`, `no_show`) in runtime and UI.
+- **Operational Filters:** Expanded pickup board with filters for date bucket, location, slot, and pickup status.
+- **Action Clarity:** Contextualized pickup actions (`Set Slot` / `Edit Slot`) and preserved approval-only scheduling rules.
+
+### Data and Terminology Consistency
+- **Canonical Decisions:** Standardized decision vocabulary to `approved`, `rejected`, `pending_docs`, `review` with backward-compatible aliasing from `declined`.
+- **Triage Columns:** Added reviewer/timestamp, assigned vehicle, and pickup status context in Applications table.
+- **Program Context:** Program selectors now use `Program Name • Type`, and program pickup locations are first-class defaults.
+
 ## [2.7.0] - 2026-02-28
 
 ### 🧭 Navigation & Changelog UX

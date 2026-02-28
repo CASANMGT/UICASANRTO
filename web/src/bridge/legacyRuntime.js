@@ -42,6 +42,13 @@ function normalizeDataIntegrity(state) {
   state.rtoApplications = Array.isArray(state.rtoApplications) ? state.rtoApplications : []
   state.filter = state.filter || { partner: 'all', status: 'all', search: '', program: 'all' }
 
+  for (const program of state.programs) {
+    if (!program.type) program.type = 'RTO'
+    if (!program.pickupLocation) {
+      program.pickupLocation = PROGRAM_PICKUP_LOCATIONS[program.partnerId] || 'Program Pickup Point'
+    }
+  }
+
   const usersById = new Map()
   const usersByName = new Map()
   for (const user of state.users) {
@@ -101,7 +108,8 @@ function normalizeDataIntegrity(state) {
       const vehicle = vehiclesById.get(app.assignedVehicleId)
       if (vehicle?.programId) app.programId = vehicle.programId
     }
-    if (!['pending', 'review', 'pending_docs', 'approved', 'declined'].includes(app.decision)) {
+    if (app.decision === 'declined') app.decision = 'rejected'
+    if (!['pending', 'review', 'pending_docs', 'approved', 'rejected'].includes(app.decision)) {
       app.decision = 'pending'
     }
     if (!Array.isArray(app.reviewLog)) app.reviewLog = []
@@ -115,12 +123,15 @@ function normalizeDataIntegrity(state) {
     }
     if (!app.pickupSchedule) {
       const fallbackProgram = state.programs.find((program) => program.id === app.programId)
-      const fallbackLocation = PROGRAM_PICKUP_LOCATIONS[fallbackProgram?.partnerId] || 'Program Pickup Point'
+      const fallbackLocation = fallbackProgram?.pickupLocation || PROGRAM_PICKUP_LOCATIONS[fallbackProgram?.partnerId] || 'Program Pickup Point'
       app.pickupSchedule = {
         date: app.pickupDate ? new Date(app.pickupDate).toISOString().slice(0, 10) : '',
         time: app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '10:00',
         location: fallbackLocation,
+        status: app.pickupDate ? 'planned' : 'unscheduled',
       }
+    } else if (!app.pickupSchedule.status) {
+      app.pickupSchedule.status = app.pickupDate ? 'planned' : 'unscheduled'
     }
   }
 }
@@ -145,6 +156,7 @@ function seedLocalState() {
       commissionType: 'percentage',
       commissionRate: 0.1,
       commissionFixed: 0,
+      pickupLocation: PROGRAM_PICKUP_LOCATIONS[partner] || 'Program Pickup Point',
       eligibleModels: [MODELS[i % MODELS.length]],
       minSalary: 0,
       promotions: [],
@@ -245,7 +257,7 @@ function seedLocalState() {
 
   const rtoApplications = users.slice(0, 40).map((user, i) => {
     const vehicle = vehicles[i]
-    const decision = i % 6 === 0 ? 'approved' : i % 9 === 0 ? 'review' : i % 7 === 0 ? 'declined' : i % 5 === 0 ? 'pending_docs' : 'pending'
+    const decision = i % 6 === 0 ? 'approved' : i % 9 === 0 ? 'review' : i % 7 === 0 ? 'rejected' : i % 5 === 0 ? 'pending_docs' : 'pending'
     const program = programs.find((item) => item.id === vehicle.programId)
     const pickupDate = decision === 'approved' && i % 3 === 0 ? new Date(Date.now() + i * 86400000).toISOString() : null
     return {
@@ -261,6 +273,7 @@ function seedLocalState() {
         date: pickupDate ? pickupDate.slice(0, 10) : '',
         time: pickupDate ? pickupDate.slice(11, 16) : '10:00',
         location: PROGRAM_PICKUP_LOCATIONS[program?.partnerId] || 'Program Pickup Point',
+        status: pickupDate ? 'planned' : 'unscheduled',
       },
       documents: [
         { id: 'ktp', name: 'KTP', status: 'submitted' },
@@ -571,9 +584,10 @@ export function getRtoConfigs() {
   const scoreCfg = safeParse(localStorage.getItem('casan_rto_cfg'), {})
   const waCfg = safeParse(localStorage.getItem('csn_wa_cfg'), {
     approved: 'Hi {nama}, your application {app_id} is approved.',
-    declined: 'Hi {nama}, your application {app_id} cannot be approved yet.',
+    rejected: 'Hi {nama}, your application {app_id} cannot be approved yet.',
     pending: 'Hi {nama}, your application {app_id} is under review.',
   })
+  if (!waCfg.rejected && waCfg.declined) waCfg.rejected = waCfg.declined
   return { scoreCfg, waCfg }
 }
 
@@ -605,7 +619,12 @@ export function getRtoSnapshot() {
 export function decideRtoApplication(id, decision, updates = {}) {
   const app = getState().rtoApplications.find((item) => item.id === id)
   if (!app) return
-  app.decision = decision
+  const normalizedDecision = decision === 'declined' ? 'rejected' : decision
+  if (!['pending', 'review', 'pending_docs', 'approved', 'rejected'].includes(normalizedDecision)) return
+  if (normalizedDecision === 'approved' && !updates.assignedVehicleId && !app.assignedVehicleId) return
+  if (normalizedDecision === 'pending_docs' && (!updates.requiredDocs || updates.requiredDocs.length === 0)) return
+  if (normalizedDecision === 'rejected' && !String(updates.rejectReason || '').trim()) return
+  app.decision = normalizedDecision
   if (updates.score !== undefined) app.score = Number(updates.score || 0)
   if (updates.assignedVehicleId !== undefined) app.assignedVehicleId = updates.assignedVehicleId || null
   if (updates.notes !== undefined) app.notes = updates.notes || ''
@@ -613,13 +632,23 @@ export function decideRtoApplication(id, decision, updates = {}) {
   if (updates.reviewEntry) {
     app.reviewLog = [...(app.reviewLog || []), updates.reviewEntry]
   }
-  if (decision !== 'approved') {
+  if (normalizedDecision !== 'approved') {
     app.pickupDate = null
+    app.pickupSchedule = {
+      ...(app.pickupSchedule || {}),
+      status: 'unscheduled',
+    }
   } else if (!app.pickupDate) {
     const schedule = app.pickupSchedule || {}
     const date = schedule.date || new Date().toISOString().slice(0, 10)
     const time = schedule.time || '10:00'
     app.pickupDate = new Date(`${date}T${time}:00`).toISOString()
+    app.pickupSchedule = {
+      ...schedule,
+      date,
+      time,
+      status: schedule.status && schedule.status !== 'unscheduled' ? schedule.status : 'planned',
+    }
   }
   notifyStateChanged()
 }
@@ -627,27 +656,37 @@ export function decideRtoApplication(id, decision, updates = {}) {
 export function scheduleRtoPickup(id, pickupDetails) {
   const app = getState().rtoApplications.find((item) => item.id === id)
   if (!app) return
-  app.decision = 'approved'
+  if (app.decision !== 'approved') return
+  const matchedProgram = getState().programs.find((program) => program.id === app.programId)
+  const defaultLocation = matchedProgram?.pickupLocation || PROGRAM_PICKUP_LOCATIONS[matchedProgram?.partnerId] || 'Program Pickup Point'
   if (typeof pickupDetails === 'string') {
     app.pickupDate = pickupDetails
     app.pickupSchedule = {
       ...(app.pickupSchedule || {}),
       date: pickupDetails.slice(0, 10),
       time: pickupDetails.slice(11, 16),
-      location: app.pickupSchedule?.location || 'Program Pickup Point',
+      location: app.pickupSchedule?.location || defaultLocation,
+      status: 'confirmed',
     }
   } else {
     const date = pickupDetails?.date || new Date().toISOString().slice(0, 10)
     const time = pickupDetails?.time || '10:00'
-    const location = pickupDetails?.location || app.pickupSchedule?.location || 'Program Pickup Point'
+    const location = pickupDetails?.location || app.pickupSchedule?.location || defaultLocation
     app.pickupDate = new Date(`${date}T${time}:00`).toISOString()
-    app.pickupSchedule = { date, time, location }
+    app.pickupSchedule = {
+      date,
+      time,
+      location,
+      status: pickupDetails?.status || (app.pickupSchedule?.date ? 'rescheduled' : 'confirmed'),
+    }
   }
   notifyStateChanged()
 }
 
 export function createRtoApplication(fields) {
   const state = getState()
+  const matchedProgram = state.programs.find((program) => program.id === fields.programId)
+  const defaultLocation = matchedProgram?.pickupLocation || PROGRAM_PICKUP_LOCATIONS[matchedProgram?.partnerId] || 'Program Pickup Point'
   const nextIndex = (state.rtoApplications?.length || 0) + 1
   const id = fields.id || `APP-${String(nextIndex).padStart(4, '0')}`
   const decision = fields.decision || 'pending'
@@ -657,13 +696,14 @@ export function createRtoApplication(fields) {
     userName: fields.userName || '',
     programId: fields.programId || '',
     score: Number(fields.score || 0),
-    decision: ['pending', 'review', 'pending_docs', 'approved', 'declined'].includes(decision) ? decision : 'pending',
+    decision: ['pending', 'review', 'pending_docs', 'approved', 'rejected'].includes(decision) ? decision : 'pending',
     assignedVehicleId: fields.assignedVehicleId || null,
     pickupDate: decision === 'approved' ? fields.pickupDate || null : null,
     pickupSchedule: {
       date: fields.pickupDate ? String(fields.pickupDate).slice(0, 10) : '',
       time: fields.pickupDate ? String(fields.pickupDate).slice(11, 16) : '10:00',
-      location: fields.pickupLocation || 'Program Pickup Point',
+      location: fields.pickupLocation || defaultLocation,
+      status: fields.pickupDate ? 'planned' : 'unscheduled',
     },
     documents: Array.isArray(fields.documents)
       ? fields.documents

@@ -3,6 +3,9 @@ import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getState, getVehicles } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
+import { PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { Select } from './ui/select'
 
 export function MapView() {
   const mapRef = useRef(null)
@@ -10,6 +13,10 @@ export function MapView() {
   const [status, setStatus] = useState('all')
   const [connectivity, setConnectivity] = useState('all')
   const [movement, setMovement] = useState('all')
+  const [programFilter, setProgramFilter] = useState('all')
+  const [gpsFilter, setGpsFilter] = useState('all')
+  const [pingAgeFilter, setPingAgeFilter] = useState('all')
+  const [speedBand, setSpeedBand] = useState('all')
   const [listPage, setListPage] = useState(1)
   const vehicles = useMemo(() => {
     void tick
@@ -44,34 +51,65 @@ export function MapView() {
       return {
         ...vehicle,
         userPhone: user?.phone || vehicle.phone || '-',
+        programId: program?.id || '',
         programName: program?.name || program?.shortName || '-',
+        programType: program?.type || '-',
+        programLabel: `${program?.name || program?.shortName || '-'} • ${program?.type || '-'}`,
         vehicleBrand: vehicle.brand || String(vehicle.model || '').split(' ')[0] || '-',
         gpsStatus: gps?.status || 'Unassigned',
         lastPingAt,
+        pingAgeHours: Math.floor((Date.now() - new Date(lastPingAt).getTime()) / (60 * 60 * 1000)),
         movementState: (vehicle.effectiveSpeed || 0) > 0 ? 'RUNNING' : 'STOPPED',
       }
     })
   }, [vehicles, tick])
+  const filteredVehicles = useMemo(() => {
+    return enrichedVehicles.filter((vehicle) => {
+      if (programFilter !== 'all' && String(vehicle.programId || '') !== programFilter) return false
+      if (gpsFilter !== 'all' && String(vehicle.gpsStatus || '').toLowerCase() !== gpsFilter) return false
+      if (pingAgeFilter === 'stale' && vehicle.pingAgeHours < 2) return false
+      if (pingAgeFilter === 'fresh' && vehicle.pingAgeHours >= 2) return false
+      if (speedBand === 'high' && Number(vehicle.effectiveSpeed || 0) < 40) return false
+      if (speedBand === 'mid' && (Number(vehicle.effectiveSpeed || 0) < 10 || Number(vehicle.effectiveSpeed || 0) >= 40)) return false
+      if (speedBand === 'low' && Number(vehicle.effectiveSpeed || 0) >= 10) return false
+      return true
+    })
+  }, [enrichedVehicles, programFilter, gpsFilter, pingAgeFilter, speedBand])
   const listPageSize = 20
-  const listTotalPages = Math.max(1, Math.ceil(enrichedVehicles.length / listPageSize))
+  const listTotalPages = Math.max(1, Math.ceil(filteredVehicles.length / listPageSize))
   const currentListPage = Math.min(listPage, listTotalPages)
-  const listRows = enrichedVehicles.slice((currentListPage - 1) * listPageSize, currentListPage * listPageSize)
+  const listRows = filteredVehicles.slice((currentListPage - 1) * listPageSize, currentListPage * listPageSize)
+  const mapStats = useMemo(
+    () => ({
+      total: filteredVehicles.length,
+      running: filteredVehicles.filter((vehicle) => vehicle.movementState === 'RUNNING').length,
+      stopped: filteredVehicles.filter((vehicle) => vehicle.movementState === 'STOPPED').length,
+      online: filteredVehicles.filter((vehicle) => vehicle.isOnline).length,
+    }),
+    [filteredVehicles],
+  )
 
   return (
-    <section className="vl-container">
-      <div className="vl-header">
-        <h2 className="vl-title">Live Asset Map</h2>
-        <div className="vl-count">{enrichedVehicles.length} Markers</div>
-      </div>
+    <PageShell>
+      <PageHeader>
+        <PageTitle>Live Asset Map</PageTitle>
+        <PageMeta>{enrichedVehicles.length} Markers</PageMeta>
+      </PageHeader>
+      <StatsGrid>
+        <StatCard label="Visible Markers" value={mapStats.total} />
+        <StatCard label="Running" value={mapStats.running} valueClassName="text-emerald-700" />
+        <StatCard label="Stopped" value={mapStats.stopped} valueClassName="text-amber-700" />
+        <StatCard label="Online" value={mapStats.online} valueClassName="text-cyan-700" />
+      </StatsGrid>
 
-      <div className="vl-controls" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        <label style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }} htmlFor="mapStatusFilter">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <label className="text-sm text-slate-600" htmlFor="mapStatusFilter">
           Status
         </label>
-        <select
+        <Select
           id="mapStatusFilter"
-          className="form-control"
-          style={{ maxWidth: 180 }}
+          variant="legacy"
+          className="max-w-[180px]"
           value={status}
           onChange={(e) => {
             setStatus(e.target.value)
@@ -84,10 +122,10 @@ export function MapView() {
           <option value="immobilized">Immobilized</option>
           <option value="paused">Paused</option>
           <option value="available">Available</option>
-        </select>
-        <select
-          className="form-control"
-          style={{ maxWidth: 180 }}
+        </Select>
+        <Select
+          variant="legacy"
+          className="max-w-[180px]"
           value={connectivity}
           onChange={(e) => {
             setConnectivity(e.target.value)
@@ -97,10 +135,10 @@ export function MapView() {
           <option value="all">All Connectivity</option>
           <option value="online">Online</option>
           <option value="offline">Offline</option>
-        </select>
-        <select
-          className="form-control"
-          style={{ maxWidth: 180 }}
+        </Select>
+        <Select
+          variant="legacy"
+          className="max-w-[180px]"
           value={movement}
           onChange={(e) => {
             setMovement(e.target.value)
@@ -110,21 +148,78 @@ export function MapView() {
           <option value="all">All Movement</option>
           <option value="running">Running</option>
           <option value="stopped">Stopped</option>
-        </select>
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }}>
-          Markers: {enrichedVehicles.length} | Active/Grace/Immobilized visible with movement filters
+        </Select>
+        <span className="text-sm text-slate-600">
+          Markers: {filteredVehicles.length} | Active/Grace/Immobilized visible with movement filters
         </span>
       </div>
+      <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+        <Select
+          variant="legacy"
+          value={programFilter}
+          onChange={(e) => {
+            setProgramFilter(e.target.value)
+            setListPage(1)
+          }}
+        >
+          <option value="all">All Programs</option>
+          {[...new Map(enrichedVehicles.filter((vehicle) => vehicle.programId).map((vehicle) => [vehicle.programId, vehicle.programLabel])).entries()].map(([programId, programLabel]) => (
+            <option key={programId} value={programId}>
+              {programLabel}
+            </option>
+          ))}
+        </Select>
+        <Select
+          variant="legacy"
+          value={gpsFilter}
+          onChange={(e) => {
+            setGpsFilter(e.target.value)
+            setListPage(1)
+          }}
+        >
+          <option value="all">All GPS Status</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+          <option value="low signal">Low Signal</option>
+          <option value="tampered">Tampered</option>
+          <option value="unassigned">Unassigned</option>
+        </Select>
+        <Select
+          variant="legacy"
+          value={pingAgeFilter}
+          onChange={(e) => {
+            setPingAgeFilter(e.target.value)
+            setListPage(1)
+          }}
+        >
+          <option value="all">All Ping Ages</option>
+          <option value="stale">Stale (&gt;= 2h)</option>
+          <option value="fresh">Fresh (&lt; 2h)</option>
+        </Select>
+        <Select
+          variant="legacy"
+          value={speedBand}
+          onChange={(e) => {
+            setSpeedBand(e.target.value)
+            setListPage(1)
+          }}
+        >
+          <option value="all">All Speed Bands</option>
+          <option value="high">High (&gt;=40 km/h)</option>
+          <option value="mid">Mid (10-39 km/h)</option>
+          <option value="low">Low (&lt;10 km/h)</option>
+        </Select>
+      </div>
 
-      <div className="card" style={{ padding: 10 }}>
-        <div style={{ marginBottom: 6, fontSize: 'var(--text-sm)', color: 'var(--t3)', textTransform: 'uppercase' }}>
+      <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-1.5 text-xs uppercase text-slate-500">
           Focus Vehicle
         </div>
-        <div style={{ display: 'flex', maxHeight: 96, flexWrap: 'wrap', gap: 6, overflowY: 'auto' }}>
-          {enrichedVehicles.slice(0, 24).map((vehicle) => (
+        <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
+          {filteredVehicles.slice(0, 24).map((vehicle) => (
             <button
               key={vehicle.id}
-              className="vl-pill"
+              className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
               type="button"
               onClick={() => {
                 if (mapRef.current) mapRef.current.setView([vehicle.lat, vehicle.lng], 14)
@@ -136,7 +231,7 @@ export function MapView() {
         </div>
       </div>
 
-      <div style={{ height: 560, overflow: 'hidden', borderRadius: 12, border: '1px solid var(--b1)' }}>
+      <div className="h-[560px] overflow-hidden rounded-xl border border-slate-200">
         <MapContainer
           center={[-6.25, 106.85]}
           zoom={11}
@@ -149,7 +244,7 @@ export function MapView() {
             attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
-          {enrichedVehicles.map((vehicle) => (
+          {filteredVehicles.map((vehicle) => (
             <CircleMarker
               key={vehicle.id}
               center={[vehicle.lat, vehicle.lng]}
@@ -174,84 +269,77 @@ export function MapView() {
         </MapContainer>
       </div>
 
-      <div className="card" style={{ padding: 10 }}>
-        <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)', textTransform: 'uppercase' }}>
+      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-xs uppercase text-slate-500">
             Vehicle Movement List
           </div>
-          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>
-            Running: {enrichedVehicles.filter((vehicle) => vehicle.movementState === 'RUNNING').length} | Stopped: {enrichedVehicles.filter((vehicle) => vehicle.movementState === 'STOPPED').length}
+          <div className="text-xs text-slate-500">
+            Running: {filteredVehicles.filter((vehicle) => vehicle.movementState === 'RUNNING').length} | Stopped: {filteredVehicles.filter((vehicle) => vehicle.movementState === 'STOPPED').length}
           </div>
         </div>
-        <div style={{ overflowX: 'auto', border: '1px solid var(--b1)', borderRadius: 10 }}>
-          <table className="vl-table" style={{ margin: 0 }}>
-            <thead>
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="min-w-[1040px] w-full border-collapse text-sm text-slate-700">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <th>VEHICLE</th>
-                <th>BRAND / MODEL</th>
-                <th>STATUS</th>
-                <th>MOVEMENT</th>
-                <th>RENTER</th>
-                <th>PROGRAM</th>
-                <th>GPS</th>
-                <th>LAST PING</th>
-                <th>SPEED</th>
+                <th className="px-3 py-2 text-left">VEHICLE</th>
+                <th className="px-3 py-2 text-left">BRAND / MODEL</th>
+                <th className="px-3 py-2 text-left">STATUS</th>
+                <th className="px-3 py-2 text-left">MOVEMENT</th>
+                <th className="px-3 py-2 text-left">RENTER</th>
+                <th className="px-3 py-2 text-left">PROGRAM</th>
+                <th className="px-3 py-2 text-left">GPS</th>
+                <th className="px-3 py-2 text-left">LAST PING</th>
+                <th className="px-3 py-2 text-left">SPEED</th>
               </tr>
             </thead>
             <tbody>
               {listRows.length > 0 ? (
                 listRows.map((vehicle) => (
-                  <tr key={`map-list-${vehicle.id}`}>
-                    <td>
-                      <div style={{ fontWeight: 700 }}>{vehicle.id}</div>
-                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{vehicle.plate}</div>
+                  <tr key={`map-list-${vehicle.id}`} className="border-t border-slate-100">
+                    <td className="px-3 py-2">
+                      <div className="font-bold text-slate-900">{vehicle.id}</div>
+                      <div className="text-xs text-slate-500">{vehicle.plate}</div>
                     </td>
-                    <td>{vehicle.vehicleBrand} / {vehicle.model || '-'}</td>
-                    <td>
+                    <td className="px-3 py-2">{vehicle.vehicleBrand} / {vehicle.model || '-'}</td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          background: `${markerColor(vehicle.status)}22`,
-                          color: markerColor(vehicle.status),
-                        }}
+                        className="inline-flex rounded-full px-2 py-1 text-xs font-bold"
+                        style={{ background: `${markerColor(vehicle.status)}22`, color: markerColor(vehicle.status) }}
                       >
                         {String(vehicle.status || '-').toUpperCase()}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          background: vehicle.movementState === 'RUNNING' ? 'var(--dg1)' : 'var(--s3)',
-                          color: vehicle.movementState === 'RUNNING' ? 'var(--dg)' : 'var(--t2)',
-                        }}
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                          vehicle.movementState === 'RUNNING'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
                       >
                         {vehicle.movementState}
                       </span>
                     </td>
-                    <td>
+                    <td className="px-3 py-2">
                       <div>{vehicle.customer || 'Unassigned'}</div>
-                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{vehicle.userPhone}</div>
+                      <div className="text-xs text-slate-500">{vehicle.userPhone}</div>
                     </td>
-                    <td>{vehicle.programName}</td>
-                    <td>
+                    <td className="px-3 py-2">{vehicle.programName}</td>
+                    <td className="px-3 py-2">
                       <span
-                        className="vl-status"
-                        style={{
-                          background: gpsColor(vehicle.gpsStatus).bg,
-                          color: gpsColor(vehicle.gpsStatus).color,
-                        }}
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${gpsColor(vehicle.gpsStatus)}`}
                       >
                         {String(vehicle.gpsStatus || '-').toUpperCase()}
                       </span>
                     </td>
-                    <td>{new Date(vehicle.lastPingAt).toLocaleString('id-ID')}</td>
-                    <td>{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</td>
+                    <td className="px-3 py-2">{new Date(vehicle.lastPingAt).toLocaleString('id-ID')}</td>
+                    <td className="px-3 py-2">{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} style={{ padding: 18, textAlign: 'center', color: 'var(--t3)' }}>
+                  <td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
                     No vehicles available for current map filters.
                   </td>
                 </tr>
@@ -259,21 +347,31 @@ export function MapView() {
             </tbody>
           </table>
         </div>
-        <div className="vl-pagination" style={{ marginTop: 8 }}>
-          <div className="vl-page-info">
-            Page {currentListPage} / {listTotalPages} ({enrichedVehicles.length} rows)
+        <div className="mt-2 flex items-center justify-between">
+          <div className="text-sm font-semibold text-slate-600">
+            Page {currentListPage} / {listTotalPages} ({filteredVehicles.length} rows)
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="vl-page-btn" disabled={currentListPage <= 1} onClick={() => setListPage((p) => Math.max(1, p - 1))}>
+          <div className="flex gap-2">
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentListPage <= 1}
+              onClick={() => setListPage((p) => Math.max(1, p - 1))}
+            >
               Prev
-            </button>
-            <button className="vl-page-btn" disabled={currentListPage >= listTotalPages} onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}>
+            </Button>
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentListPage >= listTotalPages}
+              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+            >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
-    </section>
+    </PageShell>
   )
 }
 
@@ -286,11 +384,11 @@ function markerColor(status) {
 }
 
 function gpsColor(status) {
-  if (status === 'Online') return { bg: 'var(--dg1)', color: 'var(--dg)' }
-  if (status === 'Low Signal') return { bg: 'var(--dw1)', color: 'var(--dw)' }
-  if (status === 'Tampered') return { bg: 'var(--dd1)', color: 'var(--dd)' }
-  if (status === 'Offline') return { bg: 'var(--s3)', color: 'var(--t2)' }
-  return { bg: 'rgba(148,163,184,0.2)', color: '#94a3b8' }
+  if (status === 'Online') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'Low Signal') return 'bg-amber-100 text-amber-700'
+  if (status === 'Tampered') return 'bg-rose-100 text-rose-700'
+  if (status === 'Offline') return 'bg-slate-100 text-slate-700'
+  return 'bg-slate-100 text-slate-500'
 }
 
 function hashCode(value) {
