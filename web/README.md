@@ -30,8 +30,16 @@ Feature flags are in `src/config/featureFlags.js`:
 - `financeReact`
 - `mapReact`
 - `rtoReact`
+- `rentersReact`
 
 Turn any flag off to keep that tab in legacy-fallback mode during parity testing.
+
+## Latest UI Notes
+
+- Navigation is left-sidebar first (desktop collapse + mobile drawer).
+- Changelog access is now near the `CASAN Operations` sidebar title.
+- GPS table uses merged observability columns for denser operational scanning.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

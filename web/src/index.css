@@ -2,9 +2,212 @@
 
 :root {
   font-family: "DM Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: 17px;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  background: var(--bg);
+  color: var(--t1);
+}
+
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 84px minmax(0, 1fr);
+}
+
+.app-sidebar {
+  background: var(--s1);
+  border-right: 1px solid var(--b1);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-sidebar-header {
+  padding: 8px 10px 14px;
+  border-bottom: 1px solid var(--b1);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-sidebar-title-wrap {
+  min-width: 0;
+}
+
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-nav-item {
+  width: 100%;
+  border: 1px solid var(--b1);
+  background: var(--s2);
+  color: var(--t2);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.app-nav-icon {
+  font-size: var(--text-lg);
+}
+
+.app-nav-item.active {
+  background: color-mix(in srgb, var(--ac) 20%, var(--s2));
+  color: var(--ac);
+  border-color: color-mix(in srgb, var(--ac) 40%, var(--b1));
+}
+
+.app-nav-count {
+  font-size: var(--text-sm);
+  color: var(--t3);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.app-main {
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-topbar {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app-collapse-btn {
+  border: 1px solid var(--b1);
+  border-radius: 8px;
+  background: var(--s2);
+  color: var(--t2);
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.app-menu-btn {
+  display: none;
+  border: 1px solid var(--b1);
+  border-radius: 8px;
+  background: var(--s2);
+  color: var(--t1);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.app-sidebar-overlay {
+  display: none;
+}
+
+.app-sidebar.collapsed {
+  width: 84px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.app-sidebar.collapsed .app-sidebar-title-wrap {
+  display: none;
+}
+
+.app-sidebar.collapsed .app-nav-item {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+  padding: 10px 6px;
+}
+
+.app-sidebar.collapsed .app-nav-label,
+.app-sidebar.collapsed .app-nav-count {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-menu-btn {
+    display: inline-flex;
+  }
+
+  .app-collapse-btn {
+    display: none;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(82vw, 300px);
+    height: 100vh;
+    z-index: 30;
+    transform: translateX(-102%);
+    transition: transform 0.2s ease;
+  }
+
+  .app-sidebar.collapsed {
+    width: min(82vw, 300px);
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .app-sidebar.collapsed .app-sidebar-title-wrap {
+    display: block;
+  }
+
+  .app-sidebar.collapsed .app-nav-item {
+    grid-template-columns: 24px 1fr auto;
+    justify-items: stretch;
+    text-align: left;
+    padding: 10px 10px;
+  }
+
+  .app-sidebar.collapsed .app-nav-label,
+  .app-sidebar.collapsed .app-nav-count {
+    display: inline;
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .app-sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .app-sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }

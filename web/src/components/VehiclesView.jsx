@@ -2,6 +2,24 @@ import { useMemo, useState } from 'react'
 import { extendVehicleCredits, getVehicles, lockVehicle, releaseVehicle } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 
+function scoreTone(score) {
+  const value = Number(score || 0)
+  if (value >= 80) return { bg: 'var(--dg1)', color: 'var(--dg)' }
+  if (value >= 60) return { bg: 'var(--dac1)', color: 'var(--dac)' }
+  if (value >= 41) return { bg: 'var(--dw1)', color: 'var(--dw)' }
+  if (value >= 21) return { bg: 'rgba(251,146,60,0.18)', color: '#FB923C' }
+  return { bg: 'var(--dd1)', color: 'var(--dd)' }
+}
+
+function vehicleStatusTone(status) {
+  if (status === 'active') return { bg: 'var(--dg1)', color: 'var(--dg)', label: 'ACTIVE' }
+  if (status === 'grace') return { bg: 'var(--dw1)', color: 'var(--dw)', label: 'GRACE' }
+  if (status === 'immobilized') return { bg: 'var(--dd1)', color: 'var(--dd)', label: 'IMMOBILIZED' }
+  if (status === 'paused') return { bg: 'var(--dac1)', color: 'var(--dac)', label: 'PAUSED' }
+  if (status === 'available') return { bg: 'var(--s3)', color: 'var(--t2)', label: 'AVAILABLE' }
+  return { bg: 'var(--s3)', color: 'var(--t2)', label: String(status || '-').toUpperCase() }
+}
+
 export function VehiclesView() {
   const tick = useLegacyTick()
   const [search, setSearch] = useState('')
@@ -20,11 +38,18 @@ export function VehiclesView() {
   const currentPage = Math.min(page, totalPages)
   const pageRows = vehicles.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
+  const statusPills = ['all', 'active', 'grace', 'immobilized', 'paused', 'available']
+
   return (
-    <section className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-2">
+    <section className="vl-container">
+      <div className="vl-header">
+        <h2 className="vl-title">Assets Management</h2>
+        <div className="vl-count">{vehicles.length} Units</div>
+      </div>
+
+      <div className="vl-controls">
         <input
-          className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
+          className="vl-search"
           placeholder="Search id, plate, customer..."
           value={search}
           onChange={(e) => {
@@ -32,75 +57,118 @@ export function VehiclesView() {
             setPage(1)
           }}
         />
-        <select
-          className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value)
-            setPage(1)
-          }}
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="grace">Grace</option>
-          <option value="immobilized">Immobilized</option>
-          <option value="paused">Paused</option>
-          <option value="available">Available</option>
-        </select>
+        <div className="vl-filter-pills">
+          {statusPills.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`vl-pill ${status === s ? 'active' : ''}`}
+              onClick={() => {
+                setStatus(s)
+                setPage(1)
+              }}
+            >
+              {s.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="overflow-hidden rounded border border-slate-800">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900/80 text-slate-300">
-            <tr>
-              <th className="px-3 py-2">Vehicle</th>
-              <th className="px-3 py-2">Plate</th>
-              <th className="px-3 py-2">Customer</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((v) => (
-              <tr key={v.id} className="border-t border-slate-800">
-                <td className="px-3 py-2">{v.id}</td>
-                <td className="px-3 py-2">{v.plate}</td>
-                <td className="px-3 py-2">{v.customer || '-'}</td>
-                <td className="px-3 py-2 capitalize">{v.status}</td>
-                <td className="px-3 py-2">
-                  <div className="flex gap-1">
-                    <button className="rounded bg-red-600 px-2 py-1 text-xs" onClick={() => lockVehicle(v.id)}>
+
+      <table className="vl-table">
+        <thead>
+          <tr>
+            <th>VEHICLE</th>
+            <th>RIDER</th>
+            <th>STATUS</th>
+            <th>PROGRAM</th>
+            <th>CREDIT</th>
+            <th>PROGRESS</th>
+            <th>STNK</th>
+            <th>GPS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pageRows.length > 0 ? (
+            pageRows.map((v) => (
+              <tr key={v.id}>
+                <td>
+                  <div style={{ fontWeight: 700 }}>{v.id}</div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{v.plate}</div>
+                </td>
+                <td>
+                  <div>{v.customer || '-'}</div>
+                  <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{v.phone || ''}</div>
+                </td>
+                <td>
+                  <span
+                    className="vl-status"
+                    style={{
+                      background: vehicleStatusTone(v.status).bg,
+                      color: vehicleStatusTone(v.status).color,
+                    }}
+                  >
+                    {vehicleStatusTone(v.status).label}
+                  </span>
+                </td>
+                <td>{v.programType || '-'}</td>
+                <td>{v.credits || 0}d</td>
+                <td>
+                  {v.programType === 'RTO' ? (
+                    <span
+                      className="vl-status"
+                      style={{
+                        background: scoreTone(Math.min(100, Math.max(0, 100 - (v.credits || 0)))).bg,
+                        color: scoreTone(Math.min(100, Math.max(0, 100 - (v.credits || 0)))).color,
+                      }}
+                    >
+                      {Math.min(100, Math.max(0, 100 - (v.credits || 0)))}%
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+                <td>OK</td>
+                <td>{v.isOnline ? 'On' : 'Off'}</td>
+                <td>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button className="vl-pill" type="button" onClick={() => lockVehicle(v.id)}>
                       Lock
                     </button>
-                    <button className="rounded bg-emerald-600 px-2 py-1 text-xs" onClick={() => releaseVehicle(v.id)}>
+                    <button className="vl-pill" type="button" onClick={() => releaseVehicle(v.id)}>
                       Release
                     </button>
-                    <button
-                      className="rounded bg-slate-700 px-2 py-1 text-xs"
-                      onClick={() => extendVehicleCredits(v.id, 1)}
-                    >
+                    <button className="vl-pill" type="button" onClick={() => extendVehicleCredits(v.id, 1)}>
                       +1 Day
                     </button>
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex items-center justify-between rounded border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-300">
-        <span>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+                No vehicles found for current filters.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <div className="vl-pagination">
+        <div className="vl-page-info">
           Page {currentPage} / {totalPages} ({vehicles.length} rows)
-        </span>
-        <div className="flex gap-2">
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
-            className="rounded bg-slate-700 px-2 py-1 disabled:opacity-40"
+            className="vl-page-btn"
             disabled={currentPage <= 1}
             onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
           >
             Prev
           </button>
           <button
-            className="rounded bg-slate-700 px-2 py-1 disabled:opacity-40"
+            className="vl-page-btn"
             disabled={currentPage >= totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
           >

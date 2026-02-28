@@ -6,47 +6,121 @@ import { FinanceView } from './components/FinanceView'
 import { GpsView } from './components/GpsView'
 import { MapView } from './components/MapView'
 import { ProgramsView } from './components/ProgramsView'
+import { RentersView } from './components/RentersView'
 import { RtoView } from './components/RtoView'
 import { UsersView } from './components/UsersView'
 import { VehiclesView } from './components/VehiclesView'
 
-const TABS = ['users', 'vehicles', 'finance', 'programs', 'gps', 'map', 'rto']
+const NAV_ITEMS = [
+  { key: 'users', label: 'Users', icon: '👤' },
+  { key: 'programs', label: 'Programs', icon: '⚙️' },
+  { key: 'rto', label: 'Applications', icon: '📋' },
+  { key: 'renters', label: 'Renters', icon: '🤝' },
+  { key: 'finance', label: 'Finance', icon: '💰' },
+  { key: 'vehicles', label: 'Vehicle', icon: '🏍️' },
+  { key: 'map', label: 'Maps', icon: '🗺️' },
+  { key: 'gps', label: 'GPS', icon: '📡' },
+]
+const CHANGELOG_ITEMS = [
+  { version: 'v2.6.0', date: '2026-02-28', notes: ['Map movement list with enriched telemetry', 'GPS assignment + SIM filters', 'Sidebar + mobile drawer navigation'] },
+  { version: 'v2.5.0', date: '2026-02-28', notes: ['Applications review workflow with WA templates', 'Program vehicle/renter lists + commission editing', 'Cross-tab badge and pagination consistency'] },
+]
 
 function App() {
   const { ready, state, error } = useLegacyRuntime()
   const [activeTab, setActiveTab] = useState('users')
   const [partner, setPartner] = useState('all')
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const counts = useMemo(
     () => ({
       users: state.users?.length || 0,
+      renters: (state.vehicles || []).filter((vehicle) => vehicle.customer || vehicle.userId).length,
       vehicles: state.vehicles?.length || 0,
       finance: state.transactions?.length || 0,
       programs: state.programs?.length || 0,
       gps: state.gpsDevices?.length || 0,
       map: state.vehicles?.length || 0,
-      rto: state.programs?.length || 0,
+      rto: state.rtoApplications?.length || 0,
     }),
     [state],
   )
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 md:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded border border-slate-800 bg-slate-900/60 p-4">
-          <h1 className="text-xl font-semibold">CASAN RTO Migration Shell</h1>
-          <p className="mt-1 text-sm text-slate-300">
-            Incremental React + Vite + Tailwind migration running on top of legacy data contracts.
-          </p>
-          {!ready && !error && <p className="mt-2 text-xs text-amber-300">Loading legacy runtime...</p>}
-          {!!error && <p className="mt-2 text-xs text-red-300">{error}</p>}
-          <div className="mt-3 flex items-center gap-2">
-            <label className="text-xs text-slate-300" htmlFor="partnerFilter">
+    <main className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div
+        className={`app-sidebar-overlay ${mobileNavOpen ? 'open' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+      />
+      <aside className={`app-sidebar ${mobileNavOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="app-sidebar-header">
+          <div className="app-sidebar-title-wrap">
+            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800 }}>CASAN Operations</div>
+            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>RTO & Rental</div>
+            <details style={{ marginTop: 8 }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 'var(--text-sm)' }}>📘 Changelog</summary>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {CHANGELOG_ITEMS.map((item) => (
+                  <div key={item.version} className="card" style={{ padding: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <div style={{ fontWeight: 800, fontSize: 'var(--text-sm)' }}>{item.version}</div>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--t3)' }}>{item.date}</div>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 16 }}>
+                      {item.notes.map((note) => (
+                        <li key={`${item.version}-${note}`} style={{ color: 'var(--t2)', marginBottom: 2, fontSize: 'var(--text-xs)' }}>
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+          <button className="app-collapse-btn" type="button" onClick={() => setSidebarCollapsed((prev) => !prev)}>
+            {sidebarCollapsed ? '▶' : '◀'}
+          </button>
+        </div>
+        <nav className="app-sidebar-nav">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={`app-nav-item ${activeTab === item.key ? 'active' : ''}`}
+              title={item.label}
+              onClick={() => {
+                setActiveTab(item.key)
+                setMobileNavOpen(false)
+              }}
+            >
+              <span className="app-nav-icon">{item.icon}</span>
+              <span className="app-nav-label">{item.label}</span>
+              <span className="app-nav-count">{counts[item.key] || 0}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <div className="app-main">
+        <header className="card app-topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button className="app-menu-btn" type="button" onClick={() => setMobileNavOpen((prev) => !prev)}>
+              ☰
+            </button>
+            <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, margin: 0 }}>{NAV_ITEMS.find((item) => item.key === activeTab)?.label}</h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!ready && !error && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--w)' }}>Loading...</span>}
+            {!!error && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--d)' }}>{error}</span>}
+            <label style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }} htmlFor="partnerFilter">
               Partner
             </label>
             <select
               id="partnerFilter"
-              className="rounded border border-slate-700 bg-slate-900 px-3 py-1 text-xs"
+              className="form-control"
+              style={{ width: 180 }}
               value={partner}
               onChange={(e) => {
                 const value = e.target.value
@@ -61,25 +135,9 @@ function App() {
             </select>
           </div>
         </header>
-
-        <nav className="grid gap-2 rounded border border-slate-800 bg-slate-900/60 p-2 md:grid-cols-7">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              className={`rounded px-3 py-2 text-sm capitalize ${
-                activeTab === tab ? 'bg-cyan-500 text-black' : 'bg-slate-800 text-slate-100'
-              }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab} ({counts[tab]})
-            </button>
-          ))}
-        </nav>
-
-        <section className="rounded border border-slate-800 bg-slate-900/60 p-4">
-          <StatsContext activeTab={activeTab} state={state} />
+        <section className="card" style={{ padding: 10 }}>
           {activeTab === 'users' && (featureFlags.usersReact ? <UsersView /> : <LegacyPlaceholder tab="users" />)}
+          {activeTab === 'renters' && (featureFlags.rentersReact ? <RentersView /> : <LegacyPlaceholder tab="renters" />)}
           {activeTab === 'vehicles' &&
             (featureFlags.vehiclesReact ? <VehiclesView /> : <LegacyPlaceholder tab="vehicles" />)}
           {activeTab === 'finance' &&
@@ -95,56 +153,10 @@ function App() {
   )
 }
 
-function StatsContext({ activeTab, state }) {
-  const stats = useMemo(() => {
-    if (activeTab === 'users') {
-      const low = state.users?.filter((u) => u.riskLabel === 'Low').length || 0
-      const high = state.users?.filter((u) => u.riskLabel === 'High').length || 0
-      return [
-        ['Users', state.users?.length || 0],
-        ['Low Risk', low],
-        ['High Risk', high],
-      ]
-    }
-    if (activeTab === 'finance') {
-      const paid = state.transactions?.filter((t) => t.status === 'paid').length || 0
-      return [
-        ['Transactions', state.transactions?.length || 0],
-        ['Paid', paid],
-        ['Programs', state.programs?.length || 0],
-      ]
-    }
-    if (activeTab === 'gps') {
-      const online = state.gpsDevices?.filter((d) => d.status === 'Online').length || 0
-      return [
-        ['GPS Total', state.gpsDevices?.length || 0],
-        ['Online', online],
-        ['Vehicles', state.vehicles?.length || 0],
-      ]
-    }
-    return [
-      ['Vehicles', state.vehicles?.length || 0],
-      ['Programs', state.programs?.length || 0],
-      ['Transactions', state.transactions?.length || 0],
-    ]
-  }, [activeTab, state])
-
-  return (
-    <div className="mb-4 grid gap-2 md:grid-cols-3">
-      {stats.map(([label, value]) => (
-        <div key={label} className="rounded border border-slate-800 bg-slate-900/40 px-3 py-2">
-          <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-          <div className="text-base font-semibold text-slate-100">{value}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function LegacyPlaceholder({ tab }) {
   return (
-    <div className="rounded border border-dashed border-slate-700 bg-slate-900 p-6 text-sm text-slate-300">
-      Legacy fallback enabled for <span className="font-semibold text-slate-100">{tab}</span>. Keep this flag off
+    <div className="card" style={{ padding: 18, fontSize: 'var(--text-base)', color: 'var(--t2)' }}>
+      Legacy fallback enabled for <span style={{ fontWeight: 800, color: 'var(--t1)' }}>{tab}</span>. Keep this flag off
       until parity checks pass.
     </div>
   )

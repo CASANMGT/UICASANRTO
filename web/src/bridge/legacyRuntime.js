@@ -8,6 +8,19 @@ const PARTNERS = ['tangkas', 'maka', 'united']
 const MODELS = ['Zeeho AE8', 'Maka One', 'United MX1200']
 const STATUSES = ['active', 'grace', 'immobilized', 'paused', 'available']
 const GPS_STATUSES = ['Online', 'Offline', 'Low Signal', 'Tampered']
+const INDONESIAN_FIRST_NAMES = [
+  'Ahmad', 'Budi', 'Dewi', 'Eko', 'Fajar', 'Gita', 'Hendra', 'Indra', 'Joko', 'Kartika',
+  'Lukman', 'Maya', 'Nanda', 'Putri', 'Rizky', 'Sari', 'Taufik', 'Vina', 'Wahyu', 'Yuni',
+]
+const INDONESIAN_LAST_NAMES = [
+  'Pratama', 'Santoso', 'Wijaya', 'Saputra', 'Kusuma', 'Hidayat', 'Nugroho', 'Lestari', 'Wibowo', 'Siregar',
+  'Ramadhan', 'Firmansyah', 'Setiawan', 'Permana', 'Maulana', 'Syahputra', 'Aulia', 'Kurniawan', 'Hardianto', 'Anjani',
+]
+const PROGRAM_PICKUP_LOCATIONS = {
+  tangkas: 'Tangkas Hub - Kemayoran',
+  maka: 'Maka Center - Tebet',
+  united: 'United Point - Bekasi Barat',
+}
 
 let localState = {
   vehicles: [],
@@ -17,6 +30,99 @@ let localState = {
   programs: [],
   rtoApplications: [],
   filter: { partner: 'all', status: 'all', search: '', program: 'all' },
+}
+
+function normalizeDataIntegrity(state) {
+  if (!state) return
+  state.vehicles = Array.isArray(state.vehicles) ? state.vehicles : []
+  state.users = Array.isArray(state.users) ? state.users : []
+  state.transactions = Array.isArray(state.transactions) ? state.transactions : []
+  state.gpsDevices = Array.isArray(state.gpsDevices) ? state.gpsDevices : []
+  state.programs = Array.isArray(state.programs) ? state.programs : []
+  state.rtoApplications = Array.isArray(state.rtoApplications) ? state.rtoApplications : []
+  state.filter = state.filter || { partner: 'all', status: 'all', search: '', program: 'all' }
+
+  const usersById = new Map()
+  const usersByName = new Map()
+  for (const user of state.users) {
+    if (!Array.isArray(user.vehicleIds)) user.vehicleIds = []
+    user.vehicleIds = [...new Set(user.vehicleIds.filter(Boolean))]
+    if (user.userId) usersById.set(user.userId, user)
+    if (user.name) usersByName.set(String(user.name).trim().toLowerCase(), user)
+  }
+
+  for (const vehicle of state.vehicles) {
+    const linkedUser = vehicle.userId ? usersById.get(vehicle.userId) : null
+    if (linkedUser) {
+      if (!linkedUser.vehicleIds.includes(vehicle.id)) linkedUser.vehicleIds.push(vehicle.id)
+      if (!vehicle.customer) vehicle.customer = linkedUser.name || null
+      if (!vehicle.phone) vehicle.phone = linkedUser.phone || vehicle.phone
+      continue
+    }
+    const matchByName = vehicle.customer ? usersByName.get(String(vehicle.customer).trim().toLowerCase()) : null
+    if (matchByName) {
+      vehicle.userId = matchByName.userId
+      if (!matchByName.vehicleIds.includes(vehicle.id)) matchByName.vehicleIds.push(vehicle.id)
+      if (!vehicle.phone) vehicle.phone = matchByName.phone || vehicle.phone
+    }
+  }
+
+  for (const user of state.users) {
+    if (user.vehicleIds.length > 0) continue
+    user.vehicleIds = state.vehicles.filter((v) => v.userId === user.userId).map((v) => v.id)
+  }
+
+  const vehiclesById = new Map(state.vehicles.map((vehicle) => [vehicle.id, vehicle]))
+  for (const gps of state.gpsDevices) {
+    if (!gps.createdAt) gps.createdAt = new Date().toISOString()
+    if (!gps.updatedAt) gps.updatedAt = gps.createdAt
+    if (gps.vehicleId) {
+      const vehicle = vehiclesById.get(gps.vehicleId)
+      gps.vehiclePlate = vehicle?.plate || gps.vehiclePlate || '—'
+    } else {
+      gps.vehiclePlate = gps.vehiclePlate || '—'
+    }
+  }
+  for (const tx of state.transactions) {
+    const vehicle = vehiclesById.get(tx.vehicleId)
+    if (!vehicle) continue
+    if (!tx.customer) tx.customer = vehicle.customer || ''
+    if (!tx.programId) tx.programId = vehicle.programId || ''
+  }
+  for (const app of state.rtoApplications) {
+    app.score = Number(app.score || 0)
+    const user = app.userId ? usersById.get(app.userId) : null
+    if (user && !app.userName) app.userName = user.name || ''
+    if (!app.userId && app.userName) {
+      const byName = usersByName.get(String(app.userName).trim().toLowerCase())
+      if (byName) app.userId = byName.userId
+    }
+    if (!app.programId && app.assignedVehicleId) {
+      const vehicle = vehiclesById.get(app.assignedVehicleId)
+      if (vehicle?.programId) app.programId = vehicle.programId
+    }
+    if (!['pending', 'review', 'pending_docs', 'approved', 'declined'].includes(app.decision)) {
+      app.decision = 'pending'
+    }
+    if (!Array.isArray(app.reviewLog)) app.reviewLog = []
+    if (!Array.isArray(app.documents)) {
+      app.documents = [
+        { id: 'ktp', name: 'KTP', status: 'submitted' },
+        { id: 'simc', name: 'SIM C', status: 'submitted' },
+        { id: 'kk', name: 'KK', status: 'submitted' },
+        { id: 'bike_photos', name: 'Bike Photos', status: app.assignedVehicleId ? 'submitted' : 'missing' },
+      ]
+    }
+    if (!app.pickupSchedule) {
+      const fallbackProgram = state.programs.find((program) => program.id === app.programId)
+      const fallbackLocation = PROGRAM_PICKUP_LOCATIONS[fallbackProgram?.partnerId] || 'Program Pickup Point'
+      app.pickupSchedule = {
+        date: app.pickupDate ? new Date(app.pickupDate).toISOString().slice(0, 10) : '',
+        time: app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '10:00',
+        location: fallbackLocation,
+      }
+    }
+  }
 }
 
 function rand(seed) {
@@ -49,10 +155,11 @@ function seedLocalState() {
     const partner = PARTNERS[i % PARTNERS.length]
     const program = programs[(i + 1) % programs.length]
     const status = STATUSES[i % STATUSES.length]
+    const riderName = `${INDONESIAN_FIRST_NAMES[i % INDONESIAN_FIRST_NAMES.length]} ${INDONESIAN_LAST_NAMES[(i * 3) % INDONESIAN_LAST_NAMES.length]}`
     return {
       id: `CSN-${String(i + 1).padStart(3, '0')}`,
       plate: `B ${1000 + i} XYZ`,
-      customer: status === 'available' ? null : `Rider ${i + 1}`,
+      customer: status === 'available' ? null : riderName,
       phone: `+62812${String(100000 + i).slice(-6)}`,
       status,
       partnerId: partner,
@@ -111,28 +218,36 @@ function seedLocalState() {
     }
   })
 
-  const gpsDevices = vehicles.map((vehicle, i) => ({
-    id: `GPS-${String(i + 1).padStart(5, '0')}`,
-    imei: `8688${String(1000000000 + i)}`,
-    brand: i % 2 === 0 ? 'Weloop' : 'Teltonika',
-    model: i % 2 === 0 ? 'WL-210 Pro' : 'FMB920',
-    status: GPS_STATUSES[i % GPS_STATUSES.length],
-    vehicleId: vehicle.id,
-    vehiclePlate: vehicle.plate,
-    sim: {
-      number: `0813${String(1000000 + i).slice(-7)}`,
-      carrier: i % 2 === 0 ? 'Telkomsel' : 'XL',
-      expiry: new Date(Date.now() + (i % 60) * 86400000).toISOString(),
-      status: 'Active',
-      dataUsedMB: 100 + (i % 300),
-      dataLimitMB: 500,
-    },
-    firmwareUpdateRequired: i % 9 === 0,
-  }))
+  const gpsDevices = vehicles.map((vehicle, i) => {
+    const isUnassigned = i % 11 === 0
+    const createdAt = new Date(Date.now() - i * 86400000).toISOString()
+    return {
+      id: `GPS-${String(i + 1).padStart(5, '0')}`,
+      imei: `8688${String(1000000000 + i)}`,
+      brand: i % 2 === 0 ? 'Weloop' : 'Teltonika',
+      model: i % 2 === 0 ? 'WL-210 Pro' : 'FMB920',
+      status: isUnassigned ? 'Offline' : GPS_STATUSES[i % GPS_STATUSES.length],
+      vehicleId: isUnassigned ? null : vehicle.id,
+      vehiclePlate: isUnassigned ? '—' : vehicle.plate,
+      sim: {
+        number: `0813${String(1000000 + i).slice(-7)}`,
+        carrier: i % 2 === 0 ? 'Telkomsel' : 'XL',
+        expiry: new Date(Date.now() + (i % 60) * 86400000).toISOString(),
+        status: 'Active',
+        dataUsedMB: 100 + (i % 300),
+        dataLimitMB: 500,
+      },
+      createdAt,
+      updatedAt: createdAt,
+      firmwareUpdateRequired: i % 9 === 0,
+    }
+  })
 
   const rtoApplications = users.slice(0, 40).map((user, i) => {
     const vehicle = vehicles[i]
-    const decision = i % 6 === 0 ? 'approved' : i % 7 === 0 ? 'declined' : 'pending'
+    const decision = i % 6 === 0 ? 'approved' : i % 9 === 0 ? 'review' : i % 7 === 0 ? 'declined' : i % 5 === 0 ? 'pending_docs' : 'pending'
+    const program = programs.find((item) => item.id === vehicle.programId)
+    const pickupDate = decision === 'approved' && i % 3 === 0 ? new Date(Date.now() + i * 86400000).toISOString() : null
     return {
       id: `APP-${String(i + 1).padStart(4, '0')}`,
       userId: user.userId,
@@ -141,7 +256,19 @@ function seedLocalState() {
       score: user.riskScore,
       decision,
       assignedVehicleId: decision === 'approved' ? vehicle.id : null,
-      pickupDate: decision === 'approved' && i % 3 === 0 ? new Date(Date.now() + i * 86400000).toISOString() : null,
+      pickupDate,
+      pickupSchedule: {
+        date: pickupDate ? pickupDate.slice(0, 10) : '',
+        time: pickupDate ? pickupDate.slice(11, 16) : '10:00',
+        location: PROGRAM_PICKUP_LOCATIONS[program?.partnerId] || 'Program Pickup Point',
+      },
+      documents: [
+        { id: 'ktp', name: 'KTP', status: 'submitted' },
+        { id: 'simc', name: 'SIM C', status: i % 4 === 0 ? 'missing' : 'submitted' },
+        { id: 'kk', name: 'KK', status: i % 6 === 0 ? 'missing' : 'submitted' },
+        { id: 'bike_photos', name: 'Bike Photos', status: decision === 'approved' ? 'submitted' : 'review' },
+      ],
+      reviewLog: [],
       notes: '',
     }
   })
@@ -168,14 +295,19 @@ export async function ensureLegacyRuntime() {
     } else {
       localState = window.state
     }
+    normalizeDataIntegrity(localState)
     runtimeState.loaded = true
+    // Fire one initial update so subscribers (useLegacyTick) re-render with seeded data.
+    notifyStateChanged()
   })
 
   return runtimeState.loadingPromise
 }
 
 export function getState() {
-  return window.state || localState
+  const state = window.state || localState
+  normalizeDataIntegrity(state)
+  return state
 }
 
 export function subscribe(listener) {
@@ -185,6 +317,7 @@ export function subscribe(listener) {
 }
 
 export function notifyStateChanged() {
+  normalizeDataIntegrity(getState())
   window.dispatchEvent(new CustomEvent(LISTENERS_EVENT))
 }
 
@@ -373,6 +506,8 @@ export function getGpsSnapshot(filter = {}) {
 
 export function createGps(fields) {
   const state = getState()
+  const now = new Date().toISOString()
+  const hasSim = Boolean(fields.sim?.number || fields.sim?.carrier)
   state.gpsDevices.push({
     id: `GPS-${String(state.gpsDevices.length + 1).padStart(5, '0')}`,
     imei: fields.imei || '',
@@ -381,7 +516,16 @@ export function createGps(fields) {
     status: fields.vehicleId ? 'Online' : 'Offline',
     vehicleId: fields.vehicleId || null,
     vehiclePlate: fields.vehicleId ? state.vehicles.find((v) => v.id === fields.vehicleId)?.plate || '—' : '—',
-    sim: { carrier: 'Telkomsel', expiry: new Date().toISOString(), status: 'Active', dataUsedMB: 0, dataLimitMB: 500 },
+    sim: {
+      number: fields.sim?.number || '',
+      carrier: fields.sim?.carrier || '',
+      expiry: fields.sim?.expiry || '',
+      status: hasSim ? 'Active' : 'Unassigned',
+      dataUsedMB: 0,
+      dataLimitMB: 500,
+    },
+    createdAt: now,
+    updatedAt: now,
     firmwareUpdateRequired: false,
   })
   notifyStateChanged()
@@ -393,15 +537,18 @@ export function updateGps(id, fields) {
   if (idx < 0) return
   const current = state.gpsDevices[idx]
   const nextVehicleId = fields.vehicleId !== undefined ? fields.vehicleId : current.vehicleId
+  const nextSim = {
+    ...current.sim,
+    ...(fields.sim || {}),
+  }
+  nextSim.status = nextSim.number || nextSim.carrier ? 'Active' : 'Unassigned'
   state.gpsDevices[idx] = {
     ...current,
     ...fields,
+    updatedAt: new Date().toISOString(),
     vehicleId: nextVehicleId,
     vehiclePlate: nextVehicleId ? state.vehicles.find((v) => v.id === nextVehicleId)?.plate || '—' : '—',
-    sim: {
-      ...current.sim,
-      ...(fields.sim || {}),
-    },
+    sim: nextSim,
   }
   notifyStateChanged()
 }
@@ -455,18 +602,79 @@ export function getRtoSnapshot() {
   return { apps, pickup, scoreCfg, waCfg }
 }
 
-export function decideRtoApplication(id, decision) {
+export function decideRtoApplication(id, decision, updates = {}) {
   const app = getState().rtoApplications.find((item) => item.id === id)
   if (!app) return
   app.decision = decision
-  if (decision !== 'approved') app.pickupDate = null
+  if (updates.score !== undefined) app.score = Number(updates.score || 0)
+  if (updates.assignedVehicleId !== undefined) app.assignedVehicleId = updates.assignedVehicleId || null
+  if (updates.notes !== undefined) app.notes = updates.notes || ''
+  if (Array.isArray(updates.documents)) app.documents = updates.documents
+  if (updates.reviewEntry) {
+    app.reviewLog = [...(app.reviewLog || []), updates.reviewEntry]
+  }
+  if (decision !== 'approved') {
+    app.pickupDate = null
+  } else if (!app.pickupDate) {
+    const schedule = app.pickupSchedule || {}
+    const date = schedule.date || new Date().toISOString().slice(0, 10)
+    const time = schedule.time || '10:00'
+    app.pickupDate = new Date(`${date}T${time}:00`).toISOString()
+  }
   notifyStateChanged()
 }
 
-export function scheduleRtoPickup(id, pickupDate) {
+export function scheduleRtoPickup(id, pickupDetails) {
   const app = getState().rtoApplications.find((item) => item.id === id)
   if (!app) return
   app.decision = 'approved'
-  app.pickupDate = pickupDate
+  if (typeof pickupDetails === 'string') {
+    app.pickupDate = pickupDetails
+    app.pickupSchedule = {
+      ...(app.pickupSchedule || {}),
+      date: pickupDetails.slice(0, 10),
+      time: pickupDetails.slice(11, 16),
+      location: app.pickupSchedule?.location || 'Program Pickup Point',
+    }
+  } else {
+    const date = pickupDetails?.date || new Date().toISOString().slice(0, 10)
+    const time = pickupDetails?.time || '10:00'
+    const location = pickupDetails?.location || app.pickupSchedule?.location || 'Program Pickup Point'
+    app.pickupDate = new Date(`${date}T${time}:00`).toISOString()
+    app.pickupSchedule = { date, time, location }
+  }
+  notifyStateChanged()
+}
+
+export function createRtoApplication(fields) {
+  const state = getState()
+  const nextIndex = (state.rtoApplications?.length || 0) + 1
+  const id = fields.id || `APP-${String(nextIndex).padStart(4, '0')}`
+  const decision = fields.decision || 'pending'
+  state.rtoApplications.push({
+    id,
+    userId: fields.userId || '',
+    userName: fields.userName || '',
+    programId: fields.programId || '',
+    score: Number(fields.score || 0),
+    decision: ['pending', 'review', 'pending_docs', 'approved', 'declined'].includes(decision) ? decision : 'pending',
+    assignedVehicleId: fields.assignedVehicleId || null,
+    pickupDate: decision === 'approved' ? fields.pickupDate || null : null,
+    pickupSchedule: {
+      date: fields.pickupDate ? String(fields.pickupDate).slice(0, 10) : '',
+      time: fields.pickupDate ? String(fields.pickupDate).slice(11, 16) : '10:00',
+      location: fields.pickupLocation || 'Program Pickup Point',
+    },
+    documents: Array.isArray(fields.documents)
+      ? fields.documents
+      : [
+          { id: 'ktp', name: 'KTP', status: 'submitted' },
+          { id: 'simc', name: 'SIM C', status: 'review' },
+          { id: 'kk', name: 'KK', status: 'review' },
+          { id: 'bike_photos', name: 'Bike Photos', status: fields.assignedVehicleId ? 'submitted' : 'missing' },
+        ],
+    reviewLog: [],
+    notes: fields.notes || '',
+  })
   notifyStateChanged()
 }

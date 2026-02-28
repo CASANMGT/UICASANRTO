@@ -129,6 +129,8 @@ casan_rto/
 | Feature | Status |
 |---------|--------|
 | GPS device list with status | ✅ |
+| **Combined Column:** GPS ID + status + relative last ping in one cell | ✅ |
+| **Vehicle Identity Merge:** Plate plus brand/model in one cell | ✅ |
 | **Vehicle brand & model** shown per device | ✅ |
 | **IMEI number** shown in SIM column | ✅ |
 | SIM carrier, data usage %, status | ✅ |
@@ -142,6 +144,7 @@ casan_rto/
 |---------|--------|
 | **Terminology Split:** Vehicles (Inventory) vs. Renters (Program Participants) | ✅ |
 | **Sidebar:** Users → Programs (Admin) → Applications → Renters → Finance → Vehicles → Maps → GPS | ✅ |
+| **Sidebar Changelog:** Changelog surfaced near `CASAN Operations` title | ✅ |
 | **Renamed: Renters** (Active program participants — formerly Assets) | ✅ |
 | **Renters Overhaul:** Removed top KPI bar, added prominent "+ Add Renter" | ✅ |
 | **Inline Editing:** "Edit" button for renter profiles in row | ✅ |

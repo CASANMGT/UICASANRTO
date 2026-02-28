@@ -2,6 +2,21 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [2.7.0] - 2026-02-28
+
+### 🧭 Navigation & Changelog UX
+- **Sidebar Changelog Surface:** Moved changelog access to the `CASAN Operations` sidebar title area so updates are visible without hunting through content panels.
+- **Collapsible Sidebar Runtime:** Added desktop collapsed rail mode and responsive mobile drawer behavior with full-width content stretch.
+
+### 📡 GPS Operations Enhancements
+- **Assignment Integrity:** Enforced assignment to vehicles only, with assignment dropdown showing only vehicles without GPS bindings.
+- **SIM Lifecycle Controls:** Added SIM assignment states (`With SIM` / `Unassigned SIM`), optional SIM creation/edit, and explicit unassigned SIM behavior.
+- **Telemetry Density:** Expanded GPS rows with timestamp context, combined `GPS ID / Status / Last Ping` display, and enriched vehicle identity (`plate + brand + model`).
+
+### 🗺️ Map Fleet Monitoring
+- **Movement Compliance:** Immobilized vehicles now always resolve as `STOPPED` (speed forced to zero in operational views).
+- **Bottom Fleet Table:** Added paginated movement list with status, movement, GPS health, program, renter phone, and last ping observability.
+
 ## [2.0.0] - 2026-02-26
 
 ### 💎 Premium Modern UI Overhaul

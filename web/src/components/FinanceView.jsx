@@ -25,70 +25,95 @@ export function FinanceView() {
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-slate-300" htmlFor="programFilter">
-          Program
-        </label>
-        <select
-          id="programFilter"
-          className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm"
-          value={programFilter}
-          onChange={(e) => onProgramChange(e.target.value)}
-        >
-          <option value="all">All Programs</option>
-          {data.programs.map((program) => (
-            <option key={program.id} value={program.id}>
-              {program.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="grid gap-3 md:grid-cols-4">
-        <Card label="Revenue" value={formatCurrency(data.stats.revenue)} />
-        <Card label="Partner Share" value={formatCurrency(data.stats.partner)} />
-        <Card label="CASAN Share" value={formatCurrency(data.stats.casan)} />
-        <Card label="Outstanding" value={formatCurrency(data.stats.outstanding)} />
-      </div>
-      <div className="overflow-hidden rounded border border-slate-800">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-900/80 text-slate-300">
-            <tr>
-              <th className="px-3 py-2">TX ID</th>
-              <th className="px-3 py-2">Vehicle</th>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((tx) => (
-              <tr key={tx.id + tx.date} className="border-t border-slate-800">
-                <td className="px-3 py-2">{tx.id}</td>
-                <td className="px-3 py-2">{tx.vehicleId}</td>
-                <td className="px-3 py-2">{new Date(tx.date).toLocaleString('id-ID')}</td>
-                <td className="px-3 py-2">{formatCurrency(tx.amount)}</td>
-              </tr>
+    <section style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px' }}>Finance Overview</h2>
+          <div style={{ color: 'var(--t3)', fontSize: 'var(--text-lg)' }}>Revenue streams and transaction history</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <label htmlFor="programFilter" style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>
+            Filter by Program:
+          </label>
+          <select id="programFilter" className="form-control" style={{ width: 220 }} value={programFilter} onChange={(e) => onProgramChange(e.target.value)}>
+            <option value="all">All Programs</option>
+            {data.programs.map((program) => (
+              <option key={program.id} value={program.id}>
+                {program.name}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </div>
       </div>
-      <div className="flex items-center justify-between rounded border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-300">
-        <span>
+
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+        <Card label="Total Revenue" value={formatCurrency(data.stats.revenue)} color="var(--g)" sub="Gross Volume" />
+        <Card label="Partner Payout" value={formatCurrency(data.stats.partner)} color="var(--p)" sub="After Fees" />
+        <Card label="CASAN Fees" value={formatCurrency(data.stats.casan)} color="var(--ac)" sub="Platform Share" />
+        <Card label="Outstanding" value={formatCurrency(data.stats.outstanding)} color="var(--c-danger)" sub="Potential Loss" />
+      </div>
+
+      <div className="card" style={{ overflow: 'hidden' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--s3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ margin: 0 }}>Recent Transactions</h3>
+          <span style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>{data.transactions.length} records</span>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-base)', minWidth: 520 }}>
+            <thead style={{ background: 'var(--s2)', color: 'var(--t3)' }}>
+              <tr style={{ textAlign: 'left' }}>
+                <th style={{ padding: '10px 12px' }}>TX ID</th>
+                <th style={{ padding: '10px 12px' }}>DATE & TIME</th>
+                <th style={{ padding: '10px 12px' }}>VEHICLE</th>
+                <th style={{ padding: '10px 12px' }}>USER / PHONE</th>
+                <th style={{ padding: '10px 12px' }}>PROGRAM</th>
+                <th style={{ padding: '10px 12px' }}>METHOD</th>
+                <th style={{ padding: '10px 12px', color: 'var(--ac)' }}>CASAN FEE</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right' }}>AMOUNT</th>
+                <th style={{ padding: '10px 12px' }}>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.length > 0 ? (
+                pageRows.map((tx) => (
+                  <tr key={tx.id + tx.date} style={{ borderBottom: '1px solid var(--s3)' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: "'IBM Plex Mono'" }}>{tx.id}</td>
+                    <td style={{ padding: '10px 12px' }}>{new Date(tx.date).toLocaleString('id-ID')}</td>
+                    <td style={{ padding: '10px 12px' }}>{tx.vehicleId}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div>{tx.customer || '-'}</div>
+                      <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>{tx.customerPhone || '-'}</div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>{tx.program || tx.type || '-'}</td>
+                    <td style={{ padding: '10px 12px' }}>{tx.method || '-'}</td>
+                    <td style={{ padding: '10px 12px', color: 'var(--ac)' }}>{formatCurrency(tx.casanShare || 0)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontFamily: "'IBM Plex Mono'", fontWeight: 700 }}>
+                      {formatCurrency(tx.amount)}
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>{(tx.status || '-').toUpperCase()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--t3)' }}>
+                    No transactions for selected filter.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="vl-pagination" style={{ borderTop: '1px solid var(--s3)', marginTop: 0 }}>
+        <span className="vl-page-info">
           Page {currentPage} / {totalPages} ({data.transactions.length} rows)
         </span>
-        <div className="flex gap-2">
-          <button
-            className="rounded bg-slate-700 px-2 py-1 disabled:opacity-40"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
-          >
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="vl-page-btn" disabled={currentPage <= 1} onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}>
             Prev
           </button>
-          <button
-            className="rounded bg-slate-700 px-2 py-1 disabled:opacity-40"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
-          >
+          <button className="vl-page-btn" disabled={currentPage >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}>
             Next
           </button>
         </div>
@@ -97,11 +122,14 @@ export function FinanceView() {
   )
 }
 
-function Card({ label, value }) {
+function Card({ label, value, color, sub }) {
   return (
-    <div className="rounded border border-slate-800 bg-slate-900/60 p-3">
-      <div className="text-xs uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-slate-100">{value}</div>
+    <div className="card stat-card">
+      <h3>{label}</h3>
+      <div className="value" style={{ color }}>
+        {value}
+      </div>
+      <div className="sub">{sub}</div>
     </div>
   )
 }
