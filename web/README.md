@@ -42,6 +42,7 @@ Turn any flag off to keep that tab in legacy-fallback mode during parity testing
 - Applications review flow is simplified to a single clear review action with runtime guardrails.
 - Pickup board includes location/slot/status filters and pickup lifecycle badges.
 - Decision terminology is normalized to `approved`, `rejected`, `pending_docs`, `review`.
+- Maps list interaction is click-to-zoom: selecting a vehicle row centers map on that marker (dedicated focus chips removed).
 
 # React + Vite
 

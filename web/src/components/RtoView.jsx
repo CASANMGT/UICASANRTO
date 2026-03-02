@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  completeRtoHandover,
   createRtoApplication,
   decideRtoApplication,
   getState,
@@ -20,6 +21,25 @@ const DEFAULT_PICKUP_BY_PARTNER = {
   maka: 'Maka Center - Tebet',
   united: 'United Point - Bekasi Barat',
 }
+const DEFAULT_PICKUP_CONTACT_BY_PARTNER = {
+  tangkas: { name: 'Raka Prasetyo', phone: '+62 812-3100-1001' },
+  maka: { name: 'Dina Maheswari', phone: '+62 812-3100-2001' },
+  united: { name: 'Bima Adi Nugroho', phone: '+62 812-3100-3001' },
+}
+const TAB_ITEMS = [
+  { key: 'applications', label: 'Applications' },
+  { key: 'pickup', label: 'Pickup Board' },
+  { key: 'score', label: 'Scoring Rules' },
+  { key: 'wa', label: 'WhatsApp Templates' },
+]
+
+function normalizeTab(value) {
+  if (value === 'app' || value === 'apps' || value === 'application') return 'applications'
+  if (value === 'pickups') return 'pickup'
+  if (value === 'whatsapp') return 'wa'
+  if (TAB_ITEMS.some((item) => item.key === value)) return value
+  return 'applications'
+}
 
 function decisionTone(decision) {
   if (decision === 'approved') return { tone: 'bg-emerald-100 text-emerald-700', label: 'ACCEPTED' }
@@ -35,6 +55,15 @@ function pickupStatusTone(status) {
   if (status === 'planned') return 'bg-amber-100 text-amber-700'
   if (status === 'completed') return 'bg-indigo-100 text-indigo-700'
   if (status === 'no_show') return 'bg-rose-100 text-rose-700'
+  return 'bg-slate-100 text-slate-700'
+}
+
+function vehicleStateTone(status) {
+  if (status === 'active') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'grace') return 'bg-amber-100 text-amber-700'
+  if (status === 'immobilized') return 'bg-rose-100 text-rose-700'
+  if (status === 'paused') return 'bg-cyan-100 text-cyan-700'
+  if (status === 'available') return 'bg-slate-100 text-slate-700'
   return 'bg-slate-100 text-slate-700'
 }
 
@@ -64,6 +93,10 @@ function plusDaysISO(baseDate, days) {
 function dateChipLabel(isoDate) {
   const date = new Date(`${isoDate}T00:00:00`)
   return date.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' })
+}
+
+function dayShort(isoDate) {
+  return new Date(`${isoDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short' })
 }
 
 function buildDocPreviewSrc(docName, status) {
@@ -113,7 +146,7 @@ export function RtoView() {
       return {}
     }
   }, [])
-  const [tab, setTab] = useState(initialUi.tab || 'applications')
+  const [tab, setTab] = useState(normalizeTab(initialUi.tab))
   const [scoreJson, setScoreJson] = useState(JSON.stringify(snapshot.scoreCfg || {}, null, 2))
   const [waJson, setWaJson] = useState(JSON.stringify(snapshot.waCfg || {}, null, 2))
   const [appFilter, setAppFilter] = useState(initialUi.appFilter || 'all')
@@ -163,6 +196,22 @@ export function RtoView() {
     location: '',
     status: 'planned',
   })
+  const [handoverModal, setHandoverModal] = useState({
+    open: false,
+    id: '',
+    assignedVehicleId: '',
+    identityVerified: false,
+    vehicleConditionChecked: false,
+    tireConditionChecked: false,
+    keyHandoverChecked: false,
+    stnkVerified: false,
+    contractAcknowledged: false,
+    handoverPhotoUrl: '',
+    appStatusUpdated: false,
+    notes: '',
+    error: '',
+  })
+  const [calendarCursor, setCalendarCursor] = useState(`${new Date().toISOString().slice(0, 7)}-01`)
   const programs = useMemo(() => {
     void tick
     return getPrograms()
@@ -271,6 +320,34 @@ export function RtoView() {
     () => [...new Set((pickup || []).map((app) => app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '')).filter(Boolean))].sort(),
     [pickup],
   )
+  const selectedScheduleApp = useMemo(
+    () => (scheduleModal.id ? (snapshot.apps || []).find((item) => item.id === scheduleModal.id) || null : null),
+    [snapshot.apps, scheduleModal.id],
+  )
+  const selectedHandoverApp = useMemo(
+    () => (handoverModal.id ? (snapshot.apps || []).find((item) => item.id === handoverModal.id) || null : null),
+    [snapshot.apps, handoverModal.id],
+  )
+  const selectedHandoverVehicle = useMemo(
+    () => vehicles.find((vehicle) => vehicle.id === (handoverModal.assignedVehicleId || selectedHandoverApp?.assignedVehicleId)) || null,
+    [vehicles, handoverModal.assignedVehicleId, selectedHandoverApp?.assignedVehicleId],
+  )
+  const handoverVehicleOptions = useMemo(() => {
+    if (!selectedHandoverApp?.programId) return []
+    return vehicles.filter(
+      (vehicle) =>
+        vehicle.programId === selectedHandoverApp.programId &&
+        (vehicle.id === selectedHandoverApp.assignedVehicleId || vehicle.status === 'available'),
+    )
+  }, [vehicles, selectedHandoverApp?.programId])
+  const scheduleProgram = useMemo(
+    () => programs.find((item) => item.id === selectedScheduleApp?.programId) || null,
+    [programs, selectedScheduleApp?.programId],
+  )
+  const schedulePic = useMemo(
+    () => DEFAULT_PICKUP_CONTACT_BY_PARTNER[scheduleProgram?.partnerId] || { name: 'Ops Pickup Desk', phone: '+62 811-0000-0000' },
+    [scheduleProgram?.partnerId],
+  )
   const appTotalPages = Math.max(1, Math.ceil(filteredApps.length / pageSize))
   const pickupTotalPages = Math.max(1, Math.ceil(filteredPickup.length / pageSize))
   const currentAppPage = Math.min(appPage, appTotalPages)
@@ -287,10 +364,55 @@ export function RtoView() {
     }
   }, [snapshot.apps])
   const timeSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00']
+  const todayIso = new Date().toISOString().slice(0, 10)
   const dateChoices = useMemo(() => {
-    const base = scheduleModal.date || new Date().toISOString().slice(0, 10)
-    return Array.from({ length: 10 }, (_, idx) => plusDaysISO(base, idx))
-  }, [scheduleModal.date])
+    return Array.from({ length: 120 }, (_, idx) => plusDaysISO(todayIso, idx))
+  }, [todayIso])
+  const slotLoadMap = useMemo(() => {
+    const map = {}
+    const location = (scheduleModal.location || '').trim().toLowerCase()
+    for (const app of snapshot.pickup || []) {
+      if (scheduleModal.id && app.id === scheduleModal.id) continue
+      const date = app.pickupSchedule?.date
+      const time = app.pickupSchedule?.time
+      if (!date || !time) continue
+      const appLocation = String(app.pickupSchedule?.location || getProgramLocation(app.programId) || '').trim().toLowerCase()
+      if (location && appLocation && appLocation !== location) continue
+      const key = `${date}|${time}`
+      map[key] = (map[key] || 0) + 1
+    }
+    return map
+  }, [snapshot.pickup, scheduleModal.id, scheduleModal.location])
+  const dateAvailability = useMemo(() => {
+    const result = {}
+    for (const date of dateChoices) {
+      const isPast = date < todayIso
+      const isSunday = dayShort(date) === 'Sun'
+      const hasOpenSlot = timeSlots.some((slot) => (slotLoadMap[`${date}|${slot}`] || 0) < 3)
+      result[date] = {
+        available: !isPast && !isSunday && hasOpenSlot,
+        reason: isSunday ? 'Unavailable (Sunday)' : !hasOpenSlot ? 'Fully booked' : '',
+      }
+    }
+    return result
+  }, [dateChoices, slotLoadMap, timeSlots, todayIso])
+  const monthLabel = useMemo(
+    () => new Date(`${calendarCursor}T00:00:00`).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+    [calendarCursor],
+  )
+  const calendarCells = useMemo(() => {
+    const [y, m] = calendarCursor.split('-').map(Number)
+    const firstDay = new Date(y, m - 1, 1)
+    const leadingBlanks = firstDay.getDay()
+    const totalDays = new Date(y, m, 0).getDate()
+    const cells = []
+    for (let idx = 0; idx < leadingBlanks; idx += 1) cells.push({ key: `blank-${idx}`, blank: true })
+    for (let day = 1; day <= totalDays; day += 1) {
+      const date = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      cells.push({ key: date, blank: false, date })
+    }
+    return cells
+  }, [calendarCursor])
 
   useEffect(() => {
     localStorage.setItem(
@@ -415,14 +537,20 @@ export function RtoView() {
       return
     }
     const schedule = app?.pickupSchedule || {}
+    const preferredDate = schedule.date || todayIso
+    const fallbackDate =
+      dateChoices.find((date) => dateAvailability[date]?.available) ||
+      preferredDate
+    const effectiveDate = dateAvailability[preferredDate]?.available ? preferredDate : fallbackDate
     setScheduleModal({
       open: true,
       id,
-      date: schedule.date || new Date().toISOString().slice(0, 10),
+      date: effectiveDate,
       time: schedule.time || '10:00',
       location: schedule.location || getProgramLocation(app?.programId),
       status: schedule.status || (schedule.date ? 'planned' : 'unscheduled'),
     })
+    setCalendarCursor(`${effectiveDate.slice(0, 7)}-01`)
   }
 
   const submitCreate = () => {
@@ -443,6 +571,8 @@ export function RtoView() {
 
   const submitSchedule = () => {
     if (!scheduleModal.id || !scheduleModal.date || !scheduleModal.time) return
+    if (!dateAvailability[scheduleModal.date]?.available) return
+    if ((slotLoadMap[`${scheduleModal.date}|${scheduleModal.time}`] || 0) >= 3) return
     scheduleRtoPickup(scheduleModal.id, {
       date: scheduleModal.date,
       time: scheduleModal.time,
@@ -450,6 +580,102 @@ export function RtoView() {
       status: scheduleModal.status || 'confirmed',
     })
     setScheduleModal((prev) => ({ ...prev, open: false }))
+  }
+  const openHandover = (app) => {
+    if (!app?.id || app.decision !== 'approved' || !app.assignedVehicleId) {
+      setMessage('Handover checklist requires approved application with assigned vehicle.')
+      return
+    }
+    const existing = app.handoverChecklist || {}
+    const existingPhotos = app.handoverPhotos || {}
+    setHandoverModal({
+      open: true,
+      id: app.id,
+      assignedVehicleId: app.assignedVehicleId || '',
+      identityVerified: Boolean(existing.identityVerified),
+      vehicleConditionChecked: Boolean(existing.vehicleConditionChecked),
+      tireConditionChecked: Boolean(existing.tireConditionChecked),
+      keyHandoverChecked: Boolean(existing.keyHandoverChecked),
+      stnkVerified: Boolean(existing.stnkVerified),
+      contractAcknowledged: Boolean(existing.contractAcknowledged),
+      handoverPhotoUrl: existingPhotos.handover || existingPhotos.front || existingPhotos.left || '',
+      appStatusUpdated: Boolean(existing.appStatusUpdated),
+      notes: '',
+      error: '',
+    })
+  }
+  const onHandoverPhotoChange = (key, event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      setHandoverModal((prev) => ({ ...prev, [key]: result, error: '' }))
+    }
+    reader.readAsDataURL(file)
+  }
+  const submitHandover = () => {
+    if (!handoverModal.id) return
+    if (!handoverModal.assignedVehicleId) {
+      setHandoverModal((prev) => ({ ...prev, error: 'Assigned vehicle is required for handover completion.' }))
+      return
+    }
+    const targetVehicle = vehicles.find((vehicle) => vehicle.id === handoverModal.assignedVehicleId)
+    if (!targetVehicle) {
+      setHandoverModal((prev) => ({ ...prev, error: 'Selected vehicle was not found.' }))
+      return
+    }
+    if (selectedHandoverApp?.assignedVehicleId !== handoverModal.assignedVehicleId && targetVehicle.status !== 'available') {
+      setHandoverModal((prev) => ({ ...prev, error: 'Vehicle can only be changed to one with AVAILABLE status.' }))
+      return
+    }
+    if (selectedHandoverApp?.assignedVehicleId !== handoverModal.assignedVehicleId) {
+      decideRtoApplication(handoverModal.id, 'approved', {
+        assignedVehicleId: handoverModal.assignedVehicleId,
+        notes: 'Vehicle reassigned during handover process.',
+      })
+    }
+    const checklist = {
+      identityVerified: Boolean(handoverModal.identityVerified),
+      vehicleConditionChecked: Boolean(handoverModal.vehicleConditionChecked),
+      tireConditionChecked: Boolean(handoverModal.tireConditionChecked),
+      keyHandoverChecked: Boolean(handoverModal.keyHandoverChecked),
+      stnkVerified: Boolean(handoverModal.stnkVerified),
+      contractAcknowledged: Boolean(handoverModal.contractAcknowledged),
+      appStatusUpdated: Boolean(handoverModal.appStatusUpdated),
+      photos: {
+        handover: handoverModal.handoverPhotoUrl,
+      },
+    }
+    const allChecked = [
+      checklist.identityVerified,
+      checklist.vehicleConditionChecked,
+      checklist.tireConditionChecked,
+      checklist.keyHandoverChecked,
+      checklist.stnkVerified,
+      checklist.contractAcknowledged,
+      checklist.appStatusUpdated,
+    ].every(Boolean)
+    if (!allChecked) {
+      setHandoverModal((prev) => ({ ...prev, error: 'Check all required handover checklist items before completion.' }))
+      return
+    }
+    const ok = completeRtoHandover(handoverModal.id, checklist, handoverModal.notes || '')
+    if (!ok) {
+      setHandoverModal((prev) => ({ ...prev, error: 'Unable to complete handover. Verify vehicle and checklist status.' }))
+      return
+    }
+    setHandoverModal((prev) => ({ ...prev, open: false, notes: '', error: '' }))
+    setMessage('Handover completed. Renter is now activated for Renters List.')
+  }
+  const resetApplicationFilters = () => {
+    setAppSearch('')
+    setAppFilter('all')
+    setAppScoreBand('all')
+    setAppDocsFilter('all')
+    setAppSlaFilter('all')
+    setAppReviewerFilter('all')
+    setAppPage(1)
   }
 
   const formControlCls =
@@ -460,6 +686,10 @@ export function RtoView() {
     'rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700'
   const pillCls =
     'inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100'
+  const topTabBaseCls =
+    'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
+  const topTabIdleCls = 'border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
+  const topTabActiveCls = 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)] hover:bg-indigo-700'
 
   return (
     <PageShell>
@@ -475,15 +705,14 @@ export function RtoView() {
       </StatsGrid>
 
       <div className="mb-2 flex flex-wrap gap-2">
-        {['applications', 'pickup', 'score', 'wa'].map((key) => (
+        {TAB_ITEMS.map((item) => (
           <button
-            key={key}
-            className={`${pillCls} ${
-              tab === key ? 'border-[color:var(--ac)] bg-[color:var(--ac)] text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]' : ''
-            }`}
-            onClick={() => setTab(key)}
+            key={item.key}
+            className={`${topTabBaseCls} ${tab === item.key ? topTabActiveCls : topTabIdleCls}`}
+            aria-pressed={tab === item.key}
+            onClick={() => setTab(normalizeTab(item.key))}
           >
-            {key}
+            {item.label}
           </button>
         ))}
       </div>
@@ -491,82 +720,105 @@ export function RtoView() {
 
       {tab === 'applications' && (
         <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="text-sm font-semibold text-slate-700">Application Filters</div>
+            <button className={ghostBtnCls} type="button" onClick={resetApplicationFilters}>
+              Reset Filters
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-2 lg:grid-cols-6">
-            <Input
-              variant="legacy"
-              className="lg:col-span-2"
-              placeholder="Search app, applicant, program..."
-              value={appSearch}
-              onChange={(e) => {
-                setAppSearch(e.target.value)
-                setAppPage(1)
-              }}
-            />
-            <Select
-              variant="legacy"
-              value={appFilter}
-              onChange={(e) => {
-                setAppFilter(e.target.value)
-                setAppPage(1)
-              }}
-            >
-              <option value="all">All Decisions</option>
-              <option value="pending">Pending</option>
-              <option value="review">Review</option>
-              <option value="pending_docs">Needs Docs</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </Select>
-            <Select
-              variant="legacy"
-              value={appScoreBand}
-              onChange={(e) => {
-                setAppScoreBand(e.target.value)
-                setAppPage(1)
-              }}
-            >
-              <option value="all">All Scores</option>
-              <option value="high">High (80+)</option>
-              <option value="medium">Medium (60-79)</option>
-              <option value="low">Low (&lt;60)</option>
-            </Select>
-            <Select
-              variant="legacy"
-              value={appDocsFilter}
-              onChange={(e) => {
-                setAppDocsFilter(e.target.value)
-                setAppPage(1)
-              }}
-            >
-              <option value="all">All Docs</option>
-              <option value="complete">Docs Complete</option>
-              <option value="missing">Missing Docs</option>
-            </Select>
-            <Select
-              variant="legacy"
-              value={appSlaFilter}
-              onChange={(e) => {
-                setAppSlaFilter(e.target.value)
-                setAppPage(1)
-              }}
-            >
-              <option value="all">All SLA</option>
-              <option value="today">Fresh (0-1d)</option>
-              <option value="overdue">Overdue (&gt;3d)</option>
-            </Select>
-            <Select
-              variant="legacy"
-              value={appReviewerFilter}
-              onChange={(e) => {
-                setAppReviewerFilter(e.target.value)
-                setAppPage(1)
-              }}
-            >
-              <option value="all">All Reviewers</option>
-              <option value="Unassigned">Unassigned</option>
-              <option value="Ops Reviewer">Ops Reviewer</option>
-              <option value="Risk Analyst">Risk Analyst</option>
-            </Select>
+            <div className="lg:col-span-2">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Search</div>
+              <Input
+                variant="legacy"
+                placeholder="App ID, applicant, or program"
+                value={appSearch}
+                onChange={(e) => {
+                  setAppSearch(e.target.value)
+                  setAppPage(1)
+                }}
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Decision</div>
+              <Select
+                variant="legacy"
+                value={appFilter}
+                onChange={(e) => {
+                  setAppFilter(e.target.value)
+                  setAppPage(1)
+                }}
+              >
+                <option value="all">All Decisions</option>
+                <option value="pending">Pending</option>
+                <option value="review">Review</option>
+                <option value="pending_docs">Needs Docs</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Score Band</div>
+              <Select
+                variant="legacy"
+                value={appScoreBand}
+                onChange={(e) => {
+                  setAppScoreBand(e.target.value)
+                  setAppPage(1)
+                }}
+              >
+                <option value="all">All Scores</option>
+                <option value="high">High (80+)</option>
+                <option value="medium">Medium (60-79)</option>
+                <option value="low">Low (&lt;60)</option>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Document Status</div>
+              <Select
+                variant="legacy"
+                value={appDocsFilter}
+                onChange={(e) => {
+                  setAppDocsFilter(e.target.value)
+                  setAppPage(1)
+                }}
+              >
+                <option value="all">All Docs</option>
+                <option value="complete">Docs Complete</option>
+                <option value="missing">Missing Docs</option>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">SLA</div>
+              <Select
+                variant="legacy"
+                value={appSlaFilter}
+                onChange={(e) => {
+                  setAppSlaFilter(e.target.value)
+                  setAppPage(1)
+                }}
+              >
+                <option value="all">All SLA</option>
+                <option value="today">Fresh (0-1d)</option>
+                <option value="overdue">Overdue (&gt;3d)</option>
+              </Select>
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Reviewer</div>
+              <Select
+                variant="legacy"
+                value={appReviewerFilter}
+                onChange={(e) => {
+                  setAppReviewerFilter(e.target.value)
+                  setAppPage(1)
+                }}
+              >
+                <option value="all">All Reviewers</option>
+                <option value="Unassigned">Unassigned</option>
+                <option value="Ops Reviewer">Ops Reviewer</option>
+                <option value="Risk Analyst">Risk Analyst</option>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-end">
             <button className={primaryBtnCls} type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: true }))}>
@@ -844,10 +1096,12 @@ export function RtoView() {
                 <th className="px-3 py-2 text-left">APP</th>
                 <th className="px-3 py-2 text-left">APPLICANT</th>
                 <th className="px-3 py-2 text-left">VEHICLE</th>
+                <th className="px-3 py-2 text-left">VEHICLE STATUS</th>
                 <th className="px-3 py-2 text-left">DATE</th>
                 <th className="px-3 py-2 text-left">TIME</th>
                 <th className="px-3 py-2 text-left">LOCATION</th>
                 <th className="px-3 py-2 text-left">STATUS</th>
+                <th className="px-3 py-2 text-left">HANDOVER</th>
                 <th className="px-3 py-2 text-left">ACTIONS</th>
               </tr>
             </thead>
@@ -857,7 +1111,30 @@ export function RtoView() {
                   <tr key={app.id} className="border-t border-slate-100">
                     <td className="px-3 py-2">{app.id}</td>
                     <td className="px-3 py-2">{app.userName}</td>
-                    <td className="px-3 py-2">{app.assignedVehicleId || '-'}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-semibold text-slate-900">{app.assignedVehicleId || '-'}</div>
+                    </td>
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const assignedVehicle = vehicles.find((vehicle) => vehicle.id === app.assignedVehicleId)
+                        const movement = Number(assignedVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
+                        return assignedVehicle ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicleStateTone(assignedVehicle.status)}`}>
+                              {String(assignedVehicle.status || '-').toUpperCase()}
+                            </span>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${assignedVehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {assignedVehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
+                            </span>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movement === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {movement}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )
+                      })()}
+                    </td>
                     <td className="px-3 py-2">{app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toLocaleDateString('id-ID') : '-')}</td>
                     <td className="px-3 py-2">{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</td>
                     <td className="px-3 py-2">{app.pickupSchedule?.location || getProgramLocation(app.programId)}</td>
@@ -867,15 +1144,29 @@ export function RtoView() {
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <button className={pillCls} type="button" onClick={() => onSchedule(app.id)}>
-                        {app.pickupSchedule?.date ? 'Edit Slot' : 'Set Slot'}
-                      </button>
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                          app.handoverCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {app.handoverCompleted ? 'CHECKLIST COMPLETE' : 'PENDING CHECKLIST'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button className={pillCls} type="button" onClick={() => onSchedule(app.id)}>
+                          {app.pickupSchedule?.date ? 'Edit Slot' : 'Set Slot'}
+                        </button>
+                        <button className={pillCls} type="button" onClick={() => openHandover(app)}>
+                          {app.handoverCompleted ? 'View Checklist' : 'Complete Handover'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={10} className="px-6 py-8 text-center text-sm text-slate-500">
                     No pickups scheduled yet.
                   </td>
                 </tr>
@@ -1317,26 +1608,92 @@ export function RtoView() {
         <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
           <h2>Schedule Pickup Confirmation</h2>
 
-          <div className="mb-3 rounded-xl border-2 border-cyan-200 bg-slate-50 p-3">
-            <div className="mb-1.5 text-sm font-extrabold text-cyan-700">
+          <div className="mb-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-1.5 text-sm font-extrabold text-slate-700">
               ADMIN SCHEDULING ASSISTANT
             </div>
             <div className="mb-2 text-sm text-slate-600">
               Help driver select pickup date & time.
             </div>
+            <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
+              Selected: {dateChipLabel(scheduleModal.date)} at {scheduleModal.time}
+            </div>
 
             <div className="mb-1 text-xs font-extrabold text-slate-500">PICKUP DATE</div>
-            <div className="mb-3 grid grid-cols-2 gap-1.5 md:grid-cols-5">
-              {dateChoices.map((date) => {
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={calendarCursor <= `${todayIso.slice(0, 7)}-01`}
+                onClick={() => {
+                  const date = new Date(`${calendarCursor}T00:00:00`)
+                  date.setMonth(date.getMonth() - 1)
+                  setCalendarCursor(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`)
+                }}
+              >
+                ← Prev
+              </button>
+              <div className="flex items-center gap-1.5">
+                <div className="text-sm font-bold text-slate-700">{monthLabel}</div>
+                <button
+                  type="button"
+                  className="rounded-md border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                  onClick={() => {
+                    const todayAvailable = dateAvailability[todayIso]?.available
+                    const fallbackTodayMonthDate =
+                      dateChoices.find((date) => date.startsWith(todayIso.slice(0, 7)) && dateAvailability[date]?.available) ||
+                      scheduleModal.date
+                    setCalendarCursor(`${todayIso.slice(0, 7)}-01`)
+                    setScheduleModal((prev) => ({ ...prev, date: todayAvailable ? todayIso : fallbackTodayMonthDate }))
+                  }}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
+                  onClick={() => {
+                    const date = new Date(`${calendarCursor}T00:00:00`)
+                    date.setMonth(date.getMonth() + 1)
+                    setCalendarCursor(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`)
+                  }}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+            <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={`day-${day}`}>{day}</div>
+              ))}
+            </div>
+            <div className="mb-3 grid grid-cols-7 gap-1.5">
+              {calendarCells.map((cell) => {
+                if (cell.blank) return <div key={cell.key} />
+                const date = cell.date
                 const active = date === scheduleModal.date
+                const isToday = date === todayIso
+                const available = dateAvailability[date]?.available
                 return (
                   <button
                     key={date}
                     type="button"
-                    className={`${pillCls} justify-center text-xs ${active ? 'border-cyan-300 bg-cyan-50 text-cyan-700' : ''}`}
-                    onClick={() => setScheduleModal((prev) => ({ ...prev, date }))}
+                    disabled={!available}
+                    title={available ? dateChipLabel(date) : dateAvailability[date]?.reason || 'Unavailable'}
+                    className={`relative h-10 rounded-md border text-center text-sm font-semibold transition ${
+                      active
+                        ? 'border-blue-700 bg-blue-700 text-white ring-4 ring-blue-200 ring-offset-1 animate-pulse'
+                        : isToday
+                          ? 'border-blue-300 bg-blue-50 text-blue-700 hover:border-blue-400'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+                    } ${!available ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70' : ''}`}
+                    onClick={() => {
+                      if (!available) return
+                      setScheduleModal((prev) => ({ ...prev, date }))
+                    }}
                   >
-                    {dateChipLabel(date)}
+                    {date.slice(-2)}
+                    {active ? <span className="absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" /> : null}
                   </button>
                 )
               })}
@@ -1346,17 +1703,30 @@ export function RtoView() {
             <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
               {timeSlots.map((slot) => {
                 const active = slot === scheduleModal.time
+                const isUnavailable = (slotLoadMap[`${scheduleModal.date}|${slot}`] || 0) >= 3
                 return (
                   <button
                     key={slot}
                     type="button"
-                    className={`${pillCls} justify-center text-xs ${active ? 'border-cyan-300 bg-cyan-50 text-cyan-700' : ''}`}
-                    onClick={() => setScheduleModal((prev) => ({ ...prev, time: slot }))}
+                    disabled={isUnavailable}
+                    title={isUnavailable ? 'Slot unavailable' : slot}
+                    className={`h-10 rounded-md border text-sm font-semibold transition ${
+                      active
+                        ? 'border-blue-700 bg-blue-700 text-white ring-2 ring-blue-200 ring-offset-1'
+                        : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+                    } ${isUnavailable ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70' : ''}`}
+                    onClick={() => {
+                      if (isUnavailable) return
+                      setScheduleModal((prev) => ({ ...prev, time: slot }))
+                    }}
                   >
-                    {slot}
+                    {slot}{isUnavailable ? ' (full)' : ''}
                   </button>
                 )
               })}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              Greyed dates/slots are unavailable. Sundays and fully booked slots are blocked.
             </div>
           </div>
 
@@ -1368,6 +1738,25 @@ export function RtoView() {
               onChange={(e) => setScheduleModal((prev) => ({ ...prev, location: e.target.value }))}
             />
           </div>
+          <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Pickup PIC</div>
+              <div className="text-sm font-bold text-slate-900">{schedulePic.name}</div>
+              <div className="text-sm text-slate-600">{schedulePic.phone}</div>
+              <div className="mt-2 text-xs text-slate-500">
+                Program: {scheduleProgram?.name || '-'} ({scheduleProgram?.type || '-'})
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <iframe
+                title="Pickup location map"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(scheduleModal.location || getProgramLocation(selectedScheduleApp?.programId || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                style={{ border: 0, width: '100%', height: 160 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
           <div className="mb-4">
             <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Status</label>
             <select
@@ -1378,7 +1767,6 @@ export function RtoView() {
               <option value="planned">Planned</option>
               <option value="confirmed">Confirmed</option>
               <option value="rescheduled">Rescheduled</option>
-              <option value="completed">Completed</option>
               <option value="no_show">No Show</option>
             </select>
           </div>
@@ -1386,8 +1774,122 @@ export function RtoView() {
             <button className={ghostBtnCls} type="button" onClick={() => setScheduleModal((prev) => ({ ...prev, open: false }))}>
               Cancel
             </button>
-            <button className={primaryBtnCls} type="button" onClick={submitSchedule}>
+            <button
+              className={primaryBtnCls}
+              type="button"
+              disabled={!dateAvailability[scheduleModal.date]?.available || (slotLoadMap[`${scheduleModal.date}|${scheduleModal.time}`] || 0) >= 3}
+              onClick={submitSchedule}
+            >
               Confirm Schedule: {scheduleModal.date} @ {scheduleModal.time}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${handoverModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
+        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+          <h2 className="mb-1 text-lg font-extrabold text-slate-900">Complete Handover Checklist</h2>
+          {handoverModal.error ? (
+            <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+              {handoverModal.error}
+            </div>
+          ) : null}
+          <div className="mb-3 text-sm text-slate-600">
+            App {selectedHandoverApp?.id || '-'} • {selectedHandoverApp?.userName || '-'} • Vehicle {selectedHandoverApp?.assignedVehicleId || '-'}
+          </div>
+          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Assigned Vehicle Status</div>
+            <div className="mb-2">
+              <label className="mb-1 block text-xs font-semibold text-slate-500">Assigned Vehicle (can be changed during process)</label>
+              <select
+                className={formControlCls}
+                value={handoverModal.assignedVehicleId}
+                onChange={(e) => setHandoverModal((prev) => ({ ...prev, assignedVehicleId: e.target.value, error: '' }))}
+              >
+                <option value="">Select assigned vehicle</option>
+                {handoverVehicleOptions.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.id} • {vehicle.plate || '-'} • {String(vehicle.status || '-').toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="text-sm font-bold text-slate-900">{selectedHandoverVehicle?.id || '-'}</div>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicleStateTone(selectedHandoverVehicle?.status)}`}>
+                {String(selectedHandoverVehicle?.status || 'unknown').toUpperCase()}
+              </span>
+              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${selectedHandoverVehicle?.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                {selectedHandoverVehicle?.isOnline ? 'ONLINE' : 'OFFLINE'}
+              </span>
+              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                {Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            {[
+              ['identityVerified', 'Identity verified on-site'],
+              ['vehicleConditionChecked', 'Vehicle condition and accessories checked'],
+              ['tireConditionChecked', 'Tire condition verified (front/back)'],
+              ['keyHandoverChecked', 'Key handover confirmed (main/spare)'],
+              ['stnkVerified', 'STNK document verified with plate/chassis'],
+              ['contractAcknowledged', 'Contract and payment terms acknowledged'],
+              ['appStatusUpdated', 'System status and evidence links updated'],
+            ].map(([key, label]) => (
+              <label key={key} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(handoverModal[key])}
+                  onChange={(e) => setHandoverModal((prev) => ({ ...prev, [key]: e.target.checked, error: '' }))}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Handover Photo Upload</div>
+            <div className="rounded-md border border-slate-200 bg-white p-2">
+              <div className="mb-1 text-xs font-semibold text-slate-600">Photo of handover</div>
+              <input type="file" accept="image/*" onChange={(e) => onHandoverPhotoChange('handoverPhotoUrl', e)} />
+              <div className="mt-1 text-[11px] text-slate-500">
+                {handoverModal.handoverPhotoUrl ? 'Photo attached' : 'No file uploaded'}
+              </div>
+              {handoverModal.handoverPhotoUrl ? (
+                <div className="mt-2">
+                  <img src={handoverModal.handoverPhotoUrl} alt="Handover proof" className="h-28 w-full rounded-md border border-slate-200 object-cover" />
+                  <div className="mt-2 flex gap-2">
+                    <label className={`${ghostBtnCls} cursor-pointer`}>
+                      Replace Photo
+                      <input type="file" accept="image/*" className="hidden" onChange={(e) => onHandoverPhotoChange('handoverPhotoUrl', e)} />
+                    </label>
+                    <button
+                      className={ghostBtnCls}
+                      type="button"
+                      onClick={() => setHandoverModal((prev) => ({ ...prev, handoverPhotoUrl: '', error: '' }))}
+                    >
+                      Remove Photo
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Handover Notes</label>
+            <textarea
+              className={`${formControlCls} min-h-[90px]`}
+              value={handoverModal.notes}
+              onChange={(e) => setHandoverModal((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Optional note: condition summary, remarks, photo refs."
+            />
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            <button className={ghostBtnCls} type="button" onClick={() => setHandoverModal((prev) => ({ ...prev, open: false }))}>
+              Cancel
+            </button>
+            <button className={primaryBtnCls} type="button" onClick={submitHandover}>
+              Complete Handover
             </button>
           </div>
         </div>

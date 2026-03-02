@@ -6,6 +6,7 @@ const runtimeState = {
 const LISTENERS_EVENT = 'legacy-state-updated'
 const PARTNERS = ['tangkas', 'maka', 'united']
 const MODELS = ['Zeeho AE8', 'Maka One', 'United MX1200']
+const BRANDS = ['Zeeho', 'Maka', 'United']
 const STATUSES = ['active', 'grace', 'immobilized', 'paused', 'available']
 const GPS_STATUSES = ['Online', 'Offline', 'Low Signal', 'Tampered']
 const INDONESIAN_FIRST_NAMES = [
@@ -20,6 +21,18 @@ const PROGRAM_PICKUP_LOCATIONS = {
   tangkas: 'Tangkas Hub - Kemayoran',
   maka: 'Maka Center - Tebet',
   united: 'United Point - Bekasi Barat',
+}
+const HANDOVER_CHECKLIST_TEMPLATE = {
+  identityVerified: false,
+  vehicleConditionChecked: false,
+  tireConditionChecked: false,
+  keyHandoverChecked: false,
+  stnkVerified: false,
+  contractAcknowledged: false,
+  appStatusUpdated: false,
+}
+const HANDOVER_PHOTO_TEMPLATE = {
+  handover: '',
 }
 
 let localState = {
@@ -44,6 +57,7 @@ function normalizeDataIntegrity(state) {
 
   for (const program of state.programs) {
     if (!program.type) program.type = 'RTO'
+    if (!program.durationDays) program.durationDays = program.type === 'RTO' ? 180 : 30
     if (!program.pickupLocation) {
       program.pickupLocation = PROGRAM_PICKUP_LOCATIONS[program.partnerId] || 'Program Pickup Point'
     }
@@ -59,6 +73,32 @@ function normalizeDataIntegrity(state) {
   }
 
   for (const vehicle of state.vehicles) {
+    if (!vehicle.brand && vehicle.model) {
+      vehicle.brand = String(vehicle.model).split(' ')[0]
+    }
+    if (typeof vehicle.handoverCompleted !== 'boolean') {
+      // Backfill legacy assigned renters as completed so existing lists remain stable.
+      vehicle.handoverCompleted = Boolean(vehicle.customer || vehicle.userId)
+    }
+    const existingVehicleChecklist = vehicle.handoverChecklist && typeof vehicle.handoverChecklist === 'object' ? vehicle.handoverChecklist : {}
+    const normalizedVehicleChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE, ...existingVehicleChecklist }
+    vehicle.handoverChecklist = {
+      ...normalizedVehicleChecklist,
+      appStatusUpdated: Boolean(normalizedVehicleChecklist.appStatusUpdated || existingVehicleChecklist.photosCaptured),
+    }
+    const existingVehiclePhotos = vehicle.handoverPhotos && typeof vehicle.handoverPhotos === 'object' ? vehicle.handoverPhotos : {}
+    const legacyVehiclePhoto =
+      existingVehiclePhotos.handover ||
+      existingVehiclePhotos.front ||
+      existingVehiclePhotos.left ||
+      existingVehiclePhotos.right ||
+      existingVehiclePhotos.odometer ||
+      existingVehiclePhotos.renterWithVehicle ||
+      ''
+    vehicle.handoverPhotos = { handover: legacyVehiclePhoto }
+    if (vehicle.handoverCompleted) {
+      for (const key of Object.keys(HANDOVER_CHECKLIST_TEMPLATE)) vehicle.handoverChecklist[key] = true
+    }
     const linkedUser = vehicle.userId ? usersById.get(vehicle.userId) : null
     if (linkedUser) {
       if (!linkedUser.vehicleIds.includes(vehicle.id)) linkedUser.vehicleIds.push(vehicle.id)
@@ -133,6 +173,31 @@ function normalizeDataIntegrity(state) {
     } else if (!app.pickupSchedule.status) {
       app.pickupSchedule.status = app.pickupDate ? 'planned' : 'unscheduled'
     }
+    const existingAppChecklist = app.handoverChecklist && typeof app.handoverChecklist === 'object' ? app.handoverChecklist : {}
+    const normalizedAppChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE, ...existingAppChecklist }
+    app.handoverChecklist = {
+      ...normalizedAppChecklist,
+      appStatusUpdated: Boolean(normalizedAppChecklist.appStatusUpdated || existingAppChecklist.photosCaptured),
+    }
+    const existingAppPhotos = app.handoverPhotos && typeof app.handoverPhotos === 'object' ? app.handoverPhotos : {}
+    const legacyAppPhoto =
+      existingAppPhotos.handover ||
+      existingAppPhotos.front ||
+      existingAppPhotos.left ||
+      existingAppPhotos.right ||
+      existingAppPhotos.odometer ||
+      existingAppPhotos.renterWithVehicle ||
+      ''
+    app.handoverPhotos = { handover: legacyAppPhoto }
+    if (typeof app.handoverCompleted !== 'boolean') {
+      app.handoverCompleted = app.pickupSchedule?.status === 'completed'
+    }
+    if (app.handoverCompleted && !app.handoverCompletedAt) {
+      app.handoverCompletedAt = app.updatedAt || new Date().toISOString()
+    }
+    if (app.handoverCompleted) {
+      for (const key of Object.keys(HANDOVER_CHECKLIST_TEMPLATE)) app.handoverChecklist[key] = true
+    }
   }
 }
 
@@ -157,6 +222,7 @@ function seedLocalState() {
       commissionRate: 0.1,
       commissionFixed: 0,
       pickupLocation: PROGRAM_PICKUP_LOCATIONS[partner] || 'Program Pickup Point',
+      durationDays: type === 'RTO' ? 180 : 30,
       eligibleModels: [MODELS[i % MODELS.length]],
       minSalary: 0,
       promotions: [],
@@ -177,6 +243,7 @@ function seedLocalState() {
       partnerId: partner,
       programId: program.id,
       programType: program.type,
+      brand: BRANDS[i % BRANDS.length],
       model: MODELS[i % MODELS.length],
       lat: -6.25 + rand(i + 1) * 0.2 - 0.1,
       lng: 106.85 + rand(i + 2) * 0.3 - 0.15,
@@ -184,6 +251,19 @@ function seedLocalState() {
       riskScore: Math.floor(rand(i + 4) * 100),
       speed: Math.floor(rand(i + 5) * 60),
       isOnline: rand(i + 6) > 0.2,
+      handoverCompleted: Boolean(status !== 'available'),
+      handoverChecklist: {
+        identityVerified: Boolean(status !== 'available'),
+        vehicleConditionChecked: Boolean(status !== 'available'),
+        tireConditionChecked: Boolean(status !== 'available'),
+        keyHandoverChecked: Boolean(status !== 'available'),
+        stnkVerified: Boolean(status !== 'available'),
+        contractAcknowledged: Boolean(status !== 'available'),
+        appStatusUpdated: Boolean(status !== 'available'),
+      },
+      handoverPhotos: {
+        handover: '',
+      },
     }
   })
 
@@ -275,6 +355,10 @@ function seedLocalState() {
         location: PROGRAM_PICKUP_LOCATIONS[program?.partnerId] || 'Program Pickup Point',
         status: pickupDate ? 'planned' : 'unscheduled',
       },
+      handoverChecklist: { ...HANDOVER_CHECKLIST_TEMPLATE },
+      handoverPhotos: { ...HANDOVER_PHOTO_TEMPLATE },
+      handoverCompleted: false,
+      handoverCompletedAt: null,
       documents: [
         { id: 'ktp', name: 'KTP', status: 'submitted' },
         { id: 'simc', name: 'SIM C', status: i % 4 === 0 ? 'missing' : 'submitted' },
@@ -619,9 +703,14 @@ export function getRtoSnapshot() {
 export function decideRtoApplication(id, decision, updates = {}) {
   const app = getState().rtoApplications.find((item) => item.id === id)
   if (!app) return
+  const previousAssignedVehicleId = app.assignedVehicleId || null
   const normalizedDecision = decision === 'declined' ? 'rejected' : decision
   if (!['pending', 'review', 'pending_docs', 'approved', 'rejected'].includes(normalizedDecision)) return
   if (normalizedDecision === 'approved' && !updates.assignedVehicleId && !app.assignedVehicleId) return
+  if (updates.assignedVehicleId && updates.assignedVehicleId !== previousAssignedVehicleId) {
+    const nextVehicle = getState().vehicles.find((vehicle) => vehicle.id === updates.assignedVehicleId)
+    if (!nextVehicle || nextVehicle.status !== 'available') return
+  }
   if (normalizedDecision === 'pending_docs' && (!updates.requiredDocs || updates.requiredDocs.length === 0)) return
   if (normalizedDecision === 'rejected' && !String(updates.rejectReason || '').trim()) return
   app.decision = normalizedDecision
@@ -633,6 +722,18 @@ export function decideRtoApplication(id, decision, updates = {}) {
     app.reviewLog = [...(app.reviewLog || []), updates.reviewEntry]
   }
   if (normalizedDecision !== 'approved') {
+    if (previousAssignedVehicleId) {
+      const prevVehicle = getState().vehicles.find((vehicle) => vehicle.id === previousAssignedVehicleId)
+      if (prevVehicle) {
+        prevVehicle.handoverCompleted = false
+        prevVehicle.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+        prevVehicle.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+      }
+    }
+    app.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+    app.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+    app.handoverCompleted = false
+    app.handoverCompletedAt = null
     app.pickupDate = null
     app.pickupSchedule = {
       ...(app.pickupSchedule || {}),
@@ -650,6 +751,28 @@ export function decideRtoApplication(id, decision, updates = {}) {
       status: schedule.status && schedule.status !== 'unscheduled' ? schedule.status : 'planned',
     }
   }
+  if (normalizedDecision === 'approved' && app.assignedVehicleId) {
+    if (previousAssignedVehicleId && previousAssignedVehicleId !== app.assignedVehicleId) {
+      const previousVehicle = getState().vehicles.find((vehicle) => vehicle.id === previousAssignedVehicleId)
+      if (previousVehicle) {
+        previousVehicle.handoverCompleted = false
+        previousVehicle.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+        previousVehicle.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+      }
+    }
+    const assignedVehicle = getState().vehicles.find((vehicle) => vehicle.id === app.assignedVehicleId)
+    if (assignedVehicle) {
+      assignedVehicle.userId = app.userId || assignedVehicle.userId
+      assignedVehicle.customer = app.userName || assignedVehicle.customer
+      assignedVehicle.handoverCompleted = false
+      assignedVehicle.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+      assignedVehicle.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+    }
+    app.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+    app.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+    app.handoverCompleted = false
+    app.handoverCompletedAt = null
+  }
   notifyStateChanged()
 }
 
@@ -666,21 +789,63 @@ export function scheduleRtoPickup(id, pickupDetails) {
       date: pickupDetails.slice(0, 10),
       time: pickupDetails.slice(11, 16),
       location: app.pickupSchedule?.location || defaultLocation,
-      status: 'confirmed',
+      status: app.handoverCompleted ? 'completed' : 'confirmed',
     }
   } else {
     const date = pickupDetails?.date || new Date().toISOString().slice(0, 10)
     const time = pickupDetails?.time || '10:00'
     const location = pickupDetails?.location || app.pickupSchedule?.location || defaultLocation
     app.pickupDate = new Date(`${date}T${time}:00`).toISOString()
+    const requestedStatus = pickupDetails?.status || (app.pickupSchedule?.date ? 'rescheduled' : 'confirmed')
     app.pickupSchedule = {
       date,
       time,
       location,
-      status: pickupDetails?.status || (app.pickupSchedule?.date ? 'rescheduled' : 'confirmed'),
+      status: requestedStatus === 'completed' && !app.handoverCompleted ? 'confirmed' : requestedStatus,
     }
   }
+  if (app.pickupSchedule?.status !== 'completed') {
+    app.handoverCompleted = false
+    app.handoverCompletedAt = null
+  }
   notifyStateChanged()
+}
+
+export function completeRtoHandover(id, checklist = {}, notes = '') {
+  const state = getState()
+  const app = state.rtoApplications.find((item) => item.id === id)
+  if (!app) return false
+  if (app.decision !== 'approved' || !app.assignedVehicleId) return false
+  const incoming = checklist && typeof checklist === 'object' ? checklist : {}
+  const incomingPhotos = incoming.photos && typeof incoming.photos === 'object' ? incoming.photos : {}
+  const checklistWithoutPhotos = { ...incoming }
+  delete checklistWithoutPhotos.photos
+  const normalizedChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE, ...checklistWithoutPhotos }
+  const allChecked = Object.values(normalizedChecklist).every(Boolean)
+  if (!allChecked) return false
+  const normalizedPhotos = { ...HANDOVER_PHOTO_TEMPLATE, ...incomingPhotos }
+  app.handoverChecklist = normalizedChecklist
+  app.handoverPhotos = normalizedPhotos
+  app.handoverCompleted = true
+  app.handoverCompletedAt = new Date().toISOString()
+  app.pickupSchedule = {
+    ...(app.pickupSchedule || {}),
+    status: 'completed',
+  }
+  if (notes) {
+    app.notes = [app.notes, `Handover: ${notes}`].filter(Boolean).join(' | ')
+  }
+  const vehicle = state.vehicles.find((item) => item.id === app.assignedVehicleId)
+  if (vehicle) {
+    vehicle.userId = app.userId || vehicle.userId
+    vehicle.customer = app.userName || vehicle.customer
+    vehicle.handoverCompleted = true
+    vehicle.handoverChecklist = normalizedChecklist
+    vehicle.handoverPhotos = normalizedPhotos
+    vehicle.handoverCompletedAt = app.handoverCompletedAt
+  }
+  notifyStateChanged()
+  return true
 }
 
 export function createRtoApplication(fields) {
@@ -705,6 +870,10 @@ export function createRtoApplication(fields) {
       location: fields.pickupLocation || defaultLocation,
       status: fields.pickupDate ? 'planned' : 'unscheduled',
     },
+    handoverChecklist: { ...HANDOVER_CHECKLIST_TEMPLATE },
+    handoverPhotos: { ...HANDOVER_PHOTO_TEMPLATE },
+    handoverCompleted: false,
+    handoverCompletedAt: null,
     documents: Array.isArray(fields.documents)
       ? fields.documents
       : [

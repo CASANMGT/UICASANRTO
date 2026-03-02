@@ -30,6 +30,7 @@ export function RentersView() {
   const [search, setSearch] = useState('')
   const [program, setProgram] = useState('all')
   const [status, setStatus] = useState('all')
+  const [renterTab, setRenterTab] = useState('all')
   const [page, setPage] = useState(1)
 
   const programs = useMemo(() => {
@@ -41,15 +42,28 @@ export function RentersView() {
     void tick
     const state = getState()
     const usersById = new Map((state.users || []).map((user) => [user.userId, user]))
+    const txByVehicleId = (state.transactions || []).reduce((map, tx) => {
+      const key = String(tx.vehicleId || '').trim()
+      if (!key) return map
+      map[key] = map[key] || []
+      map[key].push(tx)
+      return map
+    }, {})
     let list = (state.vehicles || [])
-      .filter((vehicle) => vehicle.customer || vehicle.userId)
+      .filter((vehicle) => (vehicle.customer || vehicle.userId) && vehicle.handoverCompleted !== false)
       .map((vehicle) => {
         const user =
           (vehicle.userId && usersById.get(vehicle.userId)) ||
           (state.users || []).find((item) => (item.name || '').toLowerCase() === (vehicle.customer || '').toLowerCase()) ||
           null
         const matchedProgram = (state.programs || []).find((item) => item.id === vehicle.programId)
-        return { vehicle, user, matchedProgram }
+        const userTx = txByVehicleId[vehicle.id] || []
+        const failedTxCount = userTx.filter((tx) => String(tx.status || '').toLowerCase() === 'failed').length
+        const missedPayments = Number(user?.missedPayments || 0)
+        const estimatedGraceCount = Math.max(0, missedPayments + (vehicle.status === 'grace' ? 1 : 0))
+        const estimatedImmobilizedCount = Math.max(0, failedTxCount + (vehicle.status === 'immobilized' ? 1 : 0))
+        const movementState = Number(vehicle.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
+        return { vehicle, user, matchedProgram, estimatedGraceCount, estimatedImmobilizedCount, movementState }
       })
 
     if (program !== 'all') list = list.filter((item) => item.vehicle.programId === program)
@@ -62,8 +76,27 @@ export function RentersView() {
           .some((value) => String(value).toLowerCase().includes(q)),
       )
     }
+    if (renterTab === 'online') list = list.filter((item) => item.vehicle.isOnline)
+    if (renterTab === 'offline') list = list.filter((item) => !item.vehicle.isOnline)
+    if (renterTab === 'running') list = list.filter((item) => item.movementState === 'RUNNING')
+    if (renterTab === 'stopped') list = list.filter((item) => item.movementState === 'STOPPED')
+    if (renterTab === 'grace_only') list = list.filter((item) => item.vehicle.status === 'grace')
+    if (renterTab === 'immobilized_only') list = list.filter((item) => item.vehicle.status === 'immobilized')
     return list
-  }, [tick, program, status, search])
+  }, [tick, program, status, search, renterTab])
+  const renterTabCounts = useMemo(() => {
+    const state = getState()
+    const list = (state.vehicles || []).filter((vehicle) => vehicle.customer || vehicle.userId)
+    return {
+      all: list.length,
+      online: list.filter((v) => v.isOnline).length,
+      offline: list.filter((v) => !v.isOnline).length,
+      running: list.filter((v) => Number(v.speed || 0) > 0).length,
+      stopped: list.filter((v) => Number(v.speed || 0) <= 0).length,
+      grace_only: list.filter((v) => v.status === 'grace').length,
+      immobilized_only: list.filter((v) => v.status === 'immobilized').length,
+    }
+  }, [tick])
   const pageSize = 20
   const totalPages = Math.max(1, Math.ceil(renters.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -132,22 +165,52 @@ export function RentersView() {
           <option value="available">Available</option>
         </Select>
       </FilterBar>
+      <div className="mb-3 flex flex-wrap gap-2">
+        {[
+          ['all', 'All'],
+          ['online', 'Online'],
+          ['offline', 'Offline'],
+          ['running', 'Running'],
+          ['stopped', 'Stopped'],
+          ['grace_only', 'Grace'],
+          ['immobilized_only', 'Immobilized'],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+              renterTab === id
+                ? 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+            }`}
+            onClick={() => {
+              setRenterTab(id)
+              setPage(1)
+            }}
+          >
+            {label} ({renterTabCounts[id] || 0})
+          </button>
+        ))}
+      </div>
 
       <DataPanel>
-        <Table density="legacy" className="min-w-[860px]">
+        <Table density="legacy" className="min-w-[1220px]">
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>RENTER</TableHead>
               <TableHead>PROGRAM</TableHead>
               <TableHead>VEHICLE</TableHead>
               <TableHead>STATUS</TableHead>
+              <TableHead>CONNECTIVITY</TableHead>
+              <TableHead>MOVEMENT</TableHead>
+              <TableHead>RISK FACTORS</TableHead>
               <TableHead>PHONE</TableHead>
               <TableHead>NIK</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
           {pageRows.length > 0 ? (
-            pageRows.map(({ vehicle, user, matchedProgram }) => (
+            pageRows.map(({ vehicle, user, matchedProgram, movementState, estimatedGraceCount, estimatedImmobilizedCount }) => (
               <TableRow key={`renter-${vehicle.id}`} tone="legacy">
                 <TableCell>
                   <div className="font-bold text-slate-900">{vehicle.customer || user?.name || 'Unknown'}</div>
@@ -159,6 +222,7 @@ export function RentersView() {
                       SCORE {user?.riskScore ?? '-'}
                     </span>
                   </div>
+                  <div className="mt-1 text-xs text-slate-500">Risk relates to grace + immobilized frequency.</div>
                 </TableCell>
                 <TableCell>
                   <div>{matchedProgram?.shortName || matchedProgram?.name || '-'}</div>
@@ -173,14 +237,28 @@ export function RentersView() {
                     {vehicleStatusTone(vehicle.status).label}
                   </span>
                 </TableCell>
+                <TableCell>
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                    {vehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                    {movementState}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs text-slate-600">Grace: {estimatedGraceCount}x</div>
+                  <div className="text-xs text-slate-600">Immobilized: {estimatedImmobilizedCount}x</div>
+                </TableCell>
                 <TableCell>{user?.phone || vehicle.phone || '-'}</TableCell>
                 <TableCell>{user?.nik || '-'}</TableCell>
               </TableRow>
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
-                No renters found for selected filters.
+              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+                No renters found. Only handover-completed renters are shown.
               </TableCell>
             </TableRow>
           )}

@@ -102,58 +102,67 @@ export function MapView() {
         <StatCard label="Online" value={mapStats.online} valueClassName="text-cyan-700" />
       </StatsGrid>
 
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <label className="text-sm text-slate-600" htmlFor="mapStatusFilter">
-          Status
-        </label>
-        <Select
-          id="mapStatusFilter"
-          variant="legacy"
-          className="max-w-[180px]"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value)
-            setListPage(1)
-          }}
-        >
-          <option value="all">All</option>
-          <option value="active">Active</option>
-          <option value="grace">Grace</option>
-          <option value="immobilized">Immobilized</option>
-          <option value="paused">Paused</option>
-          <option value="available">Available</option>
-        </Select>
-        <Select
-          variant="legacy"
-          className="max-w-[180px]"
-          value={connectivity}
-          onChange={(e) => {
-            setConnectivity(e.target.value)
-            setListPage(1)
-          }}
-        >
-          <option value="all">All Connectivity</option>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </Select>
-        <Select
-          variant="legacy"
-          className="max-w-[180px]"
-          value={movement}
-          onChange={(e) => {
-            setMovement(e.target.value)
-            setListPage(1)
-          }}
-        >
-          <option value="all">All Movement</option>
-          <option value="running">Running</option>
-          <option value="stopped">Stopped</option>
-        </Select>
-        <span className="text-sm text-slate-600">
-          Markers: {filteredVehicles.length} | Active/Grace/Immobilized visible with movement filters
-        </span>
-      </div>
       <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapStatusFilter">
+            Status
+          </label>
+          <Select
+            id="mapStatusFilter"
+            variant="legacy"
+            className="w-full"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value)
+              setListPage(1)
+            }}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="grace">Grace</option>
+            <option value="immobilized">Immobilized</option>
+            <option value="paused">Paused</option>
+            <option value="available">Available</option>
+          </Select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapConnectivityFilter">
+            Connectivity
+          </label>
+          <Select
+            id="mapConnectivityFilter"
+            variant="legacy"
+            className="w-full"
+            value={connectivity}
+            onChange={(e) => {
+              setConnectivity(e.target.value)
+              setListPage(1)
+            }}
+          >
+            <option value="all">All Connectivity</option>
+            <option value="online">Online</option>
+            <option value="offline">Offline</option>
+          </Select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapMovementFilter">
+            Movement
+          </label>
+          <Select
+            id="mapMovementFilter"
+            variant="legacy"
+            className="w-full"
+            value={movement}
+            onChange={(e) => {
+              setMovement(e.target.value)
+              setListPage(1)
+            }}
+          >
+            <option value="all">All Movement</option>
+            <option value="running">Running</option>
+            <option value="stopped">Stopped</option>
+          </Select>
+        </div>
         <Select
           variant="legacy"
           value={programFilter}
@@ -210,26 +219,9 @@ export function MapView() {
           <option value="low">Low (&lt;10 km/h)</option>
         </Select>
       </div>
-
-      <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div className="mb-1.5 text-xs uppercase text-slate-500">
-          Focus Vehicle
-        </div>
-        <div className="flex max-h-24 flex-wrap gap-1.5 overflow-y-auto">
-          {filteredVehicles.slice(0, 24).map((vehicle) => (
-            <button
-              key={vehicle.id}
-              className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-              type="button"
-              onClick={() => {
-                if (mapRef.current) mapRef.current.setView([vehicle.lat, vehicle.lng], 14)
-              }}
-            >
-              {vehicle.id}
-            </button>
-          ))}
-        </div>
-      </div>
+      <p className="mb-2 text-sm text-slate-600">
+        Markers: {filteredVehicles.length} — filtered by <strong>Status</strong>, Connectivity, Movement, Program, GPS, ping age, and speed.
+      </p>
 
       <div className="h-[560px] overflow-hidden rounded-xl border border-slate-200">
         <MapContainer
@@ -296,7 +288,14 @@ export function MapView() {
             <tbody>
               {listRows.length > 0 ? (
                 listRows.map((vehicle) => (
-                  <tr key={`map-list-${vehicle.id}`} className="border-t border-slate-100">
+                  <tr
+                    key={`map-list-${vehicle.id}`}
+                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50"
+                    title="Click row to zoom to marker"
+                    onClick={() => {
+                      if (mapRef.current) mapRef.current.setView([vehicle.lat, vehicle.lng], 14)
+                    }}
+                  >
                     <td className="px-3 py-2">
                       <div className="font-bold text-slate-900">{vehicle.id}</div>
                       <div className="text-xs text-slate-500">{vehicle.plate}</div>

@@ -2,6 +2,17 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [2.9.0] - 2026-02-28
+
+### Maps List Interaction
+- **Focus Controls Simplified:** Removed the separate `Focus Vehicle` chip panel from Maps to reduce duplicate controls.
+- **Row-to-Marker Zoom:** Clicking a row in the `Vehicle Movement List` now zooms the map directly to that vehicle marker.
+
+### Handover Workflow Hardening
+- **Vehicle Reassignment Guardrail:** During handover, assigned vehicle can only be changed to units with `available` status.
+- **Checklist Enforcement:** Handover completion now requires all operational checklist checks; photo upload is optional.
+- **Inline Validation UX:** Handover validation errors are shown inside the popout/modal for immediate operator correction.
+
 ## [2.8.0] - 2026-02-28
 
 ### Applications Review UX

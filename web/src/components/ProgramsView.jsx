@@ -10,6 +10,11 @@ function makeId(shortName) {
   return `P-${token}-${Date.now().toString().slice(-4)}`
 }
 
+function buildPickupMapQuery(location, address) {
+  const q = [location, address].map((item) => String(item || '').trim()).filter(Boolean).join(', ')
+  return q || 'Program Pickup Point'
+}
+
 export function ProgramsView() {
   const tick = useLegacyTick()
   const [search, setSearch] = useState('')
@@ -27,11 +32,13 @@ export function ProgramsView() {
     commissionType: 'percentage',
     commissionValue: '10',
     pickupLocation: '',
+    pickupAddress: '',
   })
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [rentersModal, setRentersModal] = useState({ open: false, programId: '' })
   const [vehicleModal, setVehicleModal] = useState({ open: false, programId: '' })
   const [expandedRenterVehicleId, setExpandedRenterVehicleId] = useState('')
+  const [rentersTab, setRentersTab] = useState('all')
 
   const programs = useMemo(() => {
     void tick
@@ -94,6 +101,13 @@ export function ProgramsView() {
     if (!rentersModal.programId) return []
     const state = getState()
     const usersById = new Map((state.users || []).map((user) => [user.userId, user]))
+    const txByVehicleId = (state.transactions || []).reduce((map, tx) => {
+      const key = String(tx.vehicleId || '').trim()
+      if (!key) return map
+      map[key] = map[key] || []
+      map[key].push(tx)
+      return map
+    }, {})
     return (state.vehicles || [])
       .filter((vehicle) => vehicle.programId === rentersModal.programId)
       .map((vehicle) => {
@@ -102,13 +116,44 @@ export function ProgramsView() {
           (state.users || []).find((item) => (item.name || '').toLowerCase() === (vehicle.customer || '').toLowerCase()) ||
           null
         const progressPct = Math.max(0, Math.min(100, vehicle.programType === 'RTO' ? 100 - (vehicle.credits || 0) : 0))
+        const userTx = txByVehicleId[vehicle.id] || []
+        const failedTxCount = userTx.filter((tx) => String(tx.status || '').toLowerCase() === 'failed').length
+        const missedPayments = Number(user?.missedPayments || 0)
+        const estimatedGraceCount = Math.max(0, missedPayments + (vehicle.status === 'grace' ? 1 : 0))
+        const estimatedImmobilizedCount = Math.max(0, failedTxCount + (vehicle.status === 'immobilized' ? 1 : 0))
+        const movementState = Number(vehicle.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
         return {
           vehicle,
           user,
           progressPct,
+          estimatedGraceCount,
+          estimatedImmobilizedCount,
+          movementState,
         }
       })
   }, [rentersModal.programId, tick])
+  const rentersTabCounts = useMemo(() => {
+    const counts = { all: rentersRows.length, online: 0, offline: 0, running: 0, stopped: 0, grace: 0, immobilized: 0 }
+    for (const row of rentersRows) {
+      if (row.vehicle.isOnline) counts.online += 1
+      else counts.offline += 1
+      if (row.movementState === 'RUNNING') counts.running += 1
+      else counts.stopped += 1
+      if (row.vehicle.status === 'grace') counts.grace += 1
+      if (row.vehicle.status === 'immobilized') counts.immobilized += 1
+    }
+    return counts
+  }, [rentersRows])
+  const filteredRentersRows = useMemo(() => {
+    if (rentersTab === 'all') return rentersRows
+    if (rentersTab === 'online') return rentersRows.filter((row) => row.vehicle.isOnline)
+    if (rentersTab === 'offline') return rentersRows.filter((row) => !row.vehicle.isOnline)
+    if (rentersTab === 'running') return rentersRows.filter((row) => row.movementState === 'RUNNING')
+    if (rentersTab === 'stopped') return rentersRows.filter((row) => row.movementState === 'STOPPED')
+    if (rentersTab === 'grace') return rentersRows.filter((row) => row.vehicle.status === 'grace')
+    if (rentersTab === 'immobilized') return rentersRows.filter((row) => row.vehicle.status === 'immobilized')
+    return rentersRows
+  }, [rentersRows, rentersTab])
   const pageSize = 15
   const totalPages = Math.max(1, Math.ceil(programs.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -128,6 +173,7 @@ export function ProgramsView() {
       commissionType: 'percentage',
       commissionValue: '10',
       pickupLocation: '',
+      pickupAddress: '',
     })
   }
 
@@ -145,6 +191,7 @@ export function ProgramsView() {
       commissionType: program.commissionType || 'percentage',
       commissionValue: String(program.commissionType === 'fixed' ? program.commissionFixed || 0 : Math.round((program.commissionRate || 0) * 100)),
       pickupLocation: program.pickupLocation || '',
+      pickupAddress: program.pickupAddress || '',
     })
   }
 
@@ -162,6 +209,7 @@ export function ProgramsView() {
       commissionRate: programModal.commissionType === 'percentage' ? Number(programModal.commissionValue || 0) / 100 : 0,
       commissionFixed: programModal.commissionType === 'fixed' ? Number(programModal.commissionValue || 0) : 0,
       pickupLocation: programModal.pickupLocation.trim() || 'Program Pickup Point',
+      pickupAddress: programModal.pickupAddress.trim(),
       eligibleModels: [],
       minSalary: 0,
       promotions: [],
@@ -241,15 +289,48 @@ export function ProgramsView() {
                   </td>
                   <td className="px-3 py-2">{program.partnerId}</td>
                   <td className="px-3 py-2">{program.type}</td>
-                  <td className="px-3 py-2">{vehiclesByProgram[program.id] || 0}</td>
-                  <td className="px-3 py-2">{rentersByProgram[program.id] || 0}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex rounded-full bg-cyan-50 px-2 py-1 text-xs font-bold text-cyan-700">
+                        {vehiclesByProgram[program.id] || 0}
+                      </span>
+                      <button
+                        className={actionBtnCls}
+                        type="button"
+                        onClick={() => setVehicleModal({ open: true, programId: program.id })}
+                      >
+                        Vehicle List
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
+                        {rentersByProgram[program.id] || 0}
+                      </span>
+                      <button
+                        className={actionBtnCls}
+                        type="button"
+                        onClick={() => {
+                          setExpandedRenterVehicleId('')
+                          setRentersTab('all')
+                          setRentersModal({ open: true, programId: program.id })
+                        }}
+                      >
+                        Renters List
+                      </button>
+                    </div>
+                  </td>
                   <td className="px-3 py-2">Rp {Math.round(program.price || 0).toLocaleString('id-ID')}</td>
                   <td className="px-3 py-2">
                     {program.commissionType === 'fixed'
                       ? `Fixed Rp ${Math.round(program.commissionFixed || 0).toLocaleString('id-ID')}`
                       : `${Math.round(Number(program.commissionRate || 0) * 100)}%`}
                   </td>
-                  <td className="px-3 py-2">{program.pickupLocation || 'Program Pickup Point'}</td>
+                  <td className="px-3 py-2">
+                    <div className="font-semibold text-slate-800">{program.pickupLocation || 'Program Pickup Point'}</div>
+                    <div className="text-xs text-slate-500">{program.pickupAddress || 'Address not set'}</div>
+                  </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-2">
                       <button className={actionBtnCls} type="button" onClick={() => openEditModal(program)}>
@@ -257,23 +338,6 @@ export function ProgramsView() {
                       </button>
                       <button className={actionBtnCls} type="button" onClick={() => setDeleteTarget(program)}>
                         Delete
-                      </button>
-                      <button
-                        className={actionBtnCls}
-                        type="button"
-                        onClick={() => {
-                          setExpandedRenterVehicleId('')
-                          setRentersModal({ open: true, programId: program.id })
-                        }}
-                      >
-                        Renters List
-                      </button>
-                      <button
-                        className={actionBtnCls}
-                        type="button"
-                        onClick={() => setVehicleModal({ open: true, programId: program.id })}
-                      >
-                        Vehicle List
                       </button>
                     </div>
                   </td>
@@ -366,9 +430,46 @@ export function ProgramsView() {
             <input
               className={inputCls}
               value={programModal.pickupLocation}
-              placeholder="Program pickup point"
+              placeholder="Location name (example: Tangkas Hub - Kemayoran)"
               onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupLocation: e.target.value }))}
             />
+          </div>
+          <div className="mb-4">
+            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Address</label>
+            <textarea
+              className={`${inputCls} min-h-[84px]`}
+              value={programModal.pickupAddress}
+              placeholder="Full pickup address for operators and renters"
+              onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupAddress: e.target.value }))}
+            />
+          </div>
+          <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Pickup Preview</div>
+              <div className="text-sm font-bold text-slate-900">
+                {programModal.pickupLocation.trim() || 'Program Pickup Point'}
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                {programModal.pickupAddress.trim() || 'Address not set'}
+              </div>
+              <a
+                className="mt-2 inline-flex text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open in Google Maps
+              </a>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <iframe
+                title="Program pickup map preview"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                style={{ border: 0, width: '100%', height: 170 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <button
@@ -445,23 +546,53 @@ export function ProgramsView() {
           <h2 className="mb-3 text-lg font-extrabold text-slate-900">
             Renter Details for {selectedRentersProgram?.shortName || selectedRentersProgram?.name || 'Program'}
           </h2>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[
+              ['all', 'All'],
+              ['online', 'Online'],
+              ['offline', 'Offline'],
+              ['running', 'Running'],
+              ['stopped', 'Stopped'],
+              ['grace', 'Grace'],
+              ['immobilized', 'Immobilized'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  rentersTab === id
+                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]'
+                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                }`}
+                onClick={() => {
+                  setExpandedRenterVehicleId('')
+                  setRentersTab(id)
+                }}
+              >
+                {label} ({rentersTabCounts[id] || 0})
+              </button>
+            ))}
+          </div>
           <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
             <table className="w-full border-collapse text-sm text-slate-700">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-3 py-2 text-left">RENTER INFO</th>
+                  <th className="px-3 py-2 text-left">PHONE</th>
                   <th className="px-3 py-2 text-left">RISK AUDIT</th>
+                  <th className="px-3 py-2 text-left">RISK FACTORS</th>
                   <th className="px-3 py-2 text-left">STATUS</th>
+                  <th className="px-3 py-2 text-left">CONNECTIVITY</th>
+                  <th className="px-3 py-2 text-left">MOVEMENT</th>
                   <th className="px-3 py-2 text-left">PROGRESS</th>
                   <th className="px-3 py-2 text-left">ACTIVE ADDRESS</th>
-                  <th className="px-3 py-2 text-left">GPS</th>
                   <th className="px-3 py-2 text-left">NOPOL / ID</th>
                   <th className="px-3 py-2 text-left">CREDITS</th>
                 </tr>
               </thead>
               <tbody>
-                {rentersRows.length > 0 ? (
-                  rentersRows.map(({ vehicle, user, progressPct }) => {
+                {filteredRentersRows.length > 0 ? (
+                  filteredRentersRows.map(({ vehicle, user, progressPct, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
                     const expanded = expandedRenterVehicleId === vehicle.id
                     return (
                       <Fragment key={`renters-group-${vehicle.id}`}>
@@ -479,12 +610,31 @@ export function ProgramsView() {
                             </div>
                           </td>
                           <td className="px-3 py-2">
+                            <div className="font-semibold text-slate-900">{user?.phone || vehicle.phone || '-'}</div>
+                            <div className="text-xs text-slate-500">{user?.nik || ''}</div>
+                          </td>
+                          <td className="px-3 py-2">
                             <div className="font-bold text-slate-900">{user?.riskLabel || '-'}</div>
                             <div className="text-xs text-slate-500">Score: {user?.riskScore ?? '-'}</div>
+                            <div className="text-xs text-slate-500">Risk rises with grace/immobilized events.</div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="text-xs text-slate-600">Grace: {estimatedGraceCount}x</div>
+                            <div className="text-xs text-slate-600">Immobilized: {estimatedImmobilizedCount}x</div>
                           </td>
                           <td className="px-3 py-2">
                             <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
                               {String(vehicle.status || '').toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {vehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                              {movementState}
                             </span>
                           </td>
                           <td className="px-3 py-2">
@@ -493,7 +643,6 @@ export function ProgramsView() {
                           <td className="px-3 py-2">
                             <div className="text-slate-500">{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
                           </td>
-                          <td className="px-3 py-2">{vehicle.isOnline ? 'ON' : 'OFF'}</td>
                           <td className="px-3 py-2">
                             <div className="font-bold text-slate-900">{vehicle.plate || vehicle.id}</div>
                             <div className="text-xs text-slate-500">{vehicle.model || ''}</div>
@@ -502,7 +651,7 @@ export function ProgramsView() {
                         </tr>
                         {expanded ? (
                           <tr className="bg-slate-50">
-                            <td colSpan={8} className="px-3 py-2">
+                            <td colSpan={11} className="px-3 py-2">
                               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                 <div>
                                   <div className="mb-1 text-xs font-semibold text-slate-500">Rider Info</div>
@@ -518,6 +667,8 @@ export function ProgramsView() {
                                     Total Paid: Rp {Math.round(user?.totalPaid || 0).toLocaleString('id-ID')}
                                   </div>
                                   <div className="text-sm">Missed: {user?.missedPayments ?? 0}</div>
+                                  <div className="text-sm">Grace Events (est): {estimatedGraceCount}x</div>
+                                  <div className="text-sm">Immobilized Events (est): {estimatedImmobilizedCount}x</div>
                                 </div>
                                 <div>
                                   <div className="mb-1 text-xs font-semibold text-slate-500">Emergency</div>
@@ -533,8 +684,8 @@ export function ProgramsView() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
-                      No renters in this program yet
+                    <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
+                      No renters found for selected tab.
                     </td>
                   </tr>
                 )}
@@ -547,6 +698,7 @@ export function ProgramsView() {
               type="button"
               onClick={() => {
                 setExpandedRenterVehicleId('')
+                setRentersTab('all')
                 setRentersModal({ open: false, programId: '' })
               }}
             >

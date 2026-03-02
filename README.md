@@ -153,7 +153,7 @@ vercel --prod
 - Program admin with commission modes (`%` or fixed amount), renters list, and vehicle list.
 - Program records include pickup location defaults and program filter labels using `Program Name • Type`.
 - GPS operations with assignment integrity (GPS assigned to vehicle only), SIM lifecycle fields, and filtered assignment flow.
-- Map observability with movement/status filters and paginated movement list.
+- Map observability with movement/status filters and paginated movement list; clicking a list row zooms to the matching marker.
 - Cross-tab badge consistency for status and score signals.
 
 ## Documentation
