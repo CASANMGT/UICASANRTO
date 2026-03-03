@@ -7,7 +7,7 @@
     "dev": "vite",
     "fetch:geofence": "node scripts/fetchCityPolygons.mjs",
     "import:geofence": "node scripts/importPetaNusa.mjs",
-    "build": "vite build",
+    "build": "node scripts/copyDocs.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:parity": "playwright test tests/parity.spec.js"

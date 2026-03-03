@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { featureFlags } from './config/featureFlags'
 import { setGlobalFilter } from './bridge/legacyRuntime'
 import { useLegacyRuntime } from './hooks/useLegacyRuntime'
@@ -27,6 +27,29 @@ const CHANGELOG_ITEMS = [
   { version: 'v2.6.0', date: '2026-02-28', notes: ['Map movement list with enriched telemetry', 'GPS assignment + SIM filters', 'Sidebar + mobile drawer navigation'] },
   { version: 'v2.5.0', date: '2026-02-28', notes: ['Applications review workflow with WA templates', 'Program vehicle/renter lists + commission editing', 'Cross-tab badge and pagination consistency'] },
 ]
+
+function DocPanel({ path, label }) {
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  useEffect(() => {
+    if (!path) return
+    setLoading(true)
+    setError(null)
+    fetch(`/docs/${path}`)
+      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.statusText))))
+      .then(setText)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [path])
+  return (
+    <div className="mt-3 max-h-64 overflow-auto rounded-md border border-border bg-muted/30 p-3">
+      {loading && <div className="text-muted-foreground">Loading…</div>}
+      {error && <div className="text-destructive">{error}</div>}
+      {text && <pre className="whitespace-pre-wrap break-words text-base font-sans">{text}</pre>}
+    </div>
+  )
+}
 
 function App() {
   const { ready, state, error } = useLegacyRuntime()
@@ -79,6 +102,14 @@ function App() {
                   </div>
                 ))}
               </div>
+            </details>
+            <details className="mt-3">
+              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>📖 README</summary>
+              <DocPanel path="README.md" label="README" />
+            </details>
+            <details className="mt-3">
+              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>🗺️ Roadmap</summary>
+              <DocPanel path="ROADMAP.md" label="Roadmap" />
             </details>
           </div>
           <button className="app-collapse-btn" type="button" onClick={() => setSidebarCollapsed((prev) => !prev)}>
