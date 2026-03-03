@@ -23,6 +23,11 @@ export function Badge({
   children,
   ...props
 }) {
+  // #region agent log - hypothesis C
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'badge.jsx:27',message:'Badge rendered',data:{variant,size,hasCustomClass:!!className},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+  }
+  // #endregion
   return (
     <span
       className={cn(

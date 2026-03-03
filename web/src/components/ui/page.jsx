@@ -56,6 +56,11 @@ export function StatCard({ label, value, valueClassName, className }) {
 }
 
 export function DataPanel({ className, ...props }) {
+  // #region agent log - hypothesis D
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'page.jsx:59',message:'DataPanel rendered with flex layout',data:{hasFlex1:true,hasOverflow:true,hasMinH0:true},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+  }
+  // #endregion
   return <div className={cn('min-h-0 flex-1 overflow-auto rounded-lg border border-border', className)} {...props} />
 }
 

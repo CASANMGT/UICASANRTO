@@ -370,7 +370,10 @@ export function VehiclesView() {
         <Button
           variant="legacyPrimary"
           size="legacy"
-          onClick={() =>
+          onClick={() => {
+            // #region agent log - hypothesis A
+            fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'VehiclesView.jsx:391',message:'Button rendered without h-11 shrink-0',data:{variant:'legacyPrimary',hasCustomHeight:false},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             setVehicleDialog((prev) => ({
               ...prev,
               open: true,
@@ -383,7 +386,7 @@ export function VehiclesView() {
                   'Unknown',
                 programId: prev.form.programId || programsList[0]?.id || '',
               },
-            }))}
+            }))}}
         >
           + Add Vehicle
         </Button>

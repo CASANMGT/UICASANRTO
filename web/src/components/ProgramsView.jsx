@@ -411,7 +411,6 @@ export function ProgramsView() {
         <Button
           variant="legacyGhost"
           size="legacy"
-          className="h-11 shrink-0"
           disabled={currentPage <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
@@ -421,7 +420,6 @@ export function ProgramsView() {
         <Button
           variant="legacyGhost"
           size="legacy"
-          className="h-11 shrink-0"
           disabled={currentPage >= totalPages}
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
         >

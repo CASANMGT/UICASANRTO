@@ -12,7 +12,7 @@ import {
   scheduleRtoPickup,
 } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
-import { Badge } from './ui/badge'
+import { Badge, ScoreBadge, StatusBadge } from './ui/badge'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
@@ -58,11 +58,11 @@ function normalizeTab(value) {
 }
 
 function decisionTone(decision) {
-  if (decision === 'approved') return { tone: 'bg-emerald-100 text-emerald-700', label: 'ACCEPTED' }
-  if (decision === 'rejected') return { tone: 'bg-rose-100 text-rose-700', label: 'REJECTED' }
-  if (decision === 'review') return { tone: 'bg-amber-100 text-amber-700', label: 'REVIEW' }
-  if (decision === 'pending_docs') return { tone: 'bg-orange-100 text-orange-700', label: 'NEEDS DOCS' }
-  return { tone: 'bg-muted text-foreground', label: 'PENDING' }
+  if (decision === 'approved') return { tone: 'bg-emerald-100 text-emerald-700', label: 'ACCEPTED', variant: 'success' }
+  if (decision === 'rejected') return { tone: 'bg-rose-100 text-rose-700', label: 'REJECTED', variant: 'danger' }
+  if (decision === 'review') return { tone: 'bg-amber-100 text-amber-700', label: 'REVIEW', variant: 'warning' }
+  if (decision === 'pending_docs') return { tone: 'bg-orange-100 text-orange-700', label: 'NEEDS DOCS', variant: 'warning' }
+  return { tone: 'bg-muted text-foreground', label: 'PENDING', variant: 'neutral' }
 }
 
 function pickupStatusTone(status) {
@@ -743,6 +743,9 @@ export function RtoView() {
 
       {tab === 'applications' && (
         <div className="flex flex-col gap-3">
+          {/* #region agent log - hypothesis B */}
+          {(() => { fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'RtoView.jsx:752',message:'FilterBar with lg:grid-cols-6 rendered',data:{gridCols:6,tab:'applications'},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{}); return null; })()}
+          {/* #endregion */}
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-3 py-2">
             <div className="text-base font-semibold text-foreground">Application Filters</div>
             <Button variant="legacyGhost" size="legacy" onClick={resetApplicationFilters}>
@@ -879,11 +882,7 @@ export function RtoView() {
                     </TableCell>
                     <TableCell>{app.programId}</TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex min-w-14 justify-center rounded-full px-2 py-1 text-base font-bold ${scoreTone(app.score)}`}
-                      >
-                        {app.score}
-                      </span>
+                      <ScoreBadge score={app.score} />
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -923,9 +922,7 @@ export function RtoView() {
                           const v = vehiclesById.get(app.assignedVehicleId)
                           return (
                             <div className="text-base">
-                              <span className="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 font-bold text-cyan-700">
-                                {app.assignedVehicleId}
-                              </span>
+                              <Badge variant="info" size="sm">{app.assignedVehicleId}</Badge>
                               {v && (
                                 <div className="mt-1 text-muted-foreground">
                                   <span>{v.brand || '-'} {v.model || '-'}</span>
@@ -940,16 +937,12 @@ export function RtoView() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'unscheduled')}`}>
-                        {String(app.pickupSchedule?.status || 'unscheduled').toUpperCase()}
-                      </span>
+                      <StatusBadge status={app.pickupSchedule?.status || 'unscheduled'} />
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${decisionTone(app.decision).tone}`}
-                      >
+                      <Badge variant={decisionTone(app.decision).variant || 'default'}>
                         {decisionTone(app.decision).label}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -986,17 +979,11 @@ export function RtoView() {
                   <div className="font-extrabold text-foreground">{selectedApp.id} - {selectedApp.userName}</div>
                   <div className="text-base text-muted-foreground">
                     Program: {selectedApp.programId} | Score:{' '}
-                    <span
-                      className={`rounded-full px-2 py-1 text-base font-bold ${scoreTone(selectedApp.score)}`}
-                    >
-                      {selectedApp.score}
-                    </span>{' '}
+                    <ScoreBadge score={selectedApp.score} />{' '}
                     | Status:{' '}
-                    <span
-                      className={`rounded-full px-2 py-1 text-base font-bold ${decisionTone(selectedApp.decision).tone}`}
-                    >
+                    <Badge variant={decisionTone(selectedApp.decision).variant || 'default'}>
                       {decisionTone(selectedApp.decision).label}
-                    </span>
+                    </Badge>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1170,15 +1157,13 @@ export function RtoView() {
                         const movement = Number(assignedVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
                         return assignedVehicle ? (
                           <div className="flex flex-wrap gap-1.5">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${vehicleStateTone(assignedVehicle.status)}`}>
-                              {String(assignedVehicle.status || '-').toUpperCase()}
-                            </span>
-                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${assignedVehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
+                            <StatusBadge status={assignedVehicle.status} />
+                            <Badge variant={assignedVehicle.isOnline ? 'success' : 'neutral'}>
                               {assignedVehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
-                            </span>
-                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${movement === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
+                            </Badge>
+                            <Badge variant={movement === 'RUNNING' ? 'info' : 'neutral'}>
                               {movement}
-                            </span>
+                            </Badge>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -1189,18 +1174,12 @@ export function RtoView() {
                     <TableCell>{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</TableCell>
                     <TableCell>{app.pickupSchedule?.location || getProgramLocation(app.programId)}</TableCell>
                     <TableCell>
-                      <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'planned')}`}>
-                        {String(app.pickupSchedule?.status || 'planned').toUpperCase()}
-                      </span>
+                      <StatusBadge status={app.pickupSchedule?.status || 'planned'} />
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${
-                          app.handoverCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                        }`}
-                      >
+                      <Badge variant={app.handoverCompleted ? 'success' : 'warning'}>
                         {app.handoverCompleted ? 'CHECKLIST COMPLETE' : 'PENDING CHECKLIST'}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1.5">
@@ -1279,6 +1258,9 @@ export function RtoView() {
         </>
       )}
 
+      {/* #region agent log - hypothesis E */}
+      {createModal.open && fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'RtoView.jsx:1282',message:'Custom createModal opened',data:{modal:'createModal',zIndex:50,hasFormControlCls:true},timestamp:Date.now(),hypothesisId:'E'})}).catch(()=>{})}
+      {/* #endregion */}
       <div className={`${createModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
         <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-border bg-background p-4 shadow-xl">
           <h2>Add New Renter</h2>
@@ -1405,9 +1387,9 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Documents Viewer</label>
             <div className="mb-2 flex flex-wrap gap-2">
-              <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-base font-bold text-amber-700">
+              <Badge variant="warning">
                 Missing Docs: {(reviewModal.documents || []).filter((item) => item.status === 'missing').length}
-              </span>
+              </Badge>
               <Button variant="legacyPill" size="legacy" onClick={markAllMissing}>
                 Mark Missing Docs
               </Button>
@@ -1445,11 +1427,7 @@ export function RtoView() {
                       />
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${docTone(document.status)}`}
-                      >
-                        {document.status}
-                      </span>
+                      <StatusBadge status={document.status} />
                     </TableCell>
                     <TableCell>
                       <select
@@ -1869,15 +1847,13 @@ export function RtoView() {
             </div>
             <div className="text-base font-bold text-foreground">{selectedHandoverVehicle?.id || '-'}</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${vehicleStateTone(selectedHandoverVehicle?.status)}`}>
-                {String(selectedHandoverVehicle?.status || 'unknown').toUpperCase()}
-              </span>
-              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${selectedHandoverVehicle?.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
+              <StatusBadge status={selectedHandoverVehicle?.status || 'unknown'} />
+              <Badge variant={selectedHandoverVehicle?.isOnline ? 'success' : 'neutral'}>
                 {selectedHandoverVehicle?.isOnline ? 'ONLINE' : 'OFFLINE'}
-              </span>
-              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
+              </Badge>
+              <Badge variant={Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'info' : 'neutral'}>
                 {Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'}
-              </span>
+              </Badge>
             </div>
           </div>
           <div className="space-y-2 rounded-lg border border-border bg-muted p-3">

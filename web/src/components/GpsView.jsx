@@ -506,13 +506,12 @@ export function GpsView() {
             </option>
           ))}
         </Select>
-        <Button variant="legacyPrimary" size="legacy" className="h-11 shrink-0" onClick={openCreate}>
+        <Button variant="legacyPrimary" size="legacy" onClick={openCreate}>
           Add Device
         </Button>
         <Button
           variant="legacyPill"
           size="legacy"
-          className="h-11 shrink-0"
           onClick={() => setBulkImport({ open: true, fileName: '', rows: [], result: null, error: '' })}
         >
           Bulk Add Devices
@@ -520,7 +519,6 @@ export function GpsView() {
         <Button
           variant="legacyGhost"
           size="legacy"
-          className="h-11 shrink-0"
           onClick={() => setBrandModelSettings((prev) => ({ ...prev, open: true, editId: null, brand: '', model: '' }))}
         >
           Brand/Model Settings
