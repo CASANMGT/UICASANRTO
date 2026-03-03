@@ -1,42 +1,33 @@
 import { cn } from '../../lib/utils'
 
-export function Table({ className, density = 'default', ...props }) {
+export function Table({ className, density, ...props }) {
   return (
     <table
-      className={cn(
-        'w-full border-collapse text-[color:var(--t2)]',
-        density === 'legacy' ? 'text-[12px]' : 'text-[13px]',
-        className,
-      )}
+      className={cn('w-full caption-bottom text-base', className)}
       {...props}
     />
   )
 }
 
-export function TableHeader({ className, tone = 'default', ...props }) {
+export function TableHeader({ className, tone, ...props }) {
   return (
     <thead
-      className={cn(
-        'text-[12px] uppercase tracking-wide',
-        tone === 'legacy'
-          ? 'bg-[color:var(--s2)] text-[color:var(--t3)]'
-          : 'bg-[color:var(--s2)] text-[color:var(--t3)]',
-        className,
-      )}
+      className={cn('[&_tr]:border-b', className)}
       {...props}
     />
   )
 }
 
 export function TableBody(props) {
-  return <tbody {...props} />
+  return <tbody className="[&_tr:last-child]:border-0" {...props} />
 }
 
 export function TableRow({ className, tone = 'default', ...props }) {
   return (
     <tr
       className={cn(
-        tone === 'legacy' ? 'border-t border-[color:var(--b1)]' : 'border-t border-[color:var(--b1)]',
+        'border-b border-border transition-colors hover:bg-muted/50',
+        tone === 'legacy' && 'bg-background even:bg-muted/30',
         className,
       )}
       {...props}
@@ -45,9 +36,19 @@ export function TableRow({ className, tone = 'default', ...props }) {
 }
 
 export function TableHead({ className, ...props }) {
-  return <th className={cn('px-3 py-2 text-left', className)} {...props} />
+  return (
+    <th
+      className={cn(
+        'h-12 px-4 text-left align-middle font-medium text-muted-foreground first:pl-6',
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 export function TableCell({ className, ...props }) {
-  return <td className={cn('px-3 py-2', className)} {...props} />
+  return (
+    <td className={cn('px-4 py-3 align-middle first:pl-6', className)} {...props} />
+  )
 }

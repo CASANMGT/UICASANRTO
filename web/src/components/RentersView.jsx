@@ -3,7 +3,7 @@ import { getPrograms, getState } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { FilterBar, DataPanel, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { FilterBar, DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -21,8 +21,8 @@ function vehicleStatusTone(status) {
   if (status === 'grace') return { tone: 'bg-amber-100 text-amber-700', label: 'GRACE' }
   if (status === 'immobilized') return { tone: 'bg-rose-100 text-rose-700', label: 'IMMOBILIZED' }
   if (status === 'paused') return { tone: 'bg-cyan-100 text-cyan-700', label: 'PAUSED' }
-  if (status === 'available') return { tone: 'bg-slate-100 text-slate-700', label: 'AVAILABLE' }
-  return { tone: 'bg-slate-100 text-slate-700', label: String(status || '-').toUpperCase() }
+  if (status === 'available') return { tone: 'bg-muted text-foreground', label: 'AVAILABLE' }
+  return { tone: 'bg-muted text-foreground', label: String(status || '-').toUpperCase() }
 }
 
 export function RentersView() {
@@ -97,7 +97,7 @@ export function RentersView() {
       immobilized_only: list.filter((v) => v.status === 'immobilized').length,
     }
   }, [tick])
-  const pageSize = 20
+  const pageSize = PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(renters.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   const pageRows = renters.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -181,7 +181,7 @@ export function RentersView() {
             className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
               renterTab === id
                 ? 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]'
-                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                : 'border-input bg-background text-foreground hover:bg-accent'
             }`}
             onClick={() => {
               setRenterTab(id)
@@ -194,7 +194,7 @@ export function RentersView() {
       </div>
 
       <DataPanel>
-        <Table density="legacy" className="min-w-[1220px]">
+        <Table density="legacy" className={TABLE_MIN_WIDTH}>
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>RENTER</TableHead>
@@ -213,8 +213,8 @@ export function RentersView() {
             pageRows.map(({ vehicle, user, matchedProgram, movementState, estimatedGraceCount, estimatedImmobilizedCount }) => (
               <TableRow key={`renter-${vehicle.id}`} tone="legacy">
                 <TableCell>
-                  <div className="font-bold text-slate-900">{vehicle.customer || user?.name || 'Unknown'}</div>
-                  <div className="font-mono text-xs text-slate-500">
+                  <div className="font-bold text-foreground">{vehicle.customer || user?.name || 'Unknown'}</div>
+                  <div className="font-mono text-xs text-muted-foreground">
                     {vehicle.userId || user?.userId || ''}
                   </div>
                   <div className="mt-1">
@@ -222,15 +222,15 @@ export function RentersView() {
                       SCORE {user?.riskScore ?? '-'}
                     </span>
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">Risk relates to grace + immobilized frequency.</div>
+                  <div className="mt-1 text-xs text-muted-foreground">Risk relates to grace + immobilized frequency.</div>
                 </TableCell>
                 <TableCell>
                   <div>{matchedProgram?.shortName || matchedProgram?.name || '-'}</div>
-                  <div className="text-xs text-slate-500">{vehicle.programId || '-'}</div>
+                  <div className="text-xs text-muted-foreground">{vehicle.programId || '-'}</div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-bold text-slate-900">{vehicle.id}</div>
-                  <div className="text-xs text-slate-500">{vehicle.plate || '-'}</div>
+                  <div className="font-bold text-foreground">{vehicle.id}</div>
+                  <div className="text-xs text-muted-foreground">{vehicle.plate || '-'}</div>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${vehicleStatusTone(vehicle.status).tone}`}>
@@ -238,18 +238,18 @@ export function RentersView() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
                     {vehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                  <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
                     {movementState}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="text-xs text-slate-600">Grace: {estimatedGraceCount}x</div>
-                  <div className="text-xs text-slate-600">Immobilized: {estimatedImmobilizedCount}x</div>
+                  <div className="text-xs text-muted-foreground">Grace: {estimatedGraceCount}x</div>
+                  <div className="text-xs text-muted-foreground">Immobilized: {estimatedImmobilizedCount}x</div>
                 </TableCell>
                 <TableCell>{user?.phone || vehicle.phone || '-'}</TableCell>
                 <TableCell>{user?.nik || '-'}</TableCell>
@@ -257,7 +257,7 @@ export function RentersView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No renters found. Only handover-completed renters are shown.
               </TableCell>
             </TableRow>
@@ -267,27 +267,25 @@ export function RentersView() {
       </DataPanel>
 
       <PageFooter>
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} / {totalPages} ({renters.length} rows)
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+        >
+          Prev
+        </Button>
+        <div className="text-sm font-semibold text-muted-foreground">
+          Page {currentPage} of {totalPages} ({renters.length} rows)
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </Button>
-        </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+        >
+          Next
+        </Button>
       </PageFooter>
     </PageShell>
   )

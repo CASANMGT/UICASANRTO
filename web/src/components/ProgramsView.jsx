@@ -1,9 +1,21 @@
 import { Fragment, useMemo, useState } from 'react'
-import { createProgram, editProgram, getPrograms, getState, removeProgram } from '../bridge/legacyRuntime'
+import { createPortal } from 'react-dom'
+import {
+  CITIES_GEOFENCE,
+  createProgram,
+  DEFAULT_OUT_OF_ZONE_BUFFER_KM,
+  DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
+  editProgram,
+  getPrograms,
+  getState,
+  OUT_OF_ZONE_ACTIONS,
+  removeProgram,
+} from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { FilterBar, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 function makeId(shortName) {
   const token = (shortName || 'PRG').slice(0, 2).toUpperCase()
@@ -19,6 +31,7 @@ export function ProgramsView() {
   const tick = useLegacyTick()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const DEFAULT_GEOFENCE = { tangkas: ['Jakarta'], maka: ['Jakarta'], united: ['Bekasi'] }
   const [programModal, setProgramModal] = useState({
     open: false,
     mode: 'create',
@@ -33,6 +46,11 @@ export function ProgramsView() {
     commissionValue: '10',
     pickupLocation: '',
     pickupAddress: '',
+    geofenceCities: ['Jakarta'],
+    applyOutOfZoneSpeedLimit: true,
+    outOfZoneBufferKm: DEFAULT_OUT_OF_ZONE_BUFFER_KM,
+    outOfZoneAction: OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
+    outOfZoneSpeedLimitKmh: DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
   })
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [rentersModal, setRentersModal] = useState({ open: false, programId: '' })
@@ -154,7 +172,7 @@ export function ProgramsView() {
     if (rentersTab === 'immobilized') return rentersRows.filter((row) => row.vehicle.status === 'immobilized')
     return rentersRows
   }, [rentersRows, rentersTab])
-  const pageSize = 15
+  const pageSize = PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(programs.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   const pageRows = programs.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -174,6 +192,11 @@ export function ProgramsView() {
       commissionValue: '10',
       pickupLocation: '',
       pickupAddress: '',
+      geofenceCities: DEFAULT_GEOFENCE.tangkas,
+      applyOutOfZoneSpeedLimit: true,
+      outOfZoneBufferKm: DEFAULT_OUT_OF_ZONE_BUFFER_KM,
+      outOfZoneAction: OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
+      outOfZoneSpeedLimitKmh: DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
     })
   }
 
@@ -192,6 +215,13 @@ export function ProgramsView() {
       commissionValue: String(program.commissionType === 'fixed' ? program.commissionFixed || 0 : Math.round((program.commissionRate || 0) * 100)),
       pickupLocation: program.pickupLocation || '',
       pickupAddress: program.pickupAddress || '',
+      geofenceCities: Array.isArray(program.geofenceCities) && program.geofenceCities.length > 0
+        ? [...program.geofenceCities]
+        : DEFAULT_GEOFENCE[program.partnerId] || ['Jakarta'],
+      applyOutOfZoneSpeedLimit: program.applyOutOfZoneSpeedLimit !== false,
+      outOfZoneBufferKm: Math.max(0, Number(program.outOfZoneBufferKm) || DEFAULT_OUT_OF_ZONE_BUFFER_KM),
+      outOfZoneAction: program.outOfZoneAction === OUT_OF_ZONE_ACTIONS.IMMOBILIZED ? OUT_OF_ZONE_ACTIONS.IMMOBILIZED : OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
+      outOfZoneSpeedLimitKmh: Math.max(0, Math.min(80, Number(program.outOfZoneSpeedLimitKmh) || DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH)),
     })
   }
 
@@ -210,6 +240,11 @@ export function ProgramsView() {
       commissionFixed: programModal.commissionType === 'fixed' ? Number(programModal.commissionValue || 0) : 0,
       pickupLocation: programModal.pickupLocation.trim() || 'Program Pickup Point',
       pickupAddress: programModal.pickupAddress.trim(),
+      geofenceCities: Array.isArray(programModal.geofenceCities) ? programModal.geofenceCities : DEFAULT_GEOFENCE[programModal.partnerId] || ['Jakarta'],
+      applyOutOfZoneSpeedLimit: programModal.applyOutOfZoneSpeedLimit !== false,
+      outOfZoneBufferKm: Math.max(0, Number(programModal.outOfZoneBufferKm) || DEFAULT_OUT_OF_ZONE_BUFFER_KM),
+      outOfZoneAction: programModal.outOfZoneAction === OUT_OF_ZONE_ACTIONS.IMMOBILIZED ? OUT_OF_ZONE_ACTIONS.IMMOBILIZED : OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
+      outOfZoneSpeedLimitKmh: Math.max(0, Math.min(80, Number(programModal.outOfZoneSpeedLimitKmh) || DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH)),
       eligibleModels: [],
       minSalary: 0,
       promotions: [],
@@ -228,9 +263,9 @@ export function ProgramsView() {
   const selectedVehicleProgram = programs.find((item) => item.id === vehicleModal.programId)
   const selectedRentersProgram = programs.find((item) => item.id === rentersModal.programId)
   const inputCls =
-    'w-full rounded-xl border border-[color:var(--b1)] bg-white px-3 py-2 text-[13px] text-[color:var(--t1)] outline-none ring-[color:var(--ac)] focus:ring-2'
+    'w-full rounded-md border border-input bg-background px-4 py-3 text-sm text-foreground outline-none ring-ring focus:ring-2'
   const actionBtnCls =
-    'rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100'
+    'rounded-full border border-input bg-background px-3 py-1 text-xs font-semibold text-foreground transition hover:bg-accent'
 
   return (
     <PageShell>
@@ -264,32 +299,31 @@ export function ProgramsView() {
         </div>
       </FilterBar>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="min-w-[1080px] w-full border-collapse text-sm text-slate-700">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-3 py-2 text-left">PROGRAM</th>
-              <th className="px-3 py-2 text-left">PARTNER</th>
-              <th className="px-3 py-2 text-left">TYPE</th>
-              <th className="px-3 py-2 text-left">VEHICLES ASSIGNED</th>
-              <th className="px-3 py-2 text-left">RENTERS</th>
-              <th className="px-3 py-2 text-left">PRICE / DAY</th>
-              <th className="px-3 py-2 text-left">COMMISSION</th>
-              <th className="px-3 py-2 text-left">PICKUP LOCATION</th>
-              <th className="px-3 py-2 text-left">ACTIONS</th>
-            </tr>
-          </thead>
-          <tbody>
+      <DataPanel>
+        <Table density="legacy" className={TABLE_MIN_WIDTH}>
+          <TableHeader tone="legacy">
+            <TableRow tone="legacy">
+              <TableHead>PROGRAM</TableHead>
+              <TableHead>PARTNER</TableHead>
+              <TableHead>TYPE</TableHead>
+              <TableHead>VEHICLES ASSIGNED</TableHead>
+              <TableHead>RENTERS</TableHead>
+              <TableHead>PRICE (COMMISSION)</TableHead>
+              <TableHead>PICKUP LOCATION</TableHead>
+              <TableHead>ACTIONS</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {pageRows.length > 0 ? (
               pageRows.map((program) => (
-                <tr key={program.id} className="border-t border-slate-100">
-                  <td className="px-3 py-2">
-                    <div className="font-bold text-slate-900">{program.name}</div>
-                    <div className="font-mono text-xs text-slate-500">{program.id}</div>
-                  </td>
-                  <td className="px-3 py-2">{program.partnerId}</td>
-                  <td className="px-3 py-2">{program.type}</td>
-                  <td className="px-3 py-2">
+                <TableRow key={program.id} tone="legacy">
+                  <TableCell>
+                    <div className="font-bold text-foreground">{program.name}</div>
+                    <div className="font-mono text-xs text-muted-foreground">{program.id}</div>
+                  </TableCell>
+                  <TableCell>{program.partnerId}</TableCell>
+                  <TableCell>{program.type}</TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex rounded-full bg-cyan-50 px-2 py-1 text-xs font-bold text-cyan-700">
                         {vehiclesByProgram[program.id] || 0}
@@ -302,8 +336,8 @@ export function ProgramsView() {
                         Vehicle List
                       </button>
                     </div>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
                         {rentersByProgram[program.id] || 0}
@@ -320,18 +354,36 @@ export function ProgramsView() {
                         Renters List
                       </button>
                     </div>
-                  </td>
-                  <td className="px-3 py-2">Rp {Math.round(program.price || 0).toLocaleString('id-ID')}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
                     {program.commissionType === 'fixed'
-                      ? `Fixed Rp ${Math.round(program.commissionFixed || 0).toLocaleString('id-ID')}`
-                      : `${Math.round(Number(program.commissionRate || 0) * 100)}%`}
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="font-semibold text-slate-800">{program.pickupLocation || 'Program Pickup Point'}</div>
-                    <div className="text-xs text-slate-500">{program.pickupAddress || 'Address not set'}</div>
-                  </td>
-                  <td className="px-3 py-2">
+                      ? `Rp ${Math.round(program.price || 0).toLocaleString('id-ID')} (Rp ${Math.round(program.commissionFixed || 0).toLocaleString('id-ID')})`
+                      : `Rp ${Math.round(program.price || 0).toLocaleString('id-ID')} (${Math.round(Number(program.commissionRate || 0) * 100)}%)`}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-semibold text-foreground">{program.pickupLocation || 'Program Pickup Point'}</div>
+                    <div className="text-xs text-muted-foreground">{program.pickupAddress || 'Address not set'}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      {(program.geofenceCities || []).length > 0 ? (
+                        (program.geofenceCities || []).map((city) => (
+                          <span
+                            key={city}
+                            className="inline-flex rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700"
+                          >
+                            {city}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                      {program.applyOutOfZoneSpeedLimit !== false && (
+                        <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700" title={`Beyond ${program.outOfZoneBufferKm ?? 2} km: ${program.outOfZoneAction === 'immobilized' ? 'Immobilized' : `${program.outOfZoneSpeedLimitKmh ?? 15} km/h`}`}>
+                          {program.outOfZoneBufferKm ?? 2}km → {program.outOfZoneAction === 'immobilized' ? 'Immob.' : `${program.outOfZoneSpeedLimitKmh ?? 15} km/h`}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-2">
                       <button className={actionBtnCls} type="button" onClick={() => openEditModal(program)}>
                         Edit
@@ -340,93 +392,108 @@ export function ProgramsView() {
                         Delete
                       </button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableRow tone="legacy">
+                <TableCell colSpan={8} className="px-6 py-8 text-center text-sm text-muted-foreground">
                   No programs found.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </DataPanel>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} / {totalPages} ({programs.length} rows)
+      <PageFooter>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          className="h-11 shrink-0"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+        >
+          Prev
+        </Button>
+        <div className="text-sm font-semibold text-muted-foreground">
+          Page {currentPage} of {totalPages} ({programs.length} rows)
         </div>
-        <div className="flex gap-2">
-          <button
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-100"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Prev
-          </button>
-          <button
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-100"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          className="h-11 shrink-0"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+        >
+          Next
+        </Button>
+      </PageFooter>
 
-      <div className={`${programModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+      {createPortal(
+        <>
+          <div className={`${programModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
+            <div className="app-modal-content max-h-[92vh] w-full max-w-xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-foreground">
             {programModal.mode === 'create' ? 'Launch New Program' : 'Update Program Scheme'}
           </h2>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Display Name</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Display Name</label>
             <input className={inputCls} value={programModal.name} onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))} />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Short Name</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Short Name</label>
             <input className={inputCls} value={programModal.shortName} onChange={(e) => setProgramModal((prev) => ({ ...prev, shortName: e.target.value }))} />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Partner</label>
-            <select className={inputCls} value={programModal.partnerId} onChange={(e) => setProgramModal((prev) => ({ ...prev, partnerId: e.target.value }))}>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Partner</label>
+            <select
+              className={inputCls}
+              value={programModal.partnerId}
+              onChange={(e) => {
+                const partnerId = e.target.value
+                setProgramModal((prev) => ({
+                  ...prev,
+                  partnerId,
+                  geofenceCities: prev.mode === 'create' ? DEFAULT_GEOFENCE[partnerId] || prev.geofenceCities : prev.geofenceCities,
+                }))
+              }}
+            >
               <option value="tangkas">Tangkas</option>
               <option value="maka">Maka</option>
               <option value="united">United</option>
             </select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Program Intent</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Program Intent</label>
             <select className={inputCls} value={programModal.type} onChange={(e) => setProgramModal((prev) => ({ ...prev, type: e.target.value }))}>
               <option value="RTO">Rent To Own (RTO)</option>
               <option value="Rental">Daily Rental</option>
             </select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Daily Price (IDR)</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Daily Price (IDR)</label>
             <input className={inputCls} value={programModal.price} onChange={(e) => setProgramModal((prev) => ({ ...prev, price: e.target.value }))} />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Grace Period (Days)</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Grace Period (Days)</label>
             <input className={inputCls} value={programModal.grace} onChange={(e) => setProgramModal((prev) => ({ ...prev, grace: e.target.value }))} />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Commission Type</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Commission Type</label>
             <select className={inputCls} value={programModal.commissionType} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionType: e.target.value }))}>
               <option value="percentage">Percentage (%)</option>
               <option value="fixed">Fixed Amount (IDR)</option>
             </select>
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">
               {programModal.commissionType === 'fixed' ? 'Commission Fixed (IDR)' : 'Commission Rate (%)'}
             </label>
             <input className={inputCls} value={programModal.commissionValue} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionValue: e.target.value }))} />
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Location</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Pickup Location</label>
             <input
               className={inputCls}
               value={programModal.pickupLocation}
@@ -435,7 +502,7 @@ export function ProgramsView() {
             />
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Address</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Pickup Address</label>
             <textarea
               className={`${inputCls} min-h-[84px]`}
               value={programModal.pickupAddress}
@@ -443,13 +510,89 @@ export function ProgramsView() {
               onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupAddress: e.target.value }))}
             />
           </div>
+          <div className="mb-4">
+            <label className="mb-2 block text-sm font-semibold text-muted-foreground">
+              Geofence Zone (cities allowed for this program)
+            </label>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {CITIES_GEOFENCE.map((city) => (
+                <label key={city} className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={(programModal.geofenceCities || []).includes(city)}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setProgramModal((prev) => {
+                        const current = prev.geofenceCities || []
+                        const next = checked ? [...current, city] : current.filter((c) => c !== city)
+                        return { ...prev, geofenceCities: next.length > 0 ? next : DEFAULT_GEOFENCE[prev.partnerId] }
+                      })
+                    }}
+                    className="h-4 w-4 rounded border-input accent-cyan-600"
+                  />
+                  <span className="text-sm text-foreground">{city}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Renters in this program must stay within selected city boundaries. Map shows in/out of zone.
+            </p>
+            <label className="mt-3 flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={programModal.applyOutOfZoneSpeedLimit !== false}
+                onChange={(e) => setProgramModal((prev) => ({ ...prev, applyOutOfZoneSpeedLimit: e.target.checked }))}
+                className="h-4 w-4 rounded border-input accent-cyan-600"
+              />
+              <span className="text-sm font-semibold text-foreground">Apply out-of-zone rule beyond boundary</span>
+            </label>
+            {programModal.applyOutOfZoneSpeedLimit !== false && (
+              <div className="ml-6 mt-2 space-y-2 rounded-lg border border-border bg-muted p-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Buffer (km) — no penalty within this distance from boundary</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    className={inputCls}
+                    value={programModal.outOfZoneBufferKm ?? DEFAULT_OUT_OF_ZONE_BUFFER_KM}
+                    onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneBufferKm: Math.max(0, parseFloat(e.target.value) || 0) }))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-muted-foreground">Beyond buffer — action</label>
+                  <select
+                    className={inputCls}
+                    value={programModal.outOfZoneAction ?? OUT_OF_ZONE_ACTIONS.SPEED_LIMIT}
+                    onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneAction: e.target.value }))}
+                  >
+                    <option value={OUT_OF_ZONE_ACTIONS.SPEED_LIMIT}>Speed limit (cap max km/h)</option>
+                    <option value={OUT_OF_ZONE_ACTIONS.IMMOBILIZED}>Immobilized (0 km/h)</option>
+                  </select>
+                </div>
+                {programModal.outOfZoneAction === OUT_OF_ZONE_ACTIONS.SPEED_LIMIT && (
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">Max speed (km/h) when beyond buffer</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="80"
+                      className={inputCls}
+                      value={programModal.outOfZoneSpeedLimitKmh ?? DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH}
+                      onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneSpeedLimitKmh: Math.max(0, Math.min(80, parseFloat(e.target.value) || 0)) }))}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Pickup Preview</div>
-              <div className="text-sm font-bold text-slate-900">
+            <div className="rounded-lg border border-border bg-muted p-3">
+              <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Pickup Preview</div>
+              <div className="text-sm font-bold text-foreground">
                 {programModal.pickupLocation.trim() || 'Program Pickup Point'}
               </div>
-              <div className="mt-1 text-sm text-slate-600">
+              <div className="mt-1 text-sm text-muted-foreground">
                 {programModal.pickupAddress.trim() || 'Address not set'}
               </div>
               <a
@@ -461,7 +604,7 @@ export function ProgramsView() {
                 Open in Google Maps
               </a>
             </div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="overflow-hidden rounded-lg border border-border bg-muted">
               <iframe
                 title="Program pickup map preview"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
@@ -473,77 +616,77 @@ export function ProgramsView() {
           </div>
           <div className="flex justify-end gap-2">
             <button
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
               type="button"
               onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}
             >
               Cancel
             </button>
-            <button className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700" type="button" onClick={submitProgramModal}>
+            <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90" type="button" onClick={submitProgramModal}>
               {programModal.mode === 'create' ? 'Initialize Program' : 'Save Changes'}
             </button>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className={`${vehicleModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-[94vw] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+          <div className={`${vehicleModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
+            <div className="app-modal-content max-h-[92vh] w-[94vw] max-w-5xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-foreground">
             Vehicle List for {selectedVehicleProgram?.shortName || selectedVehicleProgram?.name || 'Program'}
           </h2>
-          <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
-            <table className="w-full border-collapse text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 text-left">VEHICLE ID</th>
-                  <th className="px-3 py-2 text-left">PLATE</th>
-                  <th className="px-3 py-2 text-left">RENTER</th>
-                  <th className="px-3 py-2 text-left">STATUS</th>
-                  <th className="px-3 py-2 text-left">CREDITS</th>
-                  <th className="px-3 py-2 text-left">GPS</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="max-h-[70vh] overflow-auto rounded-lg border border-border">
+            <Table density="legacy">
+              <TableHeader tone="legacy">
+                <TableRow tone="legacy">
+                  <TableHead>VEHICLE ID</TableHead>
+                  <TableHead>PLATE</TableHead>
+                  <TableHead>RENTER</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>CREDITS</TableHead>
+                  <TableHead>GPS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {vehicleRows.length > 0 ? (
                   vehicleRows.map((vehicle) => (
-                    <tr key={`program-vehicle-${vehicle.id}`} className="border-t border-slate-100">
-                      <td className="px-3 py-2">{vehicle.id}</td>
-                      <td className="px-3 py-2">{vehicle.plate || '-'}</td>
-                      <td className="px-3 py-2">{vehicle.customer || 'Unassigned'}</td>
-                      <td className="px-3 py-2">
-                        <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                    <TableRow key={`program-vehicle-${vehicle.id}`} tone="legacy">
+                      <TableCell>{vehicle.id}</TableCell>
+                      <TableCell>{vehicle.plate || '-'}</TableCell>
+                      <TableCell>{vehicle.customer || 'Unassigned'}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex rounded-full bg-muted px-2 py-1 text-xs font-bold text-foreground">
                           {vehicle.status}
                         </span>
-                      </td>
-                      <td className="px-3 py-2">{vehicle.credits !== undefined ? `${vehicle.credits}d` : '-'}</td>
-                      <td className="px-3 py-2">{vehicle.isOnline ? 'ON' : 'OFF'}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell>{vehicle.credits !== undefined ? `${vehicle.credits}d` : '-'}</TableCell>
+                      <TableCell>{vehicle.isOnline ? 'ON' : 'OFF'}</TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <TableRow tone="legacy">
+                    <TableCell colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       No vehicles assigned to this program yet.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <div className="mt-3 flex justify-end">
             <button
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
               type="button"
               onClick={() => setVehicleModal({ open: false, programId: '' })}
             >
               Close
             </button>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className={`${rentersModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-[95vw] max-w-6xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-slate-900">
+          <div className={`${rentersModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
+            <div className="app-modal-content max-h-[92vh] w-[95vw] max-w-6xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
+          <h2 className="mb-3 text-lg font-extrabold text-foreground">
             Renter Details for {selectedRentersProgram?.shortName || selectedRentersProgram?.name || 'Program'}
           </h2>
           <div className="mb-3 flex flex-wrap gap-2">
@@ -562,7 +705,7 @@ export function ProgramsView() {
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                   rentersTab === id
                     ? 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)]'
-                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                    : 'border-input bg-background text-foreground hover:bg-muted'
                 }`}
                 onClick={() => {
                   setExpandedRenterVehicleId('')
@@ -573,88 +716,89 @@ export function ProgramsView() {
               </button>
             ))}
           </div>
-          <div className="max-h-[70vh] overflow-auto rounded-xl border border-slate-200">
-            <table className="w-full border-collapse text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 text-left">RENTER INFO</th>
-                  <th className="px-3 py-2 text-left">PHONE</th>
-                  <th className="px-3 py-2 text-left">RISK AUDIT</th>
-                  <th className="px-3 py-2 text-left">RISK FACTORS</th>
-                  <th className="px-3 py-2 text-left">STATUS</th>
-                  <th className="px-3 py-2 text-left">CONNECTIVITY</th>
-                  <th className="px-3 py-2 text-left">MOVEMENT</th>
-                  <th className="px-3 py-2 text-left">PROGRESS</th>
-                  <th className="px-3 py-2 text-left">ACTIVE ADDRESS</th>
-                  <th className="px-3 py-2 text-left">NOPOL / ID</th>
-                  <th className="px-3 py-2 text-left">CREDITS</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="max-h-[70vh] overflow-auto rounded-lg border border-border">
+            <Table density="legacy">
+              <TableHeader tone="legacy">
+                <TableRow tone="legacy">
+                  <TableHead>RENTER INFO</TableHead>
+                  <TableHead>PHONE</TableHead>
+                  <TableHead>RISK AUDIT</TableHead>
+                  <TableHead>RISK FACTORS</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>CONNECTIVITY</TableHead>
+                  <TableHead>MOVEMENT</TableHead>
+                  <TableHead>PROGRESS</TableHead>
+                  <TableHead>ACTIVE ADDRESS</TableHead>
+                  <TableHead>NOPOL / ID</TableHead>
+                  <TableHead>CREDITS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredRentersRows.length > 0 ? (
                   filteredRentersRows.map(({ vehicle, user, progressPct, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
                     const expanded = expandedRenterVehicleId === vehicle.id
                     return (
                       <Fragment key={`renters-group-${vehicle.id}`}>
-                        <tr
-                          className="cursor-pointer border-t border-slate-100"
+                        <TableRow
+                          className="cursor-pointer"
+                          tone="legacy"
                           onClick={() => setExpandedRenterVehicleId((prev) => (prev === vehicle.id ? '' : vehicle.id))}
                         >
-                          <td className="px-3 py-2">
+                          <TableCell>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-500">{expanded ? '▼' : '▶'}</span>
+                              <span className="text-xs text-muted-foreground">{expanded ? '▼' : '▶'}</span>
                               <div>
-                                <div className="font-bold text-slate-900">{vehicle.customer || 'Unknown'}</div>
-                                <div className="font-mono text-xs text-slate-500">{vehicle.userId || ''}</div>
+                                <div className="font-bold text-foreground">{vehicle.customer || 'Unknown'}</div>
+                                <div className="font-mono text-xs text-muted-foreground">{vehicle.userId || ''}</div>
                               </div>
                             </div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="font-semibold text-slate-900">{user?.phone || vehicle.phone || '-'}</div>
-                            <div className="text-xs text-slate-500">{user?.nik || ''}</div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="font-bold text-slate-900">{user?.riskLabel || '-'}</div>
-                            <div className="text-xs text-slate-500">Score: {user?.riskScore ?? '-'}</div>
-                            <div className="text-xs text-slate-500">Risk rises with grace/immobilized events.</div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="text-xs text-slate-600">Grace: {estimatedGraceCount}x</div>
-                            <div className="text-xs text-slate-600">Immobilized: {estimatedImmobilizedCount}x</div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700">
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-semibold text-foreground">{user?.phone || vehicle.phone || '-'}</div>
+                            <div className="text-xs text-muted-foreground">{user?.nik || ''}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-foreground">{user?.riskLabel || '-'}</div>
+                            <div className="text-xs text-muted-foreground">Score: {user?.riskScore ?? '-'}</div>
+                            <div className="text-xs text-muted-foreground">Risk rises with grace/immobilized events.</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs text-muted-foreground">Grace: {estimatedGraceCount}x</div>
+                            <div className="text-xs text-muted-foreground">Immobilized: {estimatedImmobilizedCount}x</div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex rounded-full bg-muted px-2 py-1 text-xs font-bold text-foreground">
                               {String(vehicle.status || '').toUpperCase()}
                             </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
                               {vehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
                             </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movementState === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
                               {movementState}
                             </span>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="font-bold text-slate-900">{progressPct}%</div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="text-slate-500">{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="font-bold text-slate-900">{vehicle.plate || vehicle.id}</div>
-                            <div className="text-xs text-slate-500">{vehicle.model || ''}</div>
-                          </td>
-                          <td className="px-3 py-2">{vehicle.credits !== undefined ? `${vehicle.credits}d` : '--'}</td>
-                        </tr>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-foreground">{progressPct}%</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-muted-foreground">{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-bold text-foreground">{vehicle.plate || vehicle.id}</div>
+                            <div className="text-xs text-muted-foreground">{vehicle.model || ''}</div>
+                          </TableCell>
+                          <TableCell>{vehicle.credits !== undefined ? `${vehicle.credits}d` : '--'}</TableCell>
+                        </TableRow>
                         {expanded ? (
-                          <tr className="bg-slate-50">
-                            <td colSpan={11} className="px-3 py-2">
+                          <tr className="bg-muted">
+                            <TableCell colSpan={11}>
                               <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                 <div>
-                                  <div className="mb-1 text-xs font-semibold text-slate-500">Rider Info</div>
+                                  <div className="mb-1 text-xs font-semibold text-muted-foreground">Rider Info</div>
                                   <div className="text-sm">NIK: {user?.nik || '--'}</div>
                                   <div className="text-sm">Phone: {user?.phone || vehicle.phone || '--'}</div>
                                   <div className="text-sm">
@@ -662,7 +806,7 @@ export function ProgramsView() {
                                   </div>
                                 </div>
                                 <div>
-                                  <div className="mb-1 text-xs font-semibold text-slate-500">Performance</div>
+                                  <div className="mb-1 text-xs font-semibold text-muted-foreground">Performance</div>
                                   <div className="text-sm">
                                     Total Paid: Rp {Math.round(user?.totalPaid || 0).toLocaleString('id-ID')}
                                   </div>
@@ -671,30 +815,30 @@ export function ProgramsView() {
                                   <div className="text-sm">Immobilized Events (est): {estimatedImmobilizedCount}x</div>
                                 </div>
                                 <div>
-                                  <div className="mb-1 text-xs font-semibold text-slate-500">Emergency</div>
+                                  <div className="mb-1 text-xs font-semibold text-muted-foreground">Emergency</div>
                                   <div className="text-sm">Name: {user?.emergencyContacts?.[0]?.name || '--'}</div>
                                   <div className="text-sm">Phone: {user?.emergencyContacts?.[0]?.phone || '--'}</div>
                                 </div>
                               </div>
-                            </td>
+                            </TableCell>
                           </tr>
                         ) : null}
                       </Fragment>
                     )
                   })
                 ) : (
-                  <tr>
-                    <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <TableRow tone="legacy">
+                    <TableCell colSpan={11} className="px-6 py-8 text-center text-sm text-muted-foreground">
                       No renters found for selected tab.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <div className="mt-3 flex justify-end">
             <button
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
               type="button"
               onClick={() => {
                 setExpandedRenterVehicleId('')
@@ -705,18 +849,18 @@ export function ProgramsView() {
               Close
             </button>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className={`${deleteTarget ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-          <h2 className="mb-2 text-lg font-extrabold text-slate-900">Delete Program</h2>
-          <div className="text-sm text-slate-600">
+          <div className={`${deleteTarget ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
+            <div className="app-modal-content w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-xl">
+          <h2 className="mb-2 text-lg font-extrabold text-foreground">Delete Program</h2>
+          <div className="text-sm text-muted-foreground">
             Delete <b>{deleteTarget?.name}</b>? This cannot be undone.
           </div>
           <div className="mt-4 flex justify-end gap-2">
             <button
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
               type="button"
               onClick={() => setDeleteTarget(null)}
             >
@@ -733,8 +877,11 @@ export function ProgramsView() {
               Delete
             </button>
           </div>
-        </div>
-      </div>
+            </div>
+          </div>
+        </>,
+        document.body,
+      )}
     </PageShell>
   )
 }

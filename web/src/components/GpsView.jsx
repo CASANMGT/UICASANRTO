@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createGps, deleteGps, getGpsSnapshot, getState, updateGps } from '../bridge/legacyRuntime'
+import {
+  createGps,
+  deleteGps,
+  getGeofenceSpeedLimit,
+  getGpsSnapshot,
+  getState,
+  updateGps,
+} from '../bridge/legacyRuntime'
 import * as XLSX from 'xlsx'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
-import { PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 const initialFilter = {
@@ -144,8 +151,11 @@ export function GpsView() {
         const address = device.address || vehicle?.lastActiveLocation || `Zone ${((Math.abs(hashCode(device.id || 'gps')) % 12) + 1)} Jakarta`
         const lat = device.lat ?? vehicle?.lat
         const lng = device.lng ?? vehicle?.lng
-          const speedKmh = Math.max(0, Math.round(Number(device.speedKmh ?? device.speed ?? vehicle?.speed ?? 0)))
-          const movement = speedKmh > 0 ? 'Running' : 'Stopped'
+        const rawSpeed = Math.max(0, Math.round(Number(device.speedKmh ?? device.speed ?? vehicle?.speed ?? 0)))
+        const vehicleForGeofence = vehicle ? { ...vehicle, lat: lat ?? vehicle.lat, lng: lng ?? vehicle.lng } : null
+        const speedLimit = getGeofenceSpeedLimit(vehicleForGeofence, program, 80)
+        const speedKmh = Math.min(rawSpeed, speedLimit)
+        const movement = speedKmh > 0 ? 'Running' : 'Stopped'
           const headingDeg = normalizeDegree(device.headingDeg ?? device.heading ?? pseudoHeading(device.id || vehicle?.id || 'gps'))
           const signalPercent = normalizePercent(device.signalPercent ?? pseudoSignal(device.status, device.id || vehicle?.id || 'gps'))
           const pingAgeHours = Math.floor((Date.now() - new Date(lastPingAt).getTime()) / (60 * 60 * 1000))
@@ -170,6 +180,7 @@ export function GpsView() {
             lng,
             movement,
             speedKmh,
+            speedLimitedByGeofence: rawSpeed > speedKmh,
             headingDeg,
             signalPercent,
           }
@@ -191,7 +202,7 @@ export function GpsView() {
     [vehicles],
   )
   const vehicleModels = useMemo(() => [...new Set(vehicles.map((vehicle) => vehicle.model).filter(Boolean))].sort(), [vehicles])
-  const pageSize = 20
+  const pageSize = PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const currentPage = Math.min(page, totalPages)
   const pageRows = filteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -365,7 +376,7 @@ export function GpsView() {
         <StatCard label="Firmware Alert" value={data.stats.firmwareAlert || 0} valueClassName="text-rose-700" />
       </StatsGrid>
 
-      <div className="mb-4 grid grid-cols-1 gap-2 xl:grid-cols-8">
+      <div className="mb-4 grid grid-cols-1 items-center gap-2 xl:grid-cols-8">
         <Input
           variant="legacy"
           className="xl:col-span-2"
@@ -494,25 +505,29 @@ export function GpsView() {
             </option>
           ))}
         </Select>
-        <Button variant="legacyPrimary" onClick={openCreate}>
+        <Button variant="legacyPrimary" size="legacy" className="h-11 shrink-0" onClick={openCreate}>
           Add Device
         </Button>
         <Button
           variant="legacyPill"
+          size="legacy"
+          className="h-11 shrink-0"
           onClick={() => setBulkImport({ open: true, fileName: '', rows: [], result: null, error: '' })}
         >
           Bulk Add Devices
         </Button>
         <Button
           variant="legacyGhost"
+          size="legacy"
+          className="h-11 shrink-0"
           onClick={() => setBrandModelSettings((prev) => ({ ...prev, open: true, editId: null, brand: '', model: '' }))}
         >
           Brand/Model Settings
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <Table className="min-w-[1280px]" density="legacy">
+      <DataPanel>
+        <Table className={TABLE_MIN_WIDTH} density="legacy">
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>DEVICE ID</TableHead>
@@ -528,36 +543,36 @@ export function GpsView() {
           </TableHeader>
           <TableBody>
           {pageRows.length > 0 ? (
-            pageRows.map(({ device, vehicle, program, user, incidentSeverity, lastPingAt, address, lat, lng, movement, speedKmh, headingDeg, signalPercent }) => (
+            pageRows.map(({ device, vehicle, program, user, incidentSeverity, lastPingAt, address, lat, lng, movement, speedKmh, speedLimitedByGeofence, headingDeg, signalPercent }) => (
               <TableRow key={device.id} tone="legacy">
                 <TableCell>
                   <div className="font-mono text-xs">{device.id}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     {new Date(device.createdAt || lastPingAt).toLocaleString('id-ID')}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-bold text-slate-900">
+                  <div className="font-bold text-foreground">
                     {device.brand} {device.model || ''}
                   </div>
-                  <div className="text-xs text-slate-500">{device.imei}</div>
+                  <div className="text-xs text-muted-foreground">{device.imei}</div>
                 </TableCell>
                 <TableCell>
                   <div className="mb-1 flex items-center gap-2">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
                       <div
                         className={`h-full rounded-full ${signalPercent >= 60 ? 'bg-emerald-500' : signalPercent >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`}
                         style={{ width: `${signalPercent}%` }}
                       />
                     </div>
-                    <span className="text-xs text-slate-600">{signalPercent}%</span>
+                    <span className="text-xs text-muted-foreground">{signalPercent}%</span>
                   </div>
                   <span
                     className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${gpsStatusTone(device.status)}`}
                   >
                     {device.status}
                   </span>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 text-xs text-muted-foreground">
                     Last ping: {timeAgo(lastPingAt)}
                   </div>
                 </TableCell>
@@ -570,9 +585,14 @@ export function GpsView() {
                     >
                       {movement}
                     </span>
-                    <span className="text-xs font-semibold text-slate-700">{speedKmh} km/h</span>
+                    <span className="text-xs font-semibold text-foreground">{speedKmh} km/h</span>
+                    {speedLimitedByGeofence && (
+                      <span className="text-xs text-amber-600" title="Out of zone beyond buffer">
+                        (limited)
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-500">Heading: {headingDeg}°</div>
+                  <div className="text-xs text-muted-foreground">Heading: {headingDeg}°</div>
                 </TableCell>
                 <TableCell>
                   <div>
@@ -582,36 +602,36 @@ export function GpsView() {
                       {program?.name || '-'}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     Name: {user?.name || vehicle?.customer || '-'}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     Phone: {user?.phone || vehicle?.phone || '-'}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div>{device.vehiclePlate || 'Unassigned Vehicle'}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     {vehicle?.id || 'Not Assigned'}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     {vehicle ? `${vehicleBrand(vehicle)} • ${vehicle.model || '-'}` : '-'}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="text-xs">{address}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     {lat && lng ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : '-'}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-muted-foreground">
                     Last Ping: {new Date(lastPingAt).toLocaleString('id-ID')}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div>{device.sim?.carrier || 'Unassigned SIM'}</div>
-                  <div className="text-xs text-slate-500">{device.sim?.number || '-'}</div>
+                  <div className="text-xs text-muted-foreground">{device.sim?.number || '-'}</div>
                   <div
-                    className={`text-xs ${simExpired(device.sim?.expiry) ? 'text-rose-600' : 'text-slate-500'}`}
+                    className={`text-xs ${simExpired(device.sim?.expiry) ? 'text-rose-600' : 'text-muted-foreground'}`}
                   >
                     Exp: {device.sim?.expiry ? new Date(device.sim.expiry).toLocaleDateString('id-ID') : '-'}
                   </div>
@@ -640,36 +660,36 @@ export function GpsView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No GPS devices found.
               </TableCell>
             </TableRow>
           )}
           </TableBody>
         </Table>
-      </div>
+      </DataPanel>
 
-      <div className="mt-4 flex items-center justify-between">
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} / {totalPages} ({filteredRows.length} rows)
+      <PageFooter>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+        >
+          Prev
+        </Button>
+        <div className="text-sm font-semibold text-muted-foreground">
+          Page {currentPage} of {totalPages} ({filteredRows.length} rows)
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="legacyGhost"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="legacyGhost"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+        >
+          Next
+        </Button>
+      </PageFooter>
 
       <Dialog open={editor.open} onOpenChange={(open) => setEditor((prev) => ({ ...prev, open }))}>
         <DialogContent tone="legacy">
@@ -677,7 +697,7 @@ export function GpsView() {
             <DialogTitle>{editor.mode === 'create' ? '📡 Add GPS Device' : '✏️ Edit Device'}</DialogTitle>
           </DialogHeader>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Brand</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Brand</label>
             <Select
               variant="legacy"
               value={editor.form.brand}
@@ -702,7 +722,7 @@ export function GpsView() {
             </Select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Model</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Model</label>
             <Select
               variant="legacy"
               value={editor.form.model}
@@ -725,7 +745,7 @@ export function GpsView() {
             </Select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">IMEI</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">IMEI</label>
             <Input
               variant="legacy"
               value={editor.form.imei}
@@ -738,7 +758,7 @@ export function GpsView() {
             />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">SIM Carrier</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">SIM Carrier</label>
             <Select
               variant="legacy"
               value={editor.form.carrier}
@@ -758,7 +778,7 @@ export function GpsView() {
             </Select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">SIM Number</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">SIM Number</label>
             <Input
               variant="legacy"
               value={editor.form.simNumber}
@@ -772,7 +792,7 @@ export function GpsView() {
             />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">SIM Expiry</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">SIM Expiry</label>
             <Input
               variant="legacy"
               type="date"
@@ -787,7 +807,7 @@ export function GpsView() {
             />
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Assigned Vehicle</label>
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Assigned Vehicle</label>
             <Select
               variant="legacy"
               value={editor.form.vehicleId}
@@ -805,7 +825,7 @@ export function GpsView() {
                 </option>
               ))}
             </Select>
-            <div className="mt-1 text-xs text-slate-500">
+            <div className="mt-1 text-xs text-muted-foreground">
               Only vehicles without GPS assignment are shown.
             </div>
           </div>
@@ -888,13 +908,13 @@ export function GpsView() {
               onChange={handleBulkImportFileChange}
             />
             {bulkImport.fileName ? (
-              <div className="text-xs text-slate-600">Selected file: {bulkImport.fileName}</div>
+              <div className="text-xs text-muted-foreground">Selected file: {bulkImport.fileName}</div>
             ) : null}
             {bulkImport.error ? (
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{bulkImport.error}</div>
             ) : null}
             {bulkImport.result ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+              <div className="rounded-xl border border-border bg-muted p-3 text-xs text-foreground">
                 <div>
                   Created: <b>{bulkImport.result.created}</b> | Skipped: <b>{bulkImport.result.skipped}</b>
                 </div>
@@ -948,7 +968,7 @@ export function GpsView() {
               {brandModelSettings.editId ? 'Save Brand/Model' : 'Add Brand/Model'}
             </Button>
           </div>
-          <div className="max-h-64 overflow-auto rounded-xl border border-slate-200">
+          <div className="max-h-64 overflow-auto rounded-lg border border-border">
             <Table density="legacy">
               <TableHeader tone="legacy">
                 <TableRow tone="legacy">
@@ -1002,13 +1022,13 @@ function gpsStatusTone(status) {
   if (status === 'Online') return 'bg-emerald-100 text-emerald-700'
   if (status === 'Low Signal') return 'bg-amber-100 text-amber-700'
   if (status === 'Tampered') return 'bg-rose-100 text-rose-700'
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-muted text-foreground'
 }
 
 function programTone(type) {
   if (type === 'RTO') return 'bg-cyan-100 text-cyan-700'
   if (type === 'Rent') return 'bg-amber-100 text-amber-700'
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-muted text-foreground'
 }
 
 function simExpired(expiry) {

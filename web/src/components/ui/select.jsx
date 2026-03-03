@@ -1,16 +1,13 @@
 import { cn } from '../../lib/utils'
 
-const variants = {
-  default: 'border-[color:var(--b1)] bg-white text-[color:var(--t1)] ring-[color:var(--ac)]',
-  legacy: 'border-[color:var(--b1)] bg-white text-[color:var(--t1)] ring-[color:var(--ac)]',
-}
-
 export function Select({ className, children, variant = 'default', ...props }) {
   return (
     <select
       className={cn(
-        'w-full rounded-xl border px-3 py-2 text-[13px] outline-none focus:ring-2',
-        variants[variant] || variants.default,
+        'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base',
+        'text-foreground',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}

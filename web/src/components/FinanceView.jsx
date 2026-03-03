@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { getFinanceSnapshot } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
-import { DataPanel, FilterBar, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -31,7 +31,7 @@ export function FinanceView() {
   const tick = useLegacyTick()
   const [programFilter, setProgramFilter] = useState('all')
   const [page, setPage] = useState(1)
-  const pageSize = 25
+  const pageSize = PAGE_SIZE
   const data = useMemo(() => {
     void tick
     const snap = getFinanceSnapshot(programFilter)
@@ -52,7 +52,7 @@ export function FinanceView() {
       <PageHeader className="mb-1 items-center">
         <div>
           <PageTitle className="mb-1">Finance Overview</PageTitle>
-          <div className="text-sm text-slate-500">Revenue streams and transaction history</div>
+          <div className="text-sm text-muted-foreground">Revenue streams and transaction history</div>
         </div>
         <PageMeta>{data.transactions.length} Records</PageMeta>
       </PageHeader>
@@ -66,7 +66,7 @@ export function FinanceView() {
 
       <FilterBar className="lg:grid-cols-4">
         <div className="flex items-center gap-2 lg:col-span-2">
-          <label htmlFor="programFilter" className="text-sm text-slate-500">
+          <label htmlFor="programFilter" className="text-sm text-muted-foreground">
             Filter by Program:
           </label>
           <Select
@@ -87,12 +87,12 @@ export function FinanceView() {
       </FilterBar>
 
       <DataPanel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-          <h3 className="m-0 text-base font-bold text-slate-900">Recent Transactions</h3>
-          <span className="text-sm text-slate-500">{data.transactions.length} records</span>
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h3 className="m-0 text-base font-bold text-foreground">Recent Transactions</h3>
+          <span className="text-sm text-muted-foreground">{data.transactions.length} records</span>
         </div>
         <div className="overflow-x-auto">
-          <Table density="legacy" className="min-w-[920px]">
+          <Table density="legacy" className={TABLE_MIN_WIDTH}>
             <TableHeader tone="legacy" className="text-left">
               <TableRow tone="legacy">
                 <TableHead>TX ID / TX DATE & TIME</TableHead>
@@ -110,7 +110,7 @@ export function FinanceView() {
                   <TableRow key={tx.id + tx.date} tone="legacy">
                     <TableCell>
                       <div className="font-mono text-xs">{tx.id}</div>
-                      <div className="text-xs text-slate-500">{formatTxDate(tx.date ?? tx.transactionDate ?? tx.createdAt ?? tx.paidAt)}</div>
+                      <div className="text-xs text-muted-foreground">{formatTxDate(tx.date ?? tx.transactionDate ?? tx.createdAt ?? tx.paidAt)}</div>
                     </TableCell>
                     <TableCell>{tx.programLabel}</TableCell>
                     <TableCell>
@@ -129,15 +129,15 @@ export function FinanceView() {
                           {tx.credits != null ? `${tx.credits}d` : '-'}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500">{tx.transactionTypeLabel}</div>
+                      <div className="text-xs text-muted-foreground">{tx.transactionTypeLabel}</div>
                     </TableCell>
                     <TableCell>
                       <div>{tx.customer || '-'}</div>
-                      <div className="text-xs text-slate-500">{tx.customerPhone}</div>
+                      <div className="text-xs text-muted-foreground">{tx.customerPhone}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-mono font-semibold text-slate-900">{formatCurrency(tx.amount)}</div>
-                      <div className="text-xs text-slate-500">{tx.method || '-'}</div>
+                      <div className="font-mono font-semibold text-foreground">{formatCurrency(tx.amount)}</div>
+                      <div className="text-xs text-muted-foreground">{tx.method || '-'}</div>
                     </TableCell>
                     <TableCell className="font-semibold text-cyan-700">{formatCurrency(tx.casanShare || 0)}</TableCell>
                     <TableCell>
@@ -159,7 +159,7 @@ export function FinanceView() {
                 ))
               ) : (
                 <TableRow tone="legacy">
-                  <TableCell colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <TableCell colSpan={7} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     No transactions for selected filter.
                   </TableCell>
                 </TableRow>
@@ -169,28 +169,26 @@ export function FinanceView() {
         </div>
       </DataPanel>
 
-      <PageFooter className="mt-1 border-t border-slate-200 pt-3">
-        <span className="text-sm font-semibold text-slate-600">
-          Page {currentPage} / {totalPages} ({data.transactions.length} rows)
-        </span>
-        <div className="flex gap-2">
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
-          >
-            Next
-          </Button>
+      <PageFooter>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
+        >
+          Prev
+        </Button>
+        <div className="text-sm font-semibold text-slate-600">
+          Page {currentPage} of {totalPages} ({data.transactions.length} rows)
         </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
+        >
+          Next
+        </Button>
       </PageFooter>
     </PageShell>
   )

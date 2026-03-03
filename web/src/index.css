@@ -1,11 +1,34 @@
 @import "tailwindcss";
 
-:root {
-  --background: 220 33% 98%;
-  --foreground: 222 47% 11%;
-  --border: 218 27% 88%;
-  --ring: 245 84% 60%;
+/* Tailwind v4: buttons use cursor:default; restore pointer for clickable buttons */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
+/* shadcn semantic color variables */
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --accent: #f8fafc;
+  --accent-foreground: #0f172a;
+  --input: #e2e8f0;
+  --border: #e2e8f0;
+  --ring: #4f46e5;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* App layout palette (consumed by sidebar/topbar/modal CSS) */
   --bg: #f7f9fc;
   --s1: rgba(255, 255, 255, 0.92);
   --s2: #f8fbff;
@@ -20,18 +43,41 @@
   --dd: #dc2626;
   --dac: #0ea5e9;
 
-  --app-fs-xs: 12px;
-  --app-fs-sm: 13px;
-  --app-fs-md: 14px;
-  --app-fs-lg: 16px;
-  --app-fs-xl: 22px;
-  --chip-fs: 11px;
-  --chip-fw: 700;
-  --chip-py: 4px;
-  --chip-px: 10px;
+  /* App layout font scale (sidebar, topbar, nav items) */
+  --app-fs-xs: 0.8125rem;
+  --app-fs-sm: 0.875rem;
+  --app-fs-md: 0.9375rem;
+  --app-fs-lg: 1.125rem;
+  --app-fs-xl: 1.5rem;
+  --app-fs-2xl: 1.75rem;
 
   font-family: "Inter", "DM Sans", system-ui, -apple-system, Segoe UI, sans-serif;
-  font-size: var(--app-fs-md);
+  line-height: 1.5;
+}
+
+/* shadcn v4: map CSS vars to Tailwind color/radius tokens */
+/* Larger font scale for readability (~1.25–1.5x vs default) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
 }
 
 body {
@@ -44,10 +90,7 @@ body {
   color: var(--t1);
 }
 
-* {
-  border-color: hsl(var(--border));
-  box-sizing: border-box;
-}
+/* ── App shell layout ── */
 
 .app-shell {
   min-height: 100vh;
@@ -62,96 +105,31 @@ body {
 
 .app-sidebar {
   border-right: 1px solid var(--b1);
-  padding: 14px 10px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 251, 255, 0.96));
   backdrop-filter: blur(8px);
 }
 
 .app-sidebar-header {
-  padding: 8px 10px 14px;
+  padding: 12px 12px 16px;
   border-bottom: 1px solid var(--b1);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 
 .app-sidebar-title-wrap {
   min-width: 0;
 }
 
-.app-brand-title {
-  font-size: var(--app-fs-xl);
-  font-weight: 800;
-  color: var(--t1);
-  letter-spacing: -0.02em;
-}
-
-.app-brand-subtitle {
-  margin-top: 2px;
-  font-size: var(--app-fs-sm);
-  color: var(--t3);
-}
-
-.app-changelog {
-  margin-top: 10px;
-}
-
-.app-changelog-summary {
-  cursor: pointer;
-  font-size: var(--app-fs-sm);
-  font-weight: 700;
-}
-
-.app-changelog-list {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.app-changelog-card {
-  padding: 8px;
-  border: 1px solid var(--b1);
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.app-changelog-head {
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.app-changelog-version {
-  font-size: var(--app-fs-sm);
-  font-weight: 800;
-}
-
-.app-changelog-date {
-  font-size: var(--app-fs-xs);
-  color: var(--t3);
-}
-
-.app-changelog-card ul {
-  margin: 0;
-  padding-left: 16px;
-}
-
-.app-changelog-note {
-  margin-bottom: 2px;
-  font-size: var(--app-fs-xs);
-  color: var(--t2);
-}
-
 .app-sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .app-nav-item {
@@ -161,10 +139,10 @@ body {
   color: var(--t2);
   border-radius: 12px;
   display: grid;
-  grid-template-columns: 24px 1fr auto;
-  gap: 8px;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
   align-items: center;
-  padding: 10px 10px;
+  padding: 12px;
   cursor: pointer;
   text-align: left;
   font-size: var(--app-fs-md);
@@ -200,23 +178,26 @@ body {
   font-family: "IBM Plex Mono", monospace;
 }
 
+/* ── Main content area ── */
+
 .app-main {
   min-width: 0;
-  padding: 12px;
+  overflow-x: hidden;
+  padding: 16px 16px 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .app-content {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .app-topbar {
-  padding: 10px 12px;
+  padding: 14px 16px;
   border: 1px solid var(--b1);
   border-radius: 14px;
   display: flex;
@@ -228,46 +209,13 @@ body {
   backdrop-filter: blur(8px);
 }
 
-.app-topbar-left,
-.app-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.app-topbar-title {
-  margin: 0;
-  font-size: var(--app-fs-xl);
-  font-weight: 800;
-  color: var(--t1);
-}
-
-.app-status-loading {
-  color: var(--dw);
-  font-size: var(--app-fs-sm);
-}
-
-.app-status-error {
-  color: var(--dd);
-  font-size: var(--app-fs-sm);
-}
-
-.app-partner-label {
-  color: var(--t2);
-  font-size: var(--app-fs-sm);
-}
-
-.app-partner-select {
-  width: 180px;
-}
-
 .app-collapse-btn,
 .app-menu-btn {
   border: 1px solid var(--b1);
   border-radius: 10px;
   background: #ffffff;
   color: var(--t2);
-  padding: 5px 9px;
+  padding: 8px 12px;
   cursor: pointer;
   font-size: var(--app-fs-sm);
 }
@@ -280,88 +228,28 @@ body {
   display: none;
 }
 
-.app-content section {
-  background: var(--s1);
-  border-color: var(--b1);
-  border-radius: 14px;
+/* ── Modals (portaled to body) ── */
+
+.app-modal-backdrop {
+  isolation: isolate;
+  position: fixed !important;
+  z-index: 100 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.app-content input:not([type='checkbox']):not([type='radio']),
-.app-content select,
-.app-topbar .form-control {
-  font-size: var(--app-fs-md) !important;
+.app-modal-content {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.18);
 }
 
-.app-content .text-slate-900 {
-  color: var(--t1) !important;
-}
-
-.app-content .text-slate-800,
-.app-content .text-slate-700,
-.app-content .text-slate-600 {
-  color: var(--t2) !important;
-}
-
-.app-content .text-slate-500,
-.app-content .text-slate-400 {
-  color: var(--t3) !important;
-}
-
-.app-content .bg-white {
-  background: #ffffff !important;
-}
-
-.app-content .bg-slate-50,
-.app-content .bg-slate-100 {
-  background: var(--s2) !important;
-}
-
-.app-content .border-slate-300,
-.app-content .border-slate-200,
-.app-content .border-slate-100 {
-  border-color: var(--b1) !important;
-}
-
-/* Final badge polish: one chip geometry and palette across tabs */
-.app-content span[class*="rounded-full"][class*="text-xs"] {
-  font-size: var(--chip-fs) !important;
-  font-weight: var(--chip-fw) !important;
-  line-height: 1.1;
-  border-radius: 999px !important;
-}
-
-.app-content span[class*="rounded-full"][class*="px-2"][class*="py-1"] {
-  padding: var(--chip-py) var(--chip-px) !important;
-}
-
-.app-content span[class*="rounded-full"][class*="px-2"][class*="py-0.5"] {
-  padding: calc(var(--chip-py) - 1px) var(--chip-px) !important;
-}
-
-.app-content .bg-emerald-100 {
-  background: #dcfce7 !important;
-  color: #166534 !important;
-}
-
-.app-content .bg-cyan-100 {
-  background: #cffafe !important;
-  color: #155e75 !important;
-}
-
-.app-content .bg-amber-100 {
-  background: #fef3c7 !important;
-  color: #92400e !important;
-}
-
-.app-content .bg-orange-100 {
-  background: #ffedd5 !important;
-  color: #9a3412 !important;
-}
-
-.app-content .bg-rose-100 {
-  background: #ffe4e6 !important;
-  color: #9f1239 !important;
-}
+/* ── Sidebar collapsed state ── */
 
 .app-sidebar.collapsed {
   width: 86px;
@@ -385,7 +273,9 @@ body {
   display: none;
 }
 
-@media (max-width: 980px) {
+/* ── Mobile responsive ── */
+
+@media (max-width: 768px) {
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -423,7 +313,7 @@ body {
     grid-template-columns: 24px 1fr auto;
     justify-items: stretch;
     text-align: left;
-    padding: 10px 10px;
+    padding: 10px;
   }
 
   .app-sidebar.collapsed .app-nav-label,
@@ -450,4 +340,31 @@ body {
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* ── Light-theme override for legacy dark-theme imports ── */
+
+.app-main,
+.app-main .card,
+.app-main section {
+  --bg: #f7f9fc;
+  --s1: rgba(255, 255, 255, 0.92);
+  --s2: #f8fbff;
+  --s3: #eef3fb;
+  --b1: #dbe5f3;
+  --t1: #0f172a;
+  --t2: #334155;
+  --t3: #64748b;
+}
+
+.app-main .card,
+.app-main .app-topbar,
+.app-main section {
+  background: var(--background);
+  border-color: var(--b1);
+  color: var(--foreground);
+}
+
+.app-main table {
+  background: var(--background);
 }

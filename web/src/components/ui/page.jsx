@@ -1,11 +1,16 @@
 import { cn } from '../../lib/utils'
 
+/** Rows per page for all tab tables */
+export const PAGE_SIZE = 20
+
+/** Minimum table width class for consistent layout across tabs */
+export const TABLE_MIN_WIDTH = 'min-w-[1200px]'
+
 export function PageShell({ className, ...props }) {
   return (
     <section
       className={cn(
-        'rounded-2xl border p-4 shadow-[0_10px_30px_rgba(79,70,229,0.08)]',
-        'border-[color:var(--b1)] bg-[color:var(--s1)] backdrop-blur-sm',
+        'min-w-0 rounded-lg border border-border bg-background px-6 py-5 shadow-sm',
         className,
       )}
       {...props}
@@ -14,19 +19,18 @@ export function PageShell({ className, ...props }) {
 }
 
 export function PageHeader({ className, ...props }) {
-  return <div className={cn('mb-4 flex flex-wrap items-start justify-between gap-3', className)} {...props} />
+  return <div className={cn('mb-5 flex flex-wrap items-start justify-between gap-4', className)} {...props} />
 }
 
 export function PageTitle({ className, ...props }) {
-  return <h2 className={cn('text-[22px] font-extrabold text-[color:var(--t1)] tracking-[-0.02em]', className)} {...props} />
+  return <h2 className={cn('text-base font-semibold leading-none tracking-tight text-foreground', className)} {...props} />
 }
 
 export function PageMeta({ className, ...props }) {
   return (
     <div
       className={cn(
-        'rounded-full border px-3 py-1 text-[13px] font-semibold',
-        'border-[color:var(--b1)] bg-[color:var(--s2)] text-[color:var(--t2)]',
+        'rounded-md border border-border bg-muted px-4 py-1.5 text-base font-medium text-muted-foreground',
         className,
       )}
       {...props}
@@ -35,26 +39,31 @@ export function PageMeta({ className, ...props }) {
 }
 
 export function FilterBar({ className, ...props }) {
-  return <div className={cn('mb-4 grid grid-cols-1 gap-2 lg:grid-cols-3', className)} {...props} />
+  return <div className={cn('mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3', className)} {...props} />
 }
 
 export function StatsGrid({ className, ...props }) {
-  return <div className={cn('mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4', className)} {...props} />
+  return <div className={cn('mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4', className)} {...props} />
 }
 
 export function StatCard({ label, value, valueClassName, className }) {
   return (
-    <div className={cn('rounded-xl border border-slate-200 bg-slate-50 p-3', className)}>
-      <div className="text-xs text-slate-500">{label}</div>
-      <div className={cn('text-xl font-extrabold text-slate-900', valueClassName)}>{value}</div>
+    <div className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}>
+      <div className="text-base font-medium text-muted-foreground">{label}</div>
+      <div className={cn('mt-2 text-base font-bold text-foreground', valueClassName)}>{value}</div>
     </div>
   )
 }
 
 export function DataPanel({ className, ...props }) {
-  return <div className={cn('overflow-x-auto rounded-xl border border-[color:var(--b1)]', className)} {...props} />
+  return <div className={cn('overflow-x-auto rounded-lg border border-border', className)} {...props} />
 }
 
 export function PageFooter({ className, ...props }) {
-  return <div className={cn('mt-4 flex items-center justify-between gap-2', className)} {...props} />
+  return (
+    <div
+      className={cn('mt-5 flex items-center justify-between gap-4 border-t border-border pt-5', className)}
+      {...props}
+    />
+  )
 }

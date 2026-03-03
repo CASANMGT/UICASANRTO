@@ -1,12 +1,36 @@
 import { useMemo, useRef, useState } from 'react'
 import { divIcon } from 'leaflet'
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import { MapContainer, Marker, Polygon, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { getState, getVehicles } from '../bridge/legacyRuntime'
+import {
+  CITIES_GEOFENCE,
+  CITIES_POLYGONS,
+  OUT_OF_ZONE_ACTIONS,
+  getDistanceToGeofenceBoundary,
+  getGeofenceSpeedLimit,
+  getState,
+  getVehicles,
+  isVehicleInProgramZone,
+} from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
-import { PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
+
+/** Convert city polygon data to Leaflet positions. GeoJSON [lng,lat] -> Leaflet [lat,lng] */
+function toLeafletPositions(cityData) {
+  if (!cityData || !Array.isArray(cityData) || cityData.length === 0) return []
+  const first = cityData[0]
+  if (!first || !Array.isArray(first)) return []
+  if (typeof first[0] === 'number') {
+    if (cityData.length < 3) return []
+    return [cityData.map(([lng, lat]) => [lat, lng])]
+  }
+  return cityData
+    .map((ring) => (Array.isArray(ring) ? ring.map(([lng, lat]) => [lat, lng]) : []))
+    .filter((r) => r.length >= 3)
+}
 
 export function MapView() {
   const mapRef = useRef(null)
@@ -19,12 +43,18 @@ export function MapView() {
   const [pingAgeFilter, setPingAgeFilter] = useState('all')
   const [speedBand, setSpeedBand] = useState('all')
   const [listPage, setListPage] = useState(1)
+  const [geofenceCities, setGeofenceCities] = useState([])
   const vehicles = useMemo(() => {
     void tick
-    let list = getVehicles({ status }).map((vehicle) => ({
-      ...vehicle,
-      effectiveSpeed: vehicle.status === 'immobilized' ? 0 : (vehicle.speed || 0),
-    }))
+    const state = getState()
+    const programsById = new Map((state.programs || []).map((p) => [p.id, p]))
+    let list = getVehicles({ status }).map((vehicle) => {
+      const program = programsById.get(vehicle.programId)
+      const speedLimit = getGeofenceSpeedLimit(vehicle, program, 80)
+      const rawSpeed = vehicle.status === 'immobilized' ? 0 : (vehicle.speed || 0)
+      const effectiveSpeed = Math.min(rawSpeed, speedLimit)
+      return { ...vehicle, effectiveSpeed }
+    })
     if (connectivity === 'online') list = list.filter((vehicle) => vehicle.isOnline)
     if (connectivity === 'offline') list = list.filter((vehicle) => !vehicle.isOnline)
     if (movement === 'running') list = list.filter((vehicle) => vehicle.effectiveSpeed > 0)
@@ -52,13 +82,25 @@ export function MapView() {
       const headingDeg = normalizeDegree(gps?.headingDeg ?? gps?.heading ?? pseudoHeading(vehicle.id || 'veh'))
       const gpsOnline = String(gps?.status || '').toLowerCase() !== 'offline' && String(gps?.status || '').toLowerCase() !== 'unassigned'
       const signalPercent = normalizePercent(gps?.signalPercent ?? pseudoSignal(gps?.status || (gpsOnline ? 'Online' : 'Offline'), vehicle.id || 'veh'))
+      const inZone = program ? isVehicleInProgramZone(vehicle, program) : null
+      const distToBoundary = program && inZone === false ? getDistanceToGeofenceBoundary(vehicle, program) : Infinity
+      const bufferKm = Math.max(0, Number(program?.outOfZoneBufferKm) ?? 2)
+      const geofenceLimit = getGeofenceSpeedLimit(vehicle, program, 80)
+      const speedLimitedByGeofence =
+        program?.applyOutOfZoneSpeedLimit !== false &&
+        inZone === false &&
+        distToBoundary > bufferKm &&
+        ((vehicle.speed || 0) > geofenceLimit || geofenceLimit === 0)
+      const outOfZoneAction = speedLimitedByGeofence && program?.outOfZoneAction === OUT_OF_ZONE_ACTIONS.IMMOBILIZED ? 'immobilized' : 'speedLimit'
       return {
         ...vehicle,
+        program,
         userPhone: user?.phone || vehicle.phone || '-',
         programId: program?.id || '',
         programName: program?.name || program?.shortName || '-',
         programType: program?.type || '-',
         programLabel: `${program?.name || program?.shortName || '-'} • ${program?.type || '-'}`,
+        programGeofenceCities: program?.geofenceCities || [],
         vehicleBrand: vehicle.brand || String(vehicle.model || '').split(' ')[0] || '-',
         gpsStatus: gps?.status || 'Unassigned',
         gpsOnline,
@@ -67,6 +109,9 @@ export function MapView() {
         pingAgeHours: Math.floor((Date.now() - new Date(lastPingAt).getTime()) / (60 * 60 * 1000)),
         movementState: (vehicle.effectiveSpeed || 0) > 0 ? 'RUNNING' : 'STOPPED',
         headingDeg,
+        inZone,
+        speedLimitedByGeofence,
+        outOfZoneAction,
       }
     })
   }, [vehicles, tick])
@@ -82,19 +127,34 @@ export function MapView() {
       return true
     })
   }, [enrichedVehicles, programFilter, gpsFilter, pingAgeFilter, speedBand])
-  const listPageSize = 20
+  const listPageSize = PAGE_SIZE
   const listTotalPages = Math.max(1, Math.ceil(filteredVehicles.length / listPageSize))
   const currentListPage = Math.min(listPage, listTotalPages)
   const listRows = filteredVehicles.slice((currentListPage - 1) * listPageSize, currentListPage * listPageSize)
   const mapStats = useMemo(
     () => ({
       total: filteredVehicles.length,
-      running: filteredVehicles.filter((vehicle) => vehicle.movementState === 'RUNNING').length,
-      stopped: filteredVehicles.filter((vehicle) => vehicle.movementState === 'STOPPED').length,
+      inZone: filteredVehicles.filter((v) => v.inZone === true).length,
+      outZone: filteredVehicles.filter((v) => v.inZone === false).length,
       online: filteredVehicles.filter((vehicle) => vehicle.isOnline).length,
     }),
     [filteredVehicles],
   )
+
+  const geofenceCitiesToShow = useMemo(() => {
+    const cities = new Set()
+    if (programFilter !== 'all') {
+      const state = getState()
+      const program = (state.programs || []).find((p) => p.id === programFilter)
+      if (program) {
+        for (const city of program.geofenceCities || []) cities.add(city)
+      }
+    }
+    for (const city of geofenceCities) cities.add(city)
+    return cities.size > 0 ? [...cities].sort() : []
+  }, [geofenceCities, programFilter, tick])
+
+  const hasGeofenceOverlay = geofenceCitiesToShow.length > 0
 
   return (
     <PageShell>
@@ -104,15 +164,48 @@ export function MapView() {
       </PageHeader>
       <StatsGrid>
         <StatCard label="Visible Markers" value={mapStats.total} />
-        <StatCard label="Running" value={mapStats.running} valueClassName="text-emerald-700" />
-        <StatCard label="Stopped" value={mapStats.stopped} valueClassName="text-amber-700" />
+        {hasGeofenceOverlay && (
+          <>
+            <StatCard label="In Zone" value={mapStats.inZone} valueClassName="text-emerald-700" />
+            <StatCard label="Out of Zone" value={mapStats.outZone} valueClassName="text-rose-700" />
+          </>
+        )}
         <StatCard label="Online" value={mapStats.online} valueClassName="text-cyan-700" />
       </StatsGrid>
 
-      <div className="h-[560px] overflow-hidden rounded-xl border border-slate-200">
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-muted/80 px-3 py-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Geofence (cities)</span>
+        {CITIES_GEOFENCE.map((city) => (
+          <label key={city} className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={geofenceCities.includes(city)}
+              onChange={(e) => {
+                setGeofenceCities((prev) =>
+                  e.target.checked ? [...prev, city] : prev.filter((c) => c !== city),
+                )
+                setListPage(1)
+              }}
+              className="h-3.5 w-3.5 rounded border-input accent-cyan-600"
+            />
+            <span className="text-sm text-foreground">{city}</span>
+          </label>
+        ))}
+        {geofenceCities.length > 0 && (
+          <button
+            type="button"
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            onClick={() => setGeofenceCities([])}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="h-[560px] overflow-hidden rounded-lg border border-border">
         <MapContainer
-          center={[-6.25, 106.85]}
-          zoom={11}
+          center={[-6.35, 107.0]}
+          zoom={9}
           className="h-full w-full"
           whenReady={(event) => {
             mapRef.current = event.target
@@ -122,6 +215,26 @@ export function MapView() {
             attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
+          {geofenceCitiesToShow.map((cityName) => {
+            const poly = CITIES_POLYGONS[cityName]
+            if (!poly) return null
+            const positionsList = toLeafletPositions(poly)
+            return positionsList.map((positions, idx) => (
+              <Polygon
+                key={`geofence-${cityName}-${idx}`}
+                positions={positions}
+                pathOptions={{
+                  color: 'rgba(14, 165, 233, 0.8)',
+                  fillColor: 'rgba(14, 165, 233, 0.15)',
+                  fillOpacity: 0.4,
+                  weight: 2,
+                }}
+                eventHandlers={{
+                  add: (e) => e.target.bringToBack(),
+                }}
+              />
+            ))
+          })}
           {filteredVehicles.map((vehicle) => (
             <Marker
               key={vehicle.id}
@@ -129,12 +242,30 @@ export function MapView() {
               icon={movementMarkerIcon(vehicle.status, vehicle.headingDeg, vehicle.movementState)}
             >
               <Popup>
-                <div className="text-xs">
+                <div className="text-sm">
                   <div className="font-semibold">{vehicle.id}</div>
                   <div>{vehicle.plate}</div>
                   <div>Renter: {vehicle.customer || 'Unassigned'}</div>
                   <div>Phone: {vehicle.userPhone}</div>
                   <div>Program: {vehicle.programName}</div>
+                  <div>
+                    Zone:{' '}
+                    {vehicle.inZone === true ? (
+                      <span className="font-semibold text-emerald-600">IN ZONE</span>
+                    ) : vehicle.inZone === false ? (
+                      <span className="font-semibold text-rose-600">OUT OF ZONE</span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <div>
+                    Speed: {Math.max(0, vehicle.effectiveSpeed || 0)} km/h
+                    {vehicle.speedLimitedByGeofence && (
+                      <span className="ml-1 text-amber-600" title={vehicle.outOfZoneAction === 'immobilized' ? 'Immobilized (out of zone beyond buffer)' : 'Speed limited (out of zone beyond buffer)'}>
+                        ({vehicle.outOfZoneAction === 'immobilized' ? 'immobilized' : 'limited'})
+                      </span>
+                    )}
+                  </div>
                   <div>Status: <span className="capitalize">{vehicle.status}</span></div>
                   <div>Connectivity: {vehicle.isOnline ? 'Online' : 'Offline'}</div>
                   <div>GPS: {vehicle.gpsStatus}</div>
@@ -148,7 +279,7 @@ export function MapView() {
       </div>
       <div className="mb-3 mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapStatusFilter">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="mapStatusFilter">
             Status
           </label>
           <Select
@@ -170,7 +301,7 @@ export function MapView() {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapConnectivityFilter">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="mapConnectivityFilter">
             Connectivity
           </label>
           <Select
@@ -189,7 +320,7 @@ export function MapView() {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapMovementFilter">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="mapMovementFilter">
             Movement
           </label>
           <Select
@@ -207,21 +338,28 @@ export function MapView() {
             <option value="stopped">Stopped</option>
           </Select>
         </div>
-        <Select
-          variant="legacy"
-          value={programFilter}
-          onChange={(e) => {
-            setProgramFilter(e.target.value)
-            setListPage(1)
-          }}
-        >
-          <option value="all">All Programs</option>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="mapProgramFilter">
+            Program (geofence)
+          </label>
+          <Select
+            id="mapProgramFilter"
+            variant="legacy"
+            className="w-full"
+            value={programFilter}
+            onChange={(e) => {
+              setProgramFilter(e.target.value)
+              setListPage(1)
+            }}
+          >
+            <option value="all">All Programs</option>
           {[...new Map(enrichedVehicles.filter((vehicle) => vehicle.programId).map((vehicle) => [vehicle.programId, vehicle.programLabel])).entries()].map(([programId, programLabel]) => (
             <option key={programId} value={programId}>
               {programLabel}
             </option>
           ))}
-        </Select>
+          </Select>
+        </div>
         <Select
           variant="legacy"
           value={gpsFilter}
@@ -263,136 +401,161 @@ export function MapView() {
           <option value="low">Low (&lt;10 km/h)</option>
         </Select>
       </div>
-      <p className="mb-2 text-sm text-slate-600">
+      <p className="mb-2 text-sm text-muted-foreground">
         Markers: {filteredVehicles.length} — filtered by <strong>Status</strong>, Connectivity, Movement, Program, GPS, ping age, and speed.
       </p>
 
-      <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className="mt-3 rounded-lg border border-border bg-muted p-3">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-xs uppercase text-slate-500">
+          <div className="text-xs uppercase text-muted-foreground">
             Vehicle Movement List
           </div>
-          <div className="text-xs text-slate-500">
-            Running: {filteredVehicles.filter((vehicle) => vehicle.movementState === 'RUNNING').length} | Stopped: {filteredVehicles.filter((vehicle) => vehicle.movementState === 'STOPPED').length}
+          <div className="text-xs text-muted-foreground">
+            In zone: {mapStats.inZone} | Out: {mapStats.outZone} | Running: {filteredVehicles.filter((v) => v.movementState === 'RUNNING').length} | Stopped: {filteredVehicles.filter((v) => v.movementState === 'STOPPED').length}
           </div>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="min-w-[1040px] w-full border-collapse text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-left">VEHICLE</th>
-                <th className="px-3 py-2 text-left">BRAND / MODEL</th>
-                <th className="px-3 py-2 text-left">RENTER</th>
-                <th className="px-3 py-2 text-left">PROGRAM</th>
-                <th className="px-3 py-2 text-left">STATUS</th>
-                <th className="px-3 py-2 text-left">MOVEMENT</th>
-                <th className="px-3 py-2 text-left">SPEED</th>
-                <th className="px-3 py-2 text-left">GPS</th>
-                <th className="px-3 py-2 text-left">LAST PING</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <Table density="legacy" className={TABLE_MIN_WIDTH}>
+            <TableHeader tone="legacy">
+              <TableRow tone="legacy">
+                <TableHead>VEHICLE</TableHead>
+                <TableHead>BRAND / MODEL</TableHead>
+                <TableHead>RENTER</TableHead>
+                <TableHead>PROGRAM</TableHead>
+                <TableHead>ZONE</TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>MOVEMENT</TableHead>
+                <TableHead>SPEED</TableHead>
+                <TableHead>GPS</TableHead>
+                <TableHead>LAST PING</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {listRows.length > 0 ? (
                 listRows.map((vehicle) => (
-                  <tr
+                  <TableRow
                     key={`map-list-${vehicle.id}`}
-                    className="cursor-pointer border-t border-slate-100 transition hover:bg-slate-50"
+                    className="cursor-pointer"
+                    tone="legacy"
                     title="Click row to zoom to marker"
                     onClick={() => {
                       if (mapRef.current) mapRef.current.setView([vehicle.lat, vehicle.lng], 14)
                     }}
                   >
-                    <td className="px-3 py-2">
-                      <div className="font-bold text-slate-900">{vehicle.id}</div>
-                      <div className="text-xs text-slate-500">{vehicle.plate}</div>
-                    </td>
-                    <td className="px-3 py-2">{vehicle.vehicleBrand} / {vehicle.model || '-'}</td>
-                    <td className="px-3 py-2">
+                    <TableCell>
+                      <div className="font-bold text-foreground">{vehicle.id}</div>
+                      <div className="text-xs text-muted-foreground">{vehicle.plate}</div>
+                    </TableCell>
+                    <TableCell>{vehicle.vehicleBrand} / {vehicle.model || '-'}</TableCell>
+                    <TableCell>
                       <div>{vehicle.customer || 'Unassigned'}</div>
-                      <div className="text-xs text-slate-500">{vehicle.userPhone}</div>
-                    </td>
-                    <td className="px-3 py-2">{vehicle.programName}</td>
-                    <td className="px-3 py-2">
+                      <div className="text-xs text-muted-foreground">{vehicle.userPhone}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-foreground">{vehicle.programName}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {(vehicle.programGeofenceCities || []).length > 0 ? (
+                          (vehicle.programGeofenceCities || []).map((city) => (
+                            <span
+                              key={city}
+                              className="inline-flex rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-semibold text-cyan-700"
+                            >
+                              {city}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {vehicle.inZone === true ? (
+                        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">IN ZONE</span>
+                      ) : vehicle.inZone === false ? (
+                        <span className="inline-flex rounded-full bg-rose-100 px-2 py-1 text-xs font-bold text-rose-700">OUT</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <span
                         className="inline-flex rounded-full px-2 py-1 text-xs font-bold"
                         style={{ background: `${markerColor(vehicle.status)}22`, color: markerColor(vehicle.status) }}
                       >
                         {String(vehicle.status || '-').toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
                           vehicle.movementState === 'RUNNING'
                             ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-slate-100 text-slate-700'
+                            : 'bg-muted text-foreground'
                         }`}
                       >
                         {vehicle.movementState}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</TableCell>
+                    <TableCell>
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${gpsColor(vehicle.gpsStatus)}`}
                       >
                         {String(vehicle.gpsStatus || '-').toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="mb-1 flex items-center gap-2">
                         <span
-                          className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
-                            vehicle.gpsOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                            vehicle.gpsOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'
                           }`}
                         >
                           {vehicle.gpsOnline ? 'ONLINE' : 'OFFLINE'}
                         </span>
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                           <div
                             className={`h-full rounded-full ${vehicle.signalPercent >= 60 ? 'bg-emerald-500' : vehicle.signalPercent >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`}
                             style={{ width: `${vehicle.signalPercent}%` }}
                           />
                         </div>
-                        <span className="text-[11px] text-slate-600">{vehicle.signalPercent}%</span>
+                        <span className="text-xs text-muted-foreground">{vehicle.signalPercent}%</span>
                       </div>
-                      <div className="text-xs text-slate-500">{timeAgo(vehicle.lastPingAt)}</div>
-                    </td>
-                  </tr>
+                      <div className="text-xs text-muted-foreground">{timeAgo(vehicle.lastPingAt)}</div>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+                <TableRow tone="legacy">
+                  <TableCell colSpan={10} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     No vehicles available for current map filters.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-        <div className="mt-2 flex items-center justify-between">
-          <div className="text-sm font-semibold text-slate-600">
-            Page {currentListPage} / {listTotalPages} ({filteredVehicles.length} rows)
+        <PageFooter>
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentListPage <= 1}
+            onClick={() => setListPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </Button>
+          <div className="text-sm font-semibold text-muted-foreground">
+            Page {currentListPage} of {listTotalPages} ({filteredVehicles.length} rows)
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="legacyGhost"
-              size="legacy"
-              disabled={currentListPage <= 1}
-              onClick={() => setListPage((p) => Math.max(1, p - 1))}
-            >
-              Prev
-            </Button>
-            <Button
-              variant="legacyGhost"
-              size="legacy"
-              disabled={currentListPage >= listTotalPages}
-              onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+          <Button
+            variant="legacyGhost"
+            size="legacy"
+            disabled={currentListPage >= listTotalPages}
+            onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+          >
+            Next
+          </Button>
+        </PageFooter>
       </div>
     </PageShell>
   )
@@ -410,8 +573,8 @@ function gpsColor(status) {
   if (status === 'Online') return 'bg-emerald-100 text-emerald-700'
   if (status === 'Low Signal') return 'bg-amber-100 text-amber-700'
   if (status === 'Tampered') return 'bg-rose-100 text-rose-700'
-  if (status === 'Offline') return 'bg-slate-100 text-slate-700'
-  return 'bg-slate-100 text-slate-500'
+  if (status === 'Offline') return 'bg-muted text-foreground'
+  return 'bg-muted text-muted-foreground'
 }
 
 function hashCode(value) {

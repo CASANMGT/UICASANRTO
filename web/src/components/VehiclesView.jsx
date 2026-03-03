@@ -5,7 +5,7 @@ import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
 import { Input } from './ui/input'
-import { DataPanel, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -30,8 +30,8 @@ function vehicleStatusTone(status) {
   if (status === 'grace') return { tone: 'bg-amber-100 text-amber-700', label: 'GRACE' }
   if (status === 'immobilized') return { tone: 'bg-rose-100 text-rose-700', label: 'IMMOBILIZED' }
   if (status === 'paused') return { tone: 'bg-cyan-100 text-cyan-700', label: 'PAUSED' }
-  if (status === 'available') return { tone: 'bg-slate-100 text-slate-700', label: 'AVAILABLE' }
-  return { tone: 'bg-slate-100 text-slate-700', label: String(status || '-').toUpperCase() }
+  if (status === 'available') return { tone: 'bg-muted text-foreground', label: 'AVAILABLE' }
+  return { tone: 'bg-muted text-foreground', label: String(status || '-').toUpperCase() }
 }
 
 export function VehiclesView() {
@@ -71,7 +71,7 @@ export function VehiclesView() {
     model: '',
   })
   const [page, setPage] = useState(1)
-  const pageSize = 20
+  const pageSize = PAGE_SIZE
   const motorBrandOptions = useMemo(
     () => [...new Set(motorCatalog.map((entry) => entry.brand).filter(Boolean))].sort(),
     [motorCatalog],
@@ -366,10 +366,11 @@ export function VehiclesView() {
             <option value="unassigned">Unassigned</option>
           </Select>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="legacyPrimary"
             size="legacy"
+            className="h-11 shrink-0"
             onClick={() =>
               setVehicleDialog((prev) => ({
                 ...prev,
@@ -390,6 +391,7 @@ export function VehiclesView() {
           <Button
             variant="legacyPill"
             size="legacy"
+            className="h-11 shrink-0"
             onClick={() => setBulkVehicle({ open: true, fileName: '', rows: [], result: null, error: '' })}
           >
             Bulk Add Vehicles
@@ -397,6 +399,7 @@ export function VehiclesView() {
           <Button
             variant="legacyGhost"
             size="legacy"
+            className="h-11 shrink-0"
             onClick={() => setMotorSettings((prev) => ({ ...prev, open: true, editId: null, brand: '', model: '' }))}
           >
             Motor Brand/Model DB
@@ -406,6 +409,7 @@ export function VehiclesView() {
               key={s}
               variant={status === s ? 'legacyPrimary' : 'legacyPill'}
               size="legacy"
+              className="h-11 shrink-0"
               onClick={() => {
                 setStatus(s)
                 setPage(1)
@@ -418,7 +422,7 @@ export function VehiclesView() {
       </div>
 
       <DataPanel>
-        <Table density="legacy" className="min-w-[960px]">
+        <Table density="legacy" className={TABLE_MIN_WIDTH}>
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>VEHICLE</TableHead>
@@ -440,16 +444,16 @@ export function VehiclesView() {
             pageRows.map((v) => (
               <TableRow key={v.id} tone="legacy">
                 <TableCell>
-                  <div className="font-bold text-slate-900">{v.id}</div>
-                  <div className="text-xs text-slate-500">{v.plate}</div>
+                  <div className="font-bold text-foreground">{v.id}</div>
+                  <div className="text-xs text-muted-foreground">{v.plate}</div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-semibold text-slate-800">{v.motorBrand}</div>
-                  <div className="text-xs text-slate-500">{v.motorMake}</div>
+                  <div className="font-semibold text-foreground">{v.motorBrand}</div>
+                  <div className="text-xs text-muted-foreground">{v.motorMake}</div>
                 </TableCell>
                 <TableCell>
                   <div>{v.customer || '-'}</div>
-                  <div className="text-xs text-slate-500">{v.phone || ''}</div>
+                  <div className="text-xs text-muted-foreground">{v.phone || ''}</div>
                 </TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${vehicleStatusTone(v.status).tone}`}>
@@ -457,8 +461,8 @@ export function VehiclesView() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <div className="font-semibold text-slate-800">{v.programName}</div>
-                  <div className="text-xs text-slate-500">{v.programTypeLabel}</div>
+                  <div className="font-semibold text-foreground">{v.programName}</div>
+                  <div className="text-xs text-muted-foreground">{v.programTypeLabel}</div>
                 </TableCell>
                 <TableCell>{v.credits || 0}d</TableCell>
                 <TableCell>
@@ -480,35 +484,35 @@ export function VehiclesView() {
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="font-mono text-xs text-slate-700">{v.stnkNumber}</div>
-                  <div className={`text-xs ${isExpired(v.stnkExpiryDate) ? 'text-rose-600' : 'text-slate-500'}`}>
+                  <div className="font-mono text-xs text-foreground">{v.stnkNumber}</div>
+                  <div className={`text-xs ${isExpired(v.stnkExpiryDate) ? 'text-rose-600' : 'text-muted-foreground'}`}>
                     Exp: {formatDate(v.stnkExpiryDate)}
                   </div>
                 </TableCell>
                 <TableCell>
                   {v.gps ? (
                     <div>
-                      <div className="font-mono text-xs font-semibold text-slate-800">{v.gps.id}</div>
+                      <div className="font-mono text-xs font-semibold text-foreground">{v.gps.id}</div>
                       <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                           <div
                             className={`h-full rounded-full ${v.signalPercent >= 60 ? 'bg-emerald-500' : v.signalPercent >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`}
                             style={{ width: `${v.signalPercent}%` }}
                           />
                         </div>
-                        <span className="text-[11px] text-slate-600">{v.signalPercent}%</span>
+                        <span className="text-xs text-muted-foreground">{v.signalPercent}%</span>
                       </div>
-                      <div className="text-xs text-slate-500">IMEI: {v.gps.imei || '-'}</div>
+                      <div className="text-xs text-muted-foreground">IMEI: {v.gps.imei || '-'}</div>
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-400">Unassigned</span>
+                    <span className="text-xs text-muted-foreground">Unassigned</span>
                   )}
                 </TableCell>
-                <TableCell className="text-xs text-slate-500">
+                <TableCell className="text-xs text-muted-foreground">
                   <div className="mb-1">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
-                        v.gpsOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                        v.gpsOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'
                       }`}
                     >
                       {v.gpsOnline ? 'ONLINE' : 'OFFLINE'}
@@ -572,7 +576,7 @@ export function VehiclesView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={12} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableCell colSpan={12} className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No vehicles found for current filters.
               </TableCell>
             </TableRow>
@@ -582,27 +586,25 @@ export function VehiclesView() {
       </DataPanel>
 
       <PageFooter>
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} / {totalPages} ({vehicles.length} rows)
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage <= 1}
+          onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
+        >
+          Prev
+        </Button>
+        <div className="text-sm font-semibold text-muted-foreground">
+          Page {currentPage} of {totalPages} ({vehicles.length} rows)
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((p) => Math.max(1, Math.min(currentPage, p) - 1))}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="legacyGhost"
-            size="legacy"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
-          >
-            Next
-          </Button>
-        </div>
+        <Button
+          variant="legacyGhost"
+          size="legacy"
+          disabled={currentPage >= totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages, Math.min(currentPage, p) + 1))}
+        >
+          Next
+        </Button>
       </PageFooter>
       <Dialog open={gpsDialog.open} onOpenChange={(open) => setGpsDialog((prev) => ({ ...prev, open }))}>
         <DialogContent tone="legacy">
@@ -631,7 +633,7 @@ export function VehiclesView() {
                 </option>
               ))}
             </Select>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-muted-foreground">
               Only unassigned devices (or the current device on this vehicle) are listed.
             </div>
           </div>
@@ -792,13 +794,13 @@ export function VehiclesView() {
               onChange={handleBulkVehicleFileChange}
             />
             {bulkVehicle.fileName ? (
-              <div className="text-xs text-slate-600">Selected file: {bulkVehicle.fileName}</div>
+              <div className="text-xs text-muted-foreground">Selected file: {bulkVehicle.fileName}</div>
             ) : null}
             {bulkVehicle.error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{bulkVehicle.error}</div>
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{bulkVehicle.error}</div>
             ) : null}
             {bulkVehicle.result ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+              <div className="rounded-lg border border-border bg-muted p-3 text-xs text-foreground">
                 <div>
                   Created: <b>{bulkVehicle.result.created}</b> | Skipped: <b>{bulkVehicle.result.skipped}</b>
                 </div>
@@ -852,7 +854,7 @@ export function VehiclesView() {
               {motorSettings.editId ? 'Save Motor' : 'Add Motor'}
             </Button>
           </div>
-          <div className="max-h-64 overflow-auto rounded-xl border border-slate-200">
+          <div className="max-h-64 overflow-auto rounded-lg border border-border">
             <Table density="legacy">
               <TableHeader tone="legacy">
                 <TableRow tone="legacy">

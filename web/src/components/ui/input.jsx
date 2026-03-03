@@ -1,18 +1,15 @@
 import { cn } from '../../lib/utils'
 
-const variants = {
-  default:
-    'border-[color:var(--b1)] bg-white text-[color:var(--t1)] placeholder:text-[color:var(--t3)] ring-[color:var(--ac)]',
-  legacy:
-    'border-[color:var(--b1)] bg-white text-[color:var(--t1)] placeholder:text-[color:var(--t3)] ring-[color:var(--ac)]',
-}
-
-export function Input({ className, variant = 'default', ...props }) {
+export function Input({ className, variant = 'default', type = 'text', ...props }) {
   return (
     <input
+      type={type}
       className={cn(
-        'w-full rounded-xl border px-3 py-2 text-[13px] outline-none focus:ring-2',
-        variants[variant] || variants.default,
+        'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base',
+        'text-foreground placeholder:text-muted-foreground',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'file:border-0 file:bg-transparent file:text-base file:font-medium',
+        'disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...props}

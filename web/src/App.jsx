@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { featureFlags } from './config/featureFlags'
 import { setGlobalFilter } from './bridge/legacyRuntime'
 import { useLegacyRuntime } from './hooks/useLegacyRuntime'
+import { Select } from './components/ui/select'
 import { FinanceView } from './components/FinanceView'
 import { GpsView } from './components/GpsView'
 import { MapView } from './components/MapView'
@@ -57,20 +58,20 @@ function App() {
       <aside className={`app-sidebar ${mobileNavOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="app-sidebar-header">
           <div className="app-sidebar-title-wrap">
-            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800 }}>CASAN Operations</div>
-            <div style={{ fontSize: 'var(--text-sm)', color: 'var(--t3)' }}>RTO & Rental</div>
-            <details style={{ marginTop: 8 }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 700, fontSize: 'var(--text-sm)' }}>📘 Changelog</summary>
-              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 'var(--text-base)', fontWeight: 800 }}>CASAN Operations</div>
+            <div style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>RTO & Rental</div>
+            <details className="mt-3">
+              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>📘 Changelog</summary>
+              <div className="mt-3 flex flex-col gap-3">
                 {CHANGELOG_ITEMS.map((item) => (
-                  <div key={item.version} className="card" style={{ padding: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <div style={{ fontWeight: 800, fontSize: 'var(--text-sm)' }}>{item.version}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--t3)' }}>{item.date}</div>
+                  <div key={item.version} className="card p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <div style={{ fontWeight: 800, fontSize: 'var(--text-base)' }}>{item.version}</div>
+                      <div style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>{item.date}</div>
                     </div>
-                    <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    <ul className="m-0 list-inside list-disc pl-5">
                       {item.notes.map((note) => (
-                        <li key={`${item.version}-${note}`} style={{ color: 'var(--t2)', marginBottom: 2, fontSize: 'var(--text-xs)' }}>
+                        <li key={`${item.version}-${note}`} className="mb-1.5" style={{ color: 'var(--t2)', fontSize: 'var(--text-base)' }}>
                           {note}
                         </li>
                       ))}
@@ -106,22 +107,21 @@ function App() {
 
       <div className="app-main">
         <header className="card app-topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-3">
             <button className="app-menu-btn" type="button" onClick={() => setMobileNavOpen((prev) => !prev)}>
               ☰
             </button>
-            <h1 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, margin: 0 }}>{NAV_ITEMS.find((item) => item.key === activeTab)?.label}</h1>
+            <h1 className="m-0 font-extrabold" style={{ fontSize: 'var(--text-base)' }}>{NAV_ITEMS.find((item) => item.key === activeTab)?.label}</h1>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {!ready && !error && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--w)' }}>Loading...</span>}
-            {!!error && <span style={{ fontSize: 'var(--text-sm)', color: 'var(--d)' }}>{error}</span>}
-            <label style={{ fontSize: 'var(--text-sm)', color: 'var(--t2)' }} htmlFor="partnerFilter">
+          <div className="flex items-center gap-3">
+            {!ready && !error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dw)' }}>Loading...</span>}
+            {!!error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dd)' }}>{error}</span>}
+            <label style={{ fontSize: 'var(--text-base)', color: 'var(--t2)' }} htmlFor="partnerFilter">
               Partner
             </label>
-            <select
+            <Select
               id="partnerFilter"
-              className="form-control"
-              style={{ width: 180 }}
+              className="w-[180px]"
               value={partner}
               onChange={(e) => {
                 const value = e.target.value
@@ -133,10 +133,10 @@ function App() {
               <option value="tangkas">Tangkas</option>
               <option value="maka">Maka</option>
               <option value="united">United</option>
-            </select>
+            </Select>
           </div>
         </header>
-        <section className="card" style={{ padding: 10 }}>
+        <section className="card min-w-0 flex-1 p-5">
           {activeTab === 'users' && (featureFlags.usersReact ? <UsersView /> : <LegacyPlaceholder tab="users" />)}
           {activeTab === 'renters' && (featureFlags.rentersReact ? <RentersView /> : <LegacyPlaceholder tab="renters" />)}
           {activeTab === 'vehicles' &&

@@ -11,9 +11,11 @@ import {
   scheduleRtoPickup,
 } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 const UI_KEY = 'casan_rto_ui'
 const DEFAULT_PICKUP_BY_PARTNER = {
@@ -46,7 +48,7 @@ function decisionTone(decision) {
   if (decision === 'rejected') return { tone: 'bg-rose-100 text-rose-700', label: 'REJECTED' }
   if (decision === 'review') return { tone: 'bg-amber-100 text-amber-700', label: 'REVIEW' }
   if (decision === 'pending_docs') return { tone: 'bg-orange-100 text-orange-700', label: 'NEEDS DOCS' }
-  return { tone: 'bg-slate-100 text-slate-700', label: 'PENDING' }
+  return { tone: 'bg-muted text-foreground', label: 'PENDING' }
 }
 
 function pickupStatusTone(status) {
@@ -55,7 +57,7 @@ function pickupStatusTone(status) {
   if (status === 'planned') return 'bg-amber-100 text-amber-700'
   if (status === 'completed') return 'bg-indigo-100 text-indigo-700'
   if (status === 'no_show') return 'bg-rose-100 text-rose-700'
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-muted text-foreground'
 }
 
 function vehicleStateTone(status) {
@@ -63,8 +65,8 @@ function vehicleStateTone(status) {
   if (status === 'grace') return 'bg-amber-100 text-amber-700'
   if (status === 'immobilized') return 'bg-rose-100 text-rose-700'
   if (status === 'paused') return 'bg-cyan-100 text-cyan-700'
-  if (status === 'available') return 'bg-slate-100 text-slate-700'
-  return 'bg-slate-100 text-slate-700'
+  if (status === 'available') return 'bg-muted text-foreground'
+  return 'bg-muted text-foreground'
 }
 
 function scoreTone(score) {
@@ -81,7 +83,7 @@ function docTone(status) {
   if (status === 'review') return 'bg-amber-100 text-amber-700'
   if (status === 'missing') return 'bg-orange-100 text-orange-700'
   if (status === 'rejected') return 'bg-rose-100 text-rose-700'
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-muted text-foreground'
 }
 
 function plusDaysISO(baseDate, days) {
@@ -178,7 +180,7 @@ export function RtoView() {
   const [pickupStatusFilter, setPickupStatusFilter] = useState('all')
   const [appPage, setAppPage] = useState(initialUi.appPage || 1)
   const [pickupPage, setPickupPage] = useState(initialUi.pickupPage || 1)
-  const pageSize = 10
+  const pageSize = PAGE_SIZE
   const [message, setMessage] = useState('')
   const [selectedAppId, setSelectedAppId] = useState('')
   const [createModal, setCreateModal] = useState({
@@ -698,16 +700,16 @@ export function RtoView() {
   }
 
   const formControlCls =
-    'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-indigo-200 focus:ring-2'
+    'w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none ring-ring focus:ring-2'
   const ghostBtnCls =
-    'rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100'
+    'rounded-md border border-input bg-background px-4 py-2 text-base font-semibold text-foreground transition hover:bg-accent'
   const primaryBtnCls =
-    'rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700'
+    'rounded-md bg-primary px-4 py-2 text-base font-semibold text-primary-foreground transition hover:bg-primary/90'
   const pillCls =
-    'inline-flex items-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100'
+    'inline-flex items-center rounded-full border border-input bg-background px-3 py-1 text-base font-semibold text-foreground transition hover:bg-muted'
   const topTabBaseCls =
-    'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
-  const topTabIdleCls = 'border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'
+    'inline-flex items-center rounded-full border px-3 py-1 text-base font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
+  const topTabIdleCls = 'border-input bg-background text-foreground hover:border-indigo-300 hover:bg-indigo-50'
   const topTabActiveCls = 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)] hover:bg-indigo-700'
 
   return (
@@ -735,19 +737,19 @@ export function RtoView() {
           </button>
         ))}
       </div>
-      {message ? <div className="mb-2 text-sm text-amber-700">{message}</div> : null}
+      {message ? <div className="mb-2 text-base text-amber-700">{message}</div> : null}
 
       {tab === 'applications' && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <div className="text-sm font-semibold text-slate-700">Application Filters</div>
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-3 py-2">
+            <div className="text-base font-semibold text-foreground">Application Filters</div>
             <button className={ghostBtnCls} type="button" onClick={resetApplicationFilters}>
               Reset Filters
             </button>
           </div>
           <div className="grid grid-cols-1 gap-2 lg:grid-cols-6">
             <div className="lg:col-span-2">
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Search</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Search</div>
               <Input
                 variant="legacy"
                 placeholder="App ID, applicant, or program"
@@ -759,7 +761,7 @@ export function RtoView() {
               />
             </div>
             <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Decision</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Decision</div>
               <Select
                 variant="legacy"
                 value={appFilter}
@@ -777,7 +779,7 @@ export function RtoView() {
               </Select>
             </div>
             <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Score Band</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Score Band</div>
               <Select
                 variant="legacy"
                 value={appScoreBand}
@@ -793,7 +795,7 @@ export function RtoView() {
               </Select>
             </div>
             <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Document Status</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Document Status</div>
               <Select
                 variant="legacy"
                 value={appDocsFilter}
@@ -808,7 +810,7 @@ export function RtoView() {
               </Select>
             </div>
             <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">SLA</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">SLA</div>
               <Select
                 variant="legacy"
                 value={appSlaFilter}
@@ -823,7 +825,7 @@ export function RtoView() {
               </Select>
             </div>
             <div>
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Reviewer</div>
+              <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Reviewer</div>
               <Select
                 variant="legacy"
                 value={appReviewerFilter}
@@ -844,44 +846,44 @@ export function RtoView() {
               + Add Renter
             </button>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-[1220px] w-full border-collapse text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-left">APP</th>
-                <th className="px-3 py-2 text-left">APPLICANT</th>
-                <th className="px-3 py-2 text-left">PROGRAM</th>
-                <th className="px-3 py-2 text-left">SCORE</th>
-                <th className="px-3 py-2 text-left">DOCUMENT REVIEW</th>
-                <th className="px-3 py-2 text-left">REVIEWER</th>
-                <th className="px-3 py-2 text-left">LAST REVIEWED</th>
-                <th className="px-3 py-2 text-left">ASSIGNED VEHICLE</th>
-                <th className="px-3 py-2 text-left">PICKUP STATUS</th>
-                <th className="px-3 py-2 text-left">DECISION</th>
-                <th className="px-3 py-2 text-left">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table density="legacy" className={TABLE_MIN_WIDTH}>
+            <TableHeader tone="legacy">
+              <TableRow tone="legacy">
+                <TableHead>APP</TableHead>
+                <TableHead>APPLICANT</TableHead>
+                <TableHead>PROGRAM</TableHead>
+                <TableHead>SCORE</TableHead>
+                <TableHead>DOCUMENT REVIEW</TableHead>
+                <TableHead>REVIEWER</TableHead>
+                <TableHead>LAST REVIEWED</TableHead>
+                <TableHead>ASSIGNED VEHICLE</TableHead>
+                <TableHead>PICKUP STATUS</TableHead>
+                <TableHead>DECISION</TableHead>
+                <TableHead>ACTIONS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {appRows.length > 0 ? (
                 appRows.map((app) => (
-                  <tr key={app.id} className="cursor-pointer border-t border-slate-100" onClick={() => setSelectedAppId(app.id)}>
-                    <td className="px-3 py-2">
+                  <TableRow key={app.id} className="cursor-pointer" tone="legacy" onClick={() => setSelectedAppId(app.id)}>
+                    <TableCell>
                       <div className="font-semibold">{app.id}</div>
-                      <div className="text-xs text-slate-500">{formatSubmissionTime(app.createdAt || app.updatedAt)}</div>
-                    </td>
-                    <td className="px-3 py-2">
+                      <div className="text-base text-muted-foreground">{formatSubmissionTime(app.createdAt || app.updatedAt)}</div>
+                    </TableCell>
+                    <TableCell>
                       <div>{app.userName || '-'}</div>
-                      <div className="text-xs text-slate-500">{usersById.get(app.userId)?.phone || '-'}</div>
-                    </td>
-                    <td className="px-3 py-2">{app.programId}</td>
-                    <td className="px-3 py-2">
+                      <div className="text-base text-muted-foreground">{usersById.get(app.userId)?.phone || '-'}</div>
+                    </TableCell>
+                    <TableCell>{app.programId}</TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-flex min-w-14 justify-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(app.score)}`}
+                        className={`inline-flex min-w-14 justify-center rounded-full px-2 py-1 text-base font-bold ${scoreTone(app.score)}`}
                       >
                         {app.score}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-wrap items-center gap-1.5">
                         {(app.documents || []).slice(0, 3).map((document) => (
                           <img
@@ -889,7 +891,7 @@ export function RtoView() {
                             src={document.img || buildDocPreviewSrc(document.name, document.status)}
                             alt={document.name}
                             title={document.name}
-                            className="h-7 w-7 rounded-md border border-slate-200 object-cover"
+                            className="h-7 w-7 rounded-md border border-border object-cover"
                             onClick={(event) => {
                               event.stopPropagation()
                               setDocPreview({
@@ -904,50 +906,50 @@ export function RtoView() {
                           {(app.documents || []).filter((d) => d.status === 'missing').length} missing
                         </span>
                       </div>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       {(app.reviewLog || []).length > 0 ? (app.reviewLog || []).slice().reverse()[0]?.by || 'Unassigned' : 'Unassigned'}
-                    </td>
-                    <td className="px-3 py-2 text-xs text-slate-500">
+                    </TableCell>
+                    <TableCell className="text-base text-muted-foreground">
                       {(app.reviewLog || []).length > 0
                         ? new Date((app.reviewLog || []).slice().reverse()[0]?.at).toLocaleString('id-ID')
                         : '-'}
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       {app.assignedVehicleId ? (
                         (() => {
                           const v = vehiclesById.get(app.assignedVehicleId)
                           return (
-                            <div className="text-xs">
+                            <div className="text-base">
                               <span className="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 font-bold text-cyan-700">
                                 {app.assignedVehicleId}
                               </span>
                               {v && (
-                                <div className="mt-1 text-slate-600">
+                                <div className="mt-1 text-muted-foreground">
                                   <span>{v.brand || '-'} {v.model || '-'}</span>
-                                  <span className="ml-1 font-mono text-slate-500">{v.plate || '-'}</span>
+                                  <span className="ml-1 font-mono text-muted-foreground">{v.plate || '-'}</span>
                                 </div>
                               )}
                             </div>
                           )
                         })()
                       ) : (
-                        <span className="text-xs text-slate-500">Unassigned</span>
+                        <span className="text-base text-muted-foreground">Unassigned</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'unscheduled')}`}>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'unscheduled')}`}>
                         {String(app.pickupSchedule?.status || 'unscheduled').toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${decisionTone(app.decision).tone}`}
+                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${decisionTone(app.decision).tone}`}
                       >
                         {decisionTone(app.decision).label}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-2">
                         <button
                           className={pillCls}
@@ -960,36 +962,36 @@ export function RtoView() {
                           Review
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
+                <TableRow tone="legacy">
+                  <TableCell colSpan={11} className="px-6 py-8 text-center text-base text-muted-foreground">
                     No applications found.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           </div>
 
           {selectedApp && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="rounded-lg border border-border bg-muted p-3">
               <div className="flex flex-wrap justify-between gap-3">
                 <div>
-                  <div className="text-xs text-slate-500">Selected Application</div>
-                  <div className="font-extrabold text-slate-900">{selectedApp.id} - {selectedApp.userName}</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-base text-muted-foreground">Selected Application</div>
+                  <div className="font-extrabold text-foreground">{selectedApp.id} - {selectedApp.userName}</div>
+                  <div className="text-base text-muted-foreground">
                     Program: {selectedApp.programId} | Score:{' '}
                     <span
-                      className={`rounded-full px-2 py-1 text-xs font-bold ${scoreTone(selectedApp.score)}`}
+                      className={`rounded-full px-2 py-1 text-base font-bold ${scoreTone(selectedApp.score)}`}
                     >
                       {selectedApp.score}
                     </span>{' '}
                     | Status:{' '}
                     <span
-                      className={`rounded-full px-2 py-1 text-xs font-bold ${decisionTone(selectedApp.decision).tone}`}
+                      className={`rounded-full px-2 py-1 text-base font-bold ${decisionTone(selectedApp.decision).tone}`}
                     >
                       {decisionTone(selectedApp.decision).label}
                     </span>
@@ -1009,19 +1011,19 @@ export function RtoView() {
                   </button>
                 </div>
               </div>
-              <div className="mt-2 text-sm text-slate-500">
+              <div className="mt-2 text-base text-muted-foreground">
                 {selectedApp.decision === 'approved'
                   ? 'Application approved - pickup scheduling enabled.'
                   : 'Select review outcome first. Pickup scheduling is disabled until application is approved.'}
               </div>
               <div className="mt-2.5">
-                <div className="mb-1.5 text-xs text-slate-500">Review Acknowledgement Trail</div>
+                <div className="mb-1.5 text-base text-muted-foreground">Review Acknowledgement Trail</div>
                 {(selectedApp.reviewLog || []).length > 0 ? (
                   (selectedApp.reviewLog || []).slice().reverse().slice(0, 5).map((item, idx) => (
-                    <div key={`${selectedApp.id}-review-${idx}`} className="py-1 text-sm text-slate-600">
+                    <div key={`${selectedApp.id}-review-${idx}`} className="py-1 text-base text-muted-foreground">
                       {new Date(item.at).toLocaleString('id-ID')} - {item.by} -{' '}
                       <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${decisionTone(item.decision).tone}`}
+                        className={`rounded-full px-2 py-0.5 text-base font-bold ${decisionTone(item.decision).tone}`}
                       >
                         {decisionTone(item.decision).label}
                       </span>{' '}
@@ -1029,33 +1031,33 @@ export function RtoView() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-sm text-slate-500">No reviews yet.</div>
+                  <div className="text-base text-muted-foreground">No reviews yet.</div>
                 )}
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-600">
-              Page {currentAppPage} / {appTotalPages} ({filteredApps.length} apps)
-            </span>
-            <div className="flex gap-2">
-              <button
-                className={ghostBtnCls}
-                disabled={currentAppPage <= 1}
-                onClick={() => setAppPage((p) => Math.max(1, Math.min(currentAppPage, p) - 1))}
-              >
-                Prev
-              </button>
-              <button
-                className={ghostBtnCls}
-                disabled={currentAppPage >= appTotalPages}
-                onClick={() => setAppPage((p) => Math.min(appTotalPages, Math.min(currentAppPage, p) + 1))}
-              >
-                Next
-              </button>
+          <PageFooter>
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentAppPage <= 1}
+              onClick={() => setAppPage((p) => Math.max(1, Math.min(currentAppPage, p) - 1))}
+            >
+              Prev
+            </Button>
+            <div className="text-base font-semibold text-muted-foreground">
+              Page {currentAppPage} of {appTotalPages} ({filteredApps.length} apps)
             </div>
-          </div>
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentAppPage >= appTotalPages}
+              onClick={() => setAppPage((p) => Math.min(appTotalPages, Math.min(currentAppPage, p) + 1))}
+            >
+              Next
+            </Button>
+          </PageFooter>
         </div>
       )}
 
@@ -1121,37 +1123,37 @@ export function RtoView() {
               <option value="no_show">No Show</option>
             </Select>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-[900px] w-full border-collapse text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-left">APP</th>
-                <th className="px-3 py-2 text-left">APPLICANT</th>
-                <th className="px-3 py-2 text-left">VEHICLE</th>
-                <th className="px-3 py-2 text-left">VEHICLE STATUS</th>
-                <th className="px-3 py-2 text-left">DATE</th>
-                <th className="px-3 py-2 text-left">TIME</th>
-                <th className="px-3 py-2 text-left">LOCATION</th>
-                <th className="px-3 py-2 text-left">STATUS</th>
-                <th className="px-3 py-2 text-left">HANDOVER</th>
-                <th className="px-3 py-2 text-left">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table density="legacy" className={TABLE_MIN_WIDTH}>
+            <TableHeader tone="legacy">
+              <TableRow tone="legacy">
+                <TableHead>APP</TableHead>
+                <TableHead>APPLICANT</TableHead>
+                <TableHead>VEHICLE</TableHead>
+                <TableHead>VEHICLE STATUS</TableHead>
+                <TableHead>DATE</TableHead>
+                <TableHead>TIME</TableHead>
+                <TableHead>LOCATION</TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>HANDOVER</TableHead>
+                <TableHead>ACTIONS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {pickupRows.length > 0 ? (
                 pickupRows.map((app) => (
-                  <tr key={app.id} className="border-t border-slate-100">
-                    <td className="px-3 py-2">{app.id}</td>
-                    <td className="px-3 py-2">{app.userName}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={app.id} tone="legacy">
+                    <TableCell>{app.id}</TableCell>
+                    <TableCell>{app.userName}</TableCell>
+                    <TableCell>
                       {app.assignedVehicleId ? (
                         (() => {
                           const v = vehiclesById.get(app.assignedVehicleId)
                           return (
-                            <div className="text-xs">
-                              <div className="font-semibold text-slate-900">{app.assignedVehicleId}</div>
+                            <div className="text-base">
+                              <div className="font-semibold text-foreground">{app.assignedVehicleId}</div>
                               {v && (
-                                <div className="text-slate-600">
+                                <div className="text-muted-foreground">
                                   {v.brand || '-'} {v.model || '-'} • <span className="font-mono">{v.plate || '-'}</span>
                                 </div>
                               )}
@@ -1159,48 +1161,48 @@ export function RtoView() {
                           )
                         })()
                       ) : (
-                        <span className="text-slate-500">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       {(() => {
                         const assignedVehicle = vehicles.find((vehicle) => vehicle.id === app.assignedVehicleId)
                         const movement = Number(assignedVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
                         return assignedVehicle ? (
                           <div className="flex flex-wrap gap-1.5">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicleStateTone(assignedVehicle.status)}`}>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${vehicleStateTone(assignedVehicle.status)}`}>
                               {String(assignedVehicle.status || '-').toUpperCase()}
                             </span>
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${assignedVehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${assignedVehicle.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
                               {assignedVehicle.isOnline ? 'ONLINE' : 'OFFLINE'}
                             </span>
-                            <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${movement === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+                            <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${movement === 'RUNNING' ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
                               {movement}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-slate-500">-</span>
+                          <span className="text-muted-foreground">-</span>
                         )
                       })()}
-                    </td>
-                    <td className="px-3 py-2">{app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toLocaleDateString('id-ID') : '-')}</td>
-                    <td className="px-3 py-2">{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</td>
-                    <td className="px-3 py-2">{app.pickupSchedule?.location || getProgramLocation(app.programId)}</td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'planned')}`}>
+                    </TableCell>
+                    <TableCell>{app.pickupSchedule?.date || (app.pickupDate ? new Date(app.pickupDate).toLocaleDateString('id-ID') : '-')}</TableCell>
+                    <TableCell>{app.pickupSchedule?.time || (app.pickupDate ? new Date(app.pickupDate).toISOString().slice(11, 16) : '-')}</TableCell>
+                    <TableCell>{app.pickupSchedule?.location || getProgramLocation(app.programId)}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${pickupStatusTone(app.pickupSchedule?.status || 'planned')}`}>
                         {String(app.pickupSchedule?.status || 'planned').toUpperCase()}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${
+                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${
                           app.handoverCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                         }`}
                       >
                         {app.handoverCompleted ? 'CHECKLIST COMPLETE' : 'PENDING CHECKLIST'}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-wrap gap-1.5">
                         <button className={pillCls} type="button" onClick={() => onSchedule(app.id)}>
                           {app.pickupSchedule?.date ? 'Edit Slot' : 'Set Slot'}
@@ -1209,52 +1211,52 @@ export function RtoView() {
                           {app.handoverCompleted ? 'View Checklist' : 'Complete Handover'}
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={10} className="px-6 py-8 text-center text-sm text-slate-500">
+                <TableRow tone="legacy">
+                  <TableCell colSpan={10} className="px-6 py-8 text-center text-base text-muted-foreground">
                     No pickups scheduled yet.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-600">
-              Page {currentPickupPage} / {pickupTotalPages} ({filteredPickup.length} pickups)
-            </span>
-            <div className="flex gap-2">
-              <button
-                className={ghostBtnCls}
-                disabled={currentPickupPage <= 1}
-                onClick={() => setPickupPage((p) => Math.max(1, Math.min(currentPickupPage, p) - 1))}
-              >
-                Prev
-              </button>
-              <button
-                className={ghostBtnCls}
-                disabled={currentPickupPage >= pickupTotalPages}
-                onClick={() => setPickupPage((p) => Math.min(pickupTotalPages, Math.min(currentPickupPage, p) + 1))}
-              >
-                Next
-              </button>
+          <PageFooter>
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentPickupPage <= 1}
+              onClick={() => setPickupPage((p) => Math.max(1, Math.min(currentPickupPage, p) - 1))}
+            >
+              Prev
+            </Button>
+            <div className="text-base font-semibold text-muted-foreground">
+              Page {currentPickupPage} of {pickupTotalPages} ({filteredPickup.length} pickups)
             </div>
-          </div>
+            <Button
+              variant="legacyGhost"
+              size="legacy"
+              disabled={currentPickupPage >= pickupTotalPages}
+              onClick={() => setPickupPage((p) => Math.min(pickupTotalPages, Math.min(currentPickupPage, p) + 1))}
+            >
+              Next
+            </Button>
+          </PageFooter>
         </div>
       )}
 
       {(tab === 'score' || tab === 'wa') && (
         <>
-          <p className="text-sm text-slate-600">
+          <p className="text-base text-muted-foreground">
             This migration-safe RTO panel preserves legacy keys while writing a versioned payload.
           </p>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div>
-              <h3 className="mb-1.5 text-sm text-slate-600">Score Config</h3>
+              <h3 className="mb-1.5 text-base text-muted-foreground">Score Config</h3>
               <textarea
                 className={`${formControlCls} h-[280px] font-mono`}
                 value={scoreJson}
@@ -1262,7 +1264,7 @@ export function RtoView() {
               />
             </div>
             <div>
-              <h3 className="mb-1.5 text-sm text-slate-600">WA Templates</h3>
+              <h3 className="mb-1.5 text-base text-muted-foreground">WA Templates</h3>
               <textarea
                 className={`${formControlCls} h-[280px] font-mono`}
                 value={waJson}
@@ -1274,16 +1276,16 @@ export function RtoView() {
             <button className={primaryBtnCls} onClick={save}>
               Save Compatibility Config
             </button>
-            <span className="text-sm text-slate-600">{message}</span>
+            <span className="text-base text-muted-foreground">{message}</span>
           </div>
         </>
       )}
 
       <div className={`${createModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-border bg-background p-4 shadow-xl">
           <h2>Add New Renter</h2>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Applicant Name</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Applicant Name</label>
             <input
               className={formControlCls}
               value={createModal.userName}
@@ -1291,7 +1293,7 @@ export function RtoView() {
             />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Program / Scheme</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Program / Scheme</label>
             <select
               className={formControlCls}
               value={createModal.programId}
@@ -1306,7 +1308,7 @@ export function RtoView() {
             </select>
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Score</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Score</label>
             <input
               className={formControlCls}
               value={createModal.score}
@@ -1314,7 +1316,7 @@ export function RtoView() {
             />
           </div>
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Decision</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Decision</label>
             <select
               className={formControlCls}
               value={createModal.decision}
@@ -1328,7 +1330,7 @@ export function RtoView() {
             </select>
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Assigned Vehicle (optional)</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Assigned Vehicle (optional)</label>
             <select
               className={formControlCls}
               value={createModal.assignedVehicleId}
@@ -1354,11 +1356,11 @@ export function RtoView() {
       </div>
 
       <div className={`${reviewModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-[95vw] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div className="max-h-[92vh] w-[95vw] max-w-5xl overflow-auto rounded-xl border border-border bg-background p-4 shadow-xl">
           <h2>Application Review</h2>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <div className="mb-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-600">Reviewer</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Reviewer</label>
               <input
                 className={formControlCls}
                 value={reviewModal.reviewer}
@@ -1366,7 +1368,7 @@ export function RtoView() {
               />
             </div>
             <div className="mb-2">
-              <label className="mb-1 block text-sm font-semibold text-slate-600">Review Decision</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Review Decision</label>
               <select
                 className={formControlCls}
                 value={reviewModal.nextDecision}
@@ -1381,7 +1383,7 @@ export function RtoView() {
           </div>
 
           <div className={`mb-3 ${reviewModal.nextDecision === 'approved' ? '' : 'opacity-60'}`}>
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Assign Vehicle (if accepted)</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Assign Vehicle (if accepted)</label>
             <select
               className={formControlCls}
               value={reviewModal.assignedVehicleId}
@@ -1398,14 +1400,14 @@ export function RtoView() {
                 ))}
             </select>
             {reviewModal.nextDecision !== 'approved' ? (
-              <div className="mt-1 text-xs text-slate-500">Vehicle assignment is enabled only for approved applications.</div>
+              <div className="mt-1 text-base text-muted-foreground">Vehicle assignment is enabled only for approved applications.</div>
             ) : null}
           </div>
 
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Documents Viewer</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Documents Viewer</label>
             <div className="mb-2 flex flex-wrap gap-2">
-              <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">
+              <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-base font-bold text-amber-700">
                 Missing Docs: {(reviewModal.documents || []).filter((item) => item.status === 'missing').length}
               </span>
               <button className={pillCls} type="button" onClick={markAllMissing}>
@@ -1415,26 +1417,26 @@ export function RtoView() {
                 Mark All Submitted
               </button>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="min-w-[740px] w-full border-collapse text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 text-left">DOCUMENT</th>
-                  <th className="px-3 py-2 text-left">PREVIEW</th>
-                  <th className="px-3 py-2 text-left">STATUS</th>
-                  <th className="px-3 py-2 text-left">REVIEW</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <Table density="legacy">
+              <TableHeader tone="legacy">
+                <TableRow tone="legacy">
+                  <TableHead>DOCUMENT</TableHead>
+                  <TableHead>PREVIEW</TableHead>
+                  <TableHead>STATUS</TableHead>
+                  <TableHead>REVIEW</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {(reviewModal.documents || []).map((document, idx) => (
-                  <tr key={`${reviewModal.appId}-${document.id}`} className="border-t border-slate-100">
-                    <td className="px-3 py-2">{document.name}</td>
-                    <td className="px-3 py-2">
+                  <TableRow key={`${reviewModal.appId}-${document.id}`} tone="legacy">
+                    <TableCell>{document.name}</TableCell>
+                    <TableCell>
                       <img
                         src={document.img || buildDocPreviewSrc(document.name, document.status)}
                         alt={document.name}
                         title={`Open ${document.name}`}
-                        className="h-11 w-16 cursor-pointer rounded-md border border-slate-200 object-cover"
+                        className="h-11 w-16 cursor-pointer rounded-md border border-border object-cover"
                         onClick={() =>
                           setDocPreview({
                             open: true,
@@ -1443,15 +1445,15 @@ export function RtoView() {
                           })
                         }
                       />
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${docTone(document.status)}`}
+                        className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${docTone(document.status)}`}
                       >
                         {document.status}
                       </span>
-                    </td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell>
                       <select
                         className={formControlCls}
                         value={document.status}
@@ -1473,16 +1475,16 @@ export function RtoView() {
                         <option value="missing">Missing</option>
                         <option value="rejected">Rejected</option>
                       </select>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             </div>
           </div>
 
-          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="mb-1.5 text-xs text-slate-500">Score Review (Legacy-style Manual Override)</div>
+          <div className="mb-3 rounded-lg border border-border bg-muted p-3">
+            <div className="mb-1.5 text-base text-muted-foreground">Score Review (Legacy-style Manual Override)</div>
             <div className="mb-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
               <div className={pillCls}>Base: {selectedReviewApp?.score ?? '-'}</div>
               <div className={pillCls}>Docs: {(reviewModal.documents || []).filter((d) => d.status === 'submitted').length}</div>
@@ -1493,7 +1495,7 @@ export function RtoView() {
             </div>
             <div className="grid grid-cols-1 gap-2 lg:grid-cols-[180px_minmax(0,1fr)]">
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">Manual Score Adj.</label>
+                <label className="mb-1 block text-base font-semibold text-muted-foreground">Manual Score Adj.</label>
                 <input
                   type="number"
                   className={formControlCls}
@@ -1504,7 +1506,7 @@ export function RtoView() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-600">Score Override Note</label>
+                <label className="mb-1 block text-base font-semibold text-muted-foreground">Score Override Note</label>
                 <input
                   className={formControlCls}
                   value={reviewModal.scoreNote}
@@ -1517,7 +1519,7 @@ export function RtoView() {
 
           {reviewModal.nextDecision === 'rejected' && (
             <div className="mb-3">
-              <label className="mb-1 block text-sm font-semibold text-slate-600">Reject Reason</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Reject Reason</label>
               <textarea
                 className={`${formControlCls} min-h-20`}
                 value={reviewModal.rejectReason}
@@ -1539,12 +1541,12 @@ export function RtoView() {
 
           {reviewModal.nextDecision === 'pending_docs' && (
             <div className="mb-3">
-              <label className="mb-1 block text-sm font-semibold text-slate-600">Documents to Re-submit</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Documents to Re-submit</label>
               <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-2">
                 {(reviewModal.documents || []).map((document) => {
                   const checked = (reviewModal.requiredDocs || []).includes(document.name)
                   return (
-                    <label key={`required-${document.id}`} className="flex items-center gap-2 text-sm text-slate-700">
+                    <label key={`required-${document.id}`} className="flex items-center gap-2 text-base text-foreground">
                       <input
                         type="checkbox"
                         checked={checked}
@@ -1575,7 +1577,7 @@ export function RtoView() {
 
           {reviewModal.nextDecision === 'review' && (
             <div className="mb-3">
-              <label className="mb-1 block text-sm font-semibold text-slate-600">Extra Review Time (days)</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Extra Review Time (days)</label>
               <input
                 type="number"
                 min={1}
@@ -1597,7 +1599,7 @@ export function RtoView() {
           )}
 
           <div className="mb-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">WhatsApp Template Preview</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">WhatsApp Template Preview</label>
             <textarea
               className={`${formControlCls} min-h-[120px] font-mono`}
               value={reviewModal.waTemplate}
@@ -1618,7 +1620,7 @@ export function RtoView() {
           </div>
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Review Notes / Acknowledgement</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Review Notes / Acknowledgement</label>
             <textarea
               className={`${formControlCls} min-h-[90px]`}
               value={reviewModal.note}
@@ -1639,9 +1641,9 @@ export function RtoView() {
       </div>
 
       <div className={`${docPreview.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="w-[95vw] max-w-5xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div className="w-[95vw] max-w-5xl rounded-xl border border-border bg-background p-4 shadow-xl">
           <h2>Document Preview - {docPreview.title}</h2>
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-black">
+          <div className="overflow-hidden rounded-xl border border-border bg-black">
             <img src={docPreview.src} alt={docPreview.title} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
           </div>
           <div className="mt-3 flex justify-end">
@@ -1653,25 +1655,25 @@ export function RtoView() {
       </div>
 
       <div className={`${scheduleModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-xl border border-border bg-background p-4 shadow-xl">
           <h2>Schedule Pickup Confirmation</h2>
 
-          <div className="mb-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="mb-1.5 text-sm font-extrabold text-slate-700">
+          <div className="mb-3 rounded-xl border border-border bg-background p-4 shadow-sm">
+            <div className="mb-1.5 text-base font-extrabold text-foreground">
               ADMIN SCHEDULING ASSISTANT
             </div>
-            <div className="mb-2 text-sm text-slate-600">
+            <div className="mb-2 text-base text-muted-foreground">
               Help driver select pickup date & time.
             </div>
-            <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">
+            <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-base font-semibold text-blue-800">
               Selected: {dateChipLabel(scheduleModal.date)} at {scheduleModal.time}
             </div>
 
-            <div className="mb-1 text-xs font-extrabold text-slate-500">PICKUP DATE</div>
+            <div className="mb-1 text-base font-extrabold text-muted-foreground">PICKUP DATE</div>
             <div className="mb-2 flex items-center justify-between">
               <button
                 type="button"
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-input bg-background px-2 py-1 text-base font-semibold text-foreground hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={calendarCursor <= `${todayIso.slice(0, 7)}-01`}
                 onClick={() => {
                   const date = new Date(`${calendarCursor}T00:00:00`)
@@ -1682,10 +1684,10 @@ export function RtoView() {
                 ← Prev
               </button>
               <div className="flex items-center gap-1.5">
-                <div className="text-sm font-bold text-slate-700">{monthLabel}</div>
+                <div className="text-base font-bold text-foreground">{monthLabel}</div>
                 <button
                   type="button"
-                  className="rounded-md border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                  className="rounded-md border border-blue-300 bg-blue-50 px-2 py-1 text-base font-semibold text-blue-700 hover:bg-blue-100"
                   onClick={() => {
                     const todayAvailable = dateAvailability[todayIso]?.available
                     const fallbackTodayMonthDate =
@@ -1699,7 +1701,7 @@ export function RtoView() {
                 </button>
                 <button
                   type="button"
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
+                  className="rounded-md border border-input bg-background px-2 py-1 text-base font-semibold text-foreground hover:border-blue-300 hover:bg-blue-50"
                   onClick={() => {
                     const date = new Date(`${calendarCursor}T00:00:00`)
                     date.setMonth(date.getMonth() + 1)
@@ -1710,7 +1712,7 @@ export function RtoView() {
                 </button>
               </div>
             </div>
-            <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            <div className="mb-1 grid grid-cols-7 gap-1 text-center text-base font-semibold uppercase tracking-wide text-muted-foreground">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                 <div key={`day-${day}`}>{day}</div>
               ))}
@@ -1728,26 +1730,26 @@ export function RtoView() {
                     type="button"
                     disabled={!available}
                     title={available ? dateChipLabel(date) : dateAvailability[date]?.reason || 'Unavailable'}
-                    className={`relative h-10 rounded-md border text-center text-sm font-semibold transition ${
+                    className={`relative h-10 rounded-md border text-center text-base font-semibold transition ${
                       active
                         ? 'border-blue-700 bg-blue-700 text-white ring-4 ring-blue-200 ring-offset-1 animate-pulse'
                         : isToday
                           ? 'border-blue-300 bg-blue-50 text-blue-700 hover:border-blue-400'
-                          : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
-                    } ${!available ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70' : ''}`}
+                          : 'border-input bg-background text-foreground hover:border-blue-300 hover:bg-blue-50'
+                    } ${!available ? 'cursor-not-allowed border-border bg-muted text-slate-400 opacity-70' : ''}`}
                     onClick={() => {
                       if (!available) return
                       setScheduleModal((prev) => ({ ...prev, date }))
                     }}
                   >
                     {date.slice(-2)}
-                    {active ? <span className="absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-white/90" /> : null}
+                    {active ? <span className="absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-background/90" /> : null}
                   </button>
                 )
               })}
             </div>
 
-            <div className="mb-1 text-xs font-extrabold text-slate-500">AVAILABLE SLOTS</div>
+            <div className="mb-1 text-base font-extrabold text-muted-foreground">AVAILABLE SLOTS</div>
             <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
               {timeSlots.map((slot) => {
                 const active = slot === scheduleModal.time
@@ -1758,11 +1760,11 @@ export function RtoView() {
                     type="button"
                     disabled={isUnavailable}
                     title={isUnavailable ? 'Slot unavailable' : slot}
-                    className={`h-10 rounded-md border text-sm font-semibold transition ${
+                    className={`h-10 rounded-md border text-base font-semibold transition ${
                       active
                         ? 'border-blue-700 bg-blue-700 text-white ring-2 ring-blue-200 ring-offset-1'
-                        : 'border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
-                    } ${isUnavailable ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-70' : ''}`}
+                        : 'border-input bg-background text-foreground hover:border-blue-300 hover:bg-blue-50'
+                    } ${isUnavailable ? 'cursor-not-allowed border-border bg-muted text-slate-400 opacity-70' : ''}`}
                     onClick={() => {
                       if (isUnavailable) return
                       setScheduleModal((prev) => ({ ...prev, time: slot }))
@@ -1773,13 +1775,13 @@ export function RtoView() {
                 )
               })}
             </div>
-            <div className="mt-2 text-xs text-slate-500">
+            <div className="mt-2 text-base text-muted-foreground">
               Greyed dates/slots are unavailable. Sundays and fully booked slots are blocked.
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Location (by program)</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Pickup Location (by program)</label>
             <input
               className={formControlCls}
               value={scheduleModal.location}
@@ -1787,15 +1789,15 @@ export function RtoView() {
             />
           </div>
           <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Pickup PIC</div>
-              <div className="text-sm font-bold text-slate-900">{schedulePic.name}</div>
-              <div className="text-sm text-slate-600">{schedulePic.phone}</div>
-              <div className="mt-2 text-xs text-slate-500">
+            <div className="rounded-lg border border-border bg-muted p-3">
+              <div className="mb-1 text-base font-semibold uppercase text-muted-foreground">Pickup PIC</div>
+              <div className="text-base font-bold text-foreground">{schedulePic.name}</div>
+              <div className="text-base text-muted-foreground">{schedulePic.phone}</div>
+              <div className="mt-2 text-base text-muted-foreground">
                 Program: {scheduleProgram?.name || '-'} ({scheduleProgram?.type || '-'})
               </div>
             </div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <div className="overflow-hidden rounded-lg border border-border bg-muted">
               <iframe
                 title="Pickup location map"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(scheduleModal.location || getProgramLocation(selectedScheduleApp?.programId || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
@@ -1806,7 +1808,7 @@ export function RtoView() {
             </div>
           </div>
           <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Pickup Status</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Pickup Status</label>
             <select
               className={formControlCls}
               value={scheduleModal.status}
@@ -1835,20 +1837,20 @@ export function RtoView() {
       </div>
 
       <div className={`${handoverModal.open ? 'flex' : 'hidden'} fixed inset-0 z-50 items-center justify-center bg-black/45 p-4`}>
-        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
-          <h2 className="mb-1 text-lg font-extrabold text-slate-900">Complete Handover Checklist</h2>
+        <div className="max-h-[92vh] w-full max-w-xl overflow-auto rounded-xl border border-border bg-background p-4 shadow-xl">
+          <h2 className="mb-1 text-base font-extrabold text-foreground">Complete Handover Checklist</h2>
           {handoverModal.error ? (
-            <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+            <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-base font-semibold text-rose-700">
               {handoverModal.error}
             </div>
           ) : null}
-          <div className="mb-3 text-sm text-slate-600">
+          <div className="mb-3 text-base text-muted-foreground">
             App {selectedHandoverApp?.id || '-'} • {selectedHandoverApp?.userName || '-'} • Vehicle {selectedHandoverApp?.assignedVehicleId || '-'}
           </div>
-          <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="mb-1 text-xs font-semibold uppercase text-slate-500">Assigned Vehicle Status</div>
+          <div className="mb-3 rounded-lg border border-border bg-muted p-3">
+            <div className="mb-1 text-base font-semibold uppercase text-muted-foreground">Assigned Vehicle Status</div>
             <div className="mb-2">
-              <label className="mb-1 block text-xs font-semibold text-slate-500">Assigned Vehicle (can be changed during process)</label>
+              <label className="mb-1 block text-base font-semibold text-muted-foreground">Assigned Vehicle (can be changed during process)</label>
               <select
                 className={formControlCls}
                 value={handoverModal.assignedVehicleId}
@@ -1862,20 +1864,20 @@ export function RtoView() {
                 ))}
               </select>
             </div>
-            <div className="text-sm font-bold text-slate-900">{selectedHandoverVehicle?.id || '-'}</div>
+            <div className="text-base font-bold text-foreground">{selectedHandoverVehicle?.id || '-'}</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${vehicleStateTone(selectedHandoverVehicle?.status)}`}>
+              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${vehicleStateTone(selectedHandoverVehicle?.status)}`}>
                 {String(selectedHandoverVehicle?.status || 'unknown').toUpperCase()}
               </span>
-              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${selectedHandoverVehicle?.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${selectedHandoverVehicle?.isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground'}`}>
                 {selectedHandoverVehicle?.isOnline ? 'ONLINE' : 'OFFLINE'}
               </span>
-              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'bg-cyan-100 text-cyan-700' : 'bg-slate-100 text-slate-700'}`}>
+              <span className={`inline-flex rounded-full px-2 py-1 text-base font-bold ${Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'bg-cyan-100 text-cyan-700' : 'bg-muted text-foreground'}`}>
                 {Number(selectedHandoverVehicle?.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'}
               </span>
             </div>
           </div>
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="space-y-2 rounded-lg border border-border bg-muted p-3">
             {[
               ['identityVerified', 'Identity verified on-site'],
               ['vehicleConditionChecked', 'Vehicle condition and accessories checked'],
@@ -1885,7 +1887,7 @@ export function RtoView() {
               ['contractAcknowledged', 'Contract and payment terms acknowledged'],
               ['appStatusUpdated', 'System status and evidence links updated'],
             ].map(([key, label]) => (
-              <label key={key} className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-2 py-2 text-sm text-slate-700">
+              <label key={key} className="flex cursor-pointer items-center gap-2 rounded-md bg-background px-2 py-2 text-base text-foreground">
                 <input
                   type="checkbox"
                   checked={Boolean(handoverModal[key])}
@@ -1895,17 +1897,17 @@ export function RtoView() {
               </label>
             ))}
           </div>
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">Handover Photo Upload</div>
-            <div className="rounded-md border border-slate-200 bg-white p-2">
-              <div className="mb-1 text-xs font-semibold text-slate-600">Photo of handover</div>
+          <div className="mt-3 rounded-lg border border-border bg-muted p-3">
+            <div className="mb-2 text-base font-semibold uppercase text-muted-foreground">Handover Photo Upload</div>
+            <div className="rounded-md border border-border bg-background p-2">
+              <div className="mb-1 text-base font-semibold text-muted-foreground">Photo of handover</div>
               <input type="file" accept="image/*" onChange={(e) => onHandoverPhotoChange('handoverPhotoUrl', e)} />
-              <div className="mt-1 text-[11px] text-slate-500">
+              <div className="mt-1 text-base text-muted-foreground">
                 {handoverModal.handoverPhotoUrl ? 'Photo attached' : 'No file uploaded'}
               </div>
               {handoverModal.handoverPhotoUrl ? (
                 <div className="mt-2">
-                  <img src={handoverModal.handoverPhotoUrl} alt="Handover proof" className="h-28 w-full rounded-md border border-slate-200 object-cover" />
+                  <img src={handoverModal.handoverPhotoUrl} alt="Handover proof" className="h-28 w-full rounded-md border border-border object-cover" />
                   <div className="mt-2 flex gap-2">
                     <label className={`${ghostBtnCls} cursor-pointer`}>
                       Replace Photo
@@ -1924,7 +1926,7 @@ export function RtoView() {
             </div>
           </div>
           <div className="mt-3">
-            <label className="mb-1 block text-sm font-semibold text-slate-600">Handover Notes</label>
+            <label className="mb-1 block text-base font-semibold text-muted-foreground">Handover Notes</label>
             <textarea
               className={`${formControlCls} min-h-[90px]`}
               value={handoverModal.notes}

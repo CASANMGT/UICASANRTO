@@ -11,21 +11,21 @@ export function Dialog({ open, onOpenChange, children }) {
   )
 }
 
+/** shadcn-aligned dialog content. tone "legacy" kept for backward compatibility. */
 export function DialogContent({ className, children, tone = 'default' }) {
   const { open, onOpenChange } = useContext(DialogContext)
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-5"
       onClick={() => onOpenChange(false)}
     >
       <div
         className={cn(
-          'max-h-[92vh] w-full max-w-xl overflow-auto rounded-2xl border p-4 shadow-[0_20px_55px_rgba(15,23,42,0.18)]',
-          tone === 'legacy' ? 'border-[color:var(--b1)] bg-[color:var(--s1)]' : 'border-[color:var(--b1)] bg-[color:var(--s1)]',
+          'max-h-[92vh] w-full max-w-lg overflow-auto rounded-lg border border-border bg-background p-6 shadow-lg space-y-4',
           className,
         )}
-        onClick={(event) => event.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {children}
       </div>
@@ -34,17 +34,17 @@ export function DialogContent({ className, children, tone = 'default' }) {
 }
 
 export function DialogHeader({ className, ...props }) {
-  return <div className={cn('mb-3', className)} {...props} />
+  return <div className={cn('flex flex-col space-y-2', className)} {...props} />
 }
 
 export function DialogTitle({ className, ...props }) {
-  return <h2 className={cn('text-[18px] font-extrabold text-[color:var(--t1)]', className)} {...props} />
+  return <h2 className={cn('text-base font-semibold leading-none tracking-tight', className)} {...props} />
 }
 
 export function DialogDescription({ className, ...props }) {
-  return <p className={cn('text-[13px] text-[color:var(--t2)]', className)} {...props} />
+  return <p className={cn('text-base text-muted-foreground', className)} {...props} />
 }
 
 export function DialogFooter({ className, ...props }) {
-  return <div className={cn('mt-4 flex justify-end gap-2', className)} {...props} />
+  return <div className={cn('mt-5 flex flex-row justify-end gap-3', className)} {...props} />
 }

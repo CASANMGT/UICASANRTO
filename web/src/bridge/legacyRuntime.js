@@ -1,6 +1,202 @@
+import cityPolygonsData from '../data/cityPolygons.json'
+
 const runtimeState = {
   loaded: false,
   loadingPromise: null,
+}
+
+/** City boundary polygons from cityPolygons.json. Format: { cityName: [[lng,lat],...] | [ [[lng,lat],...], ... ] } */
+export const CITIES_POLYGONS = cityPolygonsData || {}
+
+/** Geofence cities for Jabodetabek (ordered for UI) */
+const JABODETABEK_GEOFENCE = [
+  'Jakarta',
+  'Kabupaten Bekasi',
+  'Kota Bekasi',
+  'Kabupaten Tangerang',
+  'Kota Tangerang',
+  'Tangerang',
+  'Tangerang Selatan',
+  'Kabupaten Bogor',
+  'Kota Bogor',
+  'Depok',
+  'Kabupaten Purwakarta',
+  'Kabupaten Karawang',
+]
+
+/** List of city names: Jabodetabek first, then others from polygon data */
+export const CITIES_GEOFENCE = [
+  ...JABODETABEK_GEOFENCE,
+  ...Object.keys(CITIES_POLYGONS).filter((c) => !JABODETABEK_GEOFENCE.includes(c)).sort(),
+]
+
+/** Cities where program pickup locations are (tangkas/maka=Jakarta, united=Bekasi) */
+const PROGRAM_CITY_MAP = { tangkas: 'Jakarta', maka: 'Jakarta', united: 'Bekasi' }
+
+/**
+ * Ray-casting point-in-polygon. Point [lat,lng], polygon rings as [[lng,lat],[lng,lat],...].
+ */
+function pointInPolygonSimple(point, polygon) {
+  const [lat, lng] = point
+  const rings = Array.isArray(polygon?.[0]?.[0]) ? polygon : [polygon]
+  for (const vs of rings) {
+    if (!vs || vs.length < 3) continue
+    let inside = false
+    const n = vs.length
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const xi = vs[i][0]
+      const yi = vs[i][1]
+      const xj = vs[j][0]
+      const yj = vs[j][1]
+      if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
+    }
+    if (inside) return true
+  }
+  return false
+}
+
+/**
+ * Check if vehicle is inside any program geofence (cities where we have program pickup locations).
+ */
+export function isInProgramGeofence(vehicle) {
+  const lat = Number(vehicle?.lat)
+  const lng = Number(vehicle?.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  const point = [lat, lng]
+  const programCities = new Set(Object.values(PROGRAM_CITY_MAP))
+  for (const city of programCities) {
+    const poly = CITIES_POLYGONS[city]
+    if (poly && pointInPolygonSimple(point, poly)) return true
+  }
+  return false
+}
+
+/**
+ * Check if vehicle is inside its program's geofence zone. Uses program.geofenceCities.
+ */
+export function isVehicleInProgramZone(vehicle, program) {
+  if (!vehicle || !program) return null
+  const lat = Number(vehicle.lat)
+  const lng = Number(vehicle.lng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  const cities = program?.geofenceCities
+  if (!Array.isArray(cities) || cities.length === 0) return null
+  const point = [lat, lng]
+  for (const city of cities) {
+    const poly = CITIES_POLYGONS[city]
+    if (poly && pointInPolygonSimple(point, poly)) return true
+  }
+  return false
+}
+
+/** Haversine distance in km. Points as [lat, lng]. */
+function haversineKm(a, b) {
+  const R = 6371
+  const dLat = ((b[0] - a[0]) * Math.PI) / 180
+  const dLng = ((b[1] - a[1]) * Math.PI) / 180
+  const lat1 = (a[0] * Math.PI) / 180
+  const lat2 = (b[0] * Math.PI) / 180
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
+}
+
+/** Distance from point [lat,lng] to line segment a–b (vertices as [lng,lat] in GeoJSON). */
+function distancePointToSegment(point, a, b) {
+  const [plat, plng] = point
+  const [ax, ay] = a
+  const [bx, by] = b
+  const segLng = bx - ax
+  const segLat = by - ay
+  const denom = segLng * segLng + segLat * segLat
+  if (!Number.isFinite(denom) || denom === 0) return haversineKm([plat, plng], [ay, ax])
+  let t = ((plng - ax) * segLng + (plat - ay) * segLat) / denom
+  t = Math.max(0, Math.min(1, t))
+  const nearestLng = ax + t * segLng
+  const nearestLat = ay + t * segLat
+  return haversineKm([plat, plng], [nearestLat, nearestLng])
+}
+
+/** Min distance (km) from point [lat,lng] to polygon boundary. Polygon: [[lng,lat],...] or rings. */
+function distanceToPolygonBoundary(point, polygon) {
+  const rings = Array.isArray(polygon?.[0]?.[0]) ? polygon : [polygon]
+  let minDist = Infinity
+  for (const vs of rings) {
+    if (!vs || vs.length < 2) continue
+    const n = vs.length
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const d = distancePointToSegment(point, vs[j], vs[i])
+      if (d < minDist) minDist = d
+    }
+  }
+  return minDist
+}
+
+/** Distance (km) from vehicle to nearest point on program geofence boundary. Infinity if in zone or no geofence. */
+export function getDistanceToGeofenceBoundary(vehicle, program) {
+  try {
+    if (!vehicle || !program) return Infinity
+    const lat = Number(vehicle.lat)
+    const lng = Number(vehicle.lng)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Infinity
+    const cities = program?.geofenceCities
+    if (!Array.isArray(cities) || cities.length === 0) return Infinity
+    if (!CITIES_POLYGONS || typeof CITIES_POLYGONS !== 'object') return Infinity
+    if (isVehicleInProgramZone(vehicle, program)) return Infinity
+    const point = [lat, lng]
+    let minDist = Infinity
+    for (const city of cities) {
+      const poly = CITIES_POLYGONS[city]
+      if (poly) {
+        const d = distanceToPolygonBoundary(point, poly)
+        if (Number.isFinite(d) && d < minDist) minDist = d
+      }
+    }
+    return minDist
+  } catch {
+    return Infinity
+  }
+}
+
+/** Default buffer (km): beyond this distance from boundary, apply rule. */
+export const DEFAULT_OUT_OF_ZONE_BUFFER_KM = 2
+
+/** Default speed limit (km/h) when action is speedLimit. */
+export const DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH = 15
+
+/** Out-of-zone actions: immobilized (0 km/h) or speedLimit (cap at configured km/h). */
+export const OUT_OF_ZONE_ACTIONS = { IMMOBILIZED: 'immobilized', SPEED_LIMIT: 'speedLimit' }
+
+/**
+ * Effective speed limit for vehicle based on program geofence rules.
+ * Returns limit in km/h: 0 = immobilized, else max allowed speed.
+ * When in zone or within buffer: returns defaultLimit (no cap).
+ */
+export function getGeofenceSpeedLimit(vehicle, program, defaultLimit = 80) {
+  try {
+    if (!vehicle || !program) return defaultLimit
+    if (program.applyOutOfZoneSpeedLimit !== true) return defaultLimit
+    if (isVehicleInProgramZone(vehicle, program)) return defaultLimit
+    const dist = getDistanceToGeofenceBoundary(vehicle, program)
+    if (!Number.isFinite(dist)) return defaultLimit
+    const bufferKm = Math.max(0, Number(program.outOfZoneBufferKm) || DEFAULT_OUT_OF_ZONE_BUFFER_KM)
+    if (dist <= bufferKm) return defaultLimit
+    const action = program.outOfZoneAction === OUT_OF_ZONE_ACTIONS.IMMOBILIZED ? OUT_OF_ZONE_ACTIONS.IMMOBILIZED : OUT_OF_ZONE_ACTIONS.SPEED_LIMIT
+    if (action === OUT_OF_ZONE_ACTIONS.IMMOBILIZED) return 0
+    const limitKmh = Math.max(0, Math.min(80, Number(program.outOfZoneSpeedLimitKmh) || DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH))
+    return limitKmh
+  } catch {
+    return defaultLimit
+  }
+}
+
+/** Cities to show in "From program" mode (Jakarta, Bekasi - where partners operate) */
+export const PROGRAM_GEOFENCE_CITIES = ['Jakarta', 'Bekasi']
+
+/** Default geofence cities per partner (program zone) */
+const DEFAULT_GEOFENCE_BY_PARTNER = {
+  tangkas: ['Jakarta'],
+  maka: ['Jakarta'],
+  united: ['Bekasi'],
 }
 
 const LISTENERS_EVENT = 'legacy-state-updated'
@@ -60,6 +256,21 @@ function normalizeDataIntegrity(state) {
     if (!program.durationDays) program.durationDays = program.type === 'RTO' ? 180 : 30
     if (!program.pickupLocation) {
       program.pickupLocation = PROGRAM_PICKUP_LOCATIONS[program.partnerId] || 'Program Pickup Point'
+    }
+    if (!Array.isArray(program.geofenceCities) || program.geofenceCities.length === 0) {
+      program.geofenceCities = DEFAULT_GEOFENCE_BY_PARTNER[program.partnerId] || PROGRAM_GEOFENCE_CITIES
+    }
+    if (typeof program.applyOutOfZoneSpeedLimit !== 'boolean') {
+      program.applyOutOfZoneSpeedLimit = true
+    }
+    if (typeof program.outOfZoneBufferKm !== 'number' || program.outOfZoneBufferKm < 0) {
+      program.outOfZoneBufferKm = DEFAULT_OUT_OF_ZONE_BUFFER_KM
+    }
+    if (program.outOfZoneAction !== OUT_OF_ZONE_ACTIONS.IMMOBILIZED && program.outOfZoneAction !== OUT_OF_ZONE_ACTIONS.SPEED_LIMIT) {
+      program.outOfZoneAction = OUT_OF_ZONE_ACTIONS.SPEED_LIMIT
+    }
+    if (typeof program.outOfZoneSpeedLimitKmh !== 'number' || program.outOfZoneSpeedLimitKmh < 0) {
+      program.outOfZoneSpeedLimitKmh = DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH
     }
   }
 
@@ -412,25 +623,34 @@ export async function ensureLegacyRuntime() {
   if (runtimeState.loadingPromise) return runtimeState.loadingPromise
 
   runtimeState.loadingPromise = Promise.resolve().then(() => {
-    // Use existing global state when present (legacy page), otherwise seed local portable data.
-    if (!window.state || !window.state.vehicles?.length) {
-      seedLocalState()
-    } else {
-      localState = window.state
+    try {
+      // Use existing global state when present (legacy page), otherwise seed local portable data.
+      if (typeof window === 'undefined' || !window.state || !window.state.vehicles?.length) {
+        seedLocalState()
+      } else {
+        localState = window.state
+      }
+      normalizeDataIntegrity(localState)
+      runtimeState.loaded = true
+      notifyStateChanged()
+    } catch (err) {
+      console.error('[legacyRuntime] ensureLegacyRuntime failed:', err)
+      throw err
     }
-    normalizeDataIntegrity(localState)
-    runtimeState.loaded = true
-    // Fire one initial update so subscribers (useLegacyTick) re-render with seeded data.
-    notifyStateChanged()
   })
 
   return runtimeState.loadingPromise
 }
 
 export function getState() {
-  const state = window.state || localState
-  normalizeDataIntegrity(state)
-  return state
+  try {
+    const state = typeof window !== 'undefined' && window.state ? window.state : localState
+    if (state) normalizeDataIntegrity(state)
+    return state || localState
+  } catch (err) {
+    console.warn('[legacyRuntime] getState failed:', err)
+    return localState
+  }
 }
 
 export function subscribe(listener) {

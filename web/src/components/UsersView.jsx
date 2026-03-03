@@ -4,7 +4,7 @@ import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
 import { Input } from './ui/input'
-import { DataPanel, FilterBar, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid } from './ui/page'
+import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -146,7 +146,7 @@ export function UsersView() {
     return Object.fromEntries(entries)
   }, [programs, tick])
 
-  const pageSize = 10
+  const pageSize = PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(riskFilteredRows.length / pageSize))
   const [page, setPage] = useState(1)
   const currentPage = Math.min(page, totalPages)
@@ -168,7 +168,7 @@ export function UsersView() {
       <PageHeader>
         <div>
           <PageTitle>Rider KYC & Profiles</PageTitle>
-          <div className="mt-0.5 text-sm text-slate-500">Operational Behavioral Auditing • sorted by latest join</div>
+          <div className="mt-0.5 text-sm text-muted-foreground">Operational Behavioral Auditing • sorted by latest join</div>
         </div>
         <PageMeta>{riskFilteredRows.length} Riders Displayed</PageMeta>
       </PageHeader>
@@ -220,7 +220,7 @@ export function UsersView() {
       </FilterBar>
 
       <DataPanel>
-        <Table density="legacy" className="min-w-[900px]">
+        <Table density="legacy" className={TABLE_MIN_WIDTH}>
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>USER</TableHead>
@@ -237,46 +237,46 @@ export function UsersView() {
           {pageRows.length > 0 ? (
             pageRows.map((user) => (
               <TableRow key={user.userId} tone="legacy">
-                <TableCell>
-                  <div className="flex items-center gap-2">
+                <TableCell className="min-w-[140px]">
+                  <div className="flex items-center gap-3">
                     <img
                       src={user.avatarUrl}
                       alt={`${user.name} avatar`}
-                      className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                      className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
                       loading="lazy"
                     />
-                    <div>
-                      <div className="font-bold text-slate-900">{user.name}</div>
-                      <div className="text-xs text-slate-500">{user.userId}</div>
-                      <div className="text-xs text-slate-500">{user.phone || '-'}</div>
+                    <div className="min-w-0">
+                      <div className="truncate font-bold text-foreground">{user.name}</div>
+                      <div className="text-xs text-muted-foreground">{user.userId}</div>
+                      <div className="truncate text-xs text-muted-foreground">{user.phone || '-'}</div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-semibold text-slate-800">{user.programName}</div>
-                  <div className="text-xs text-slate-500">{user.programType}</div>
+                  <div className="font-semibold text-foreground">{user.programName}</div>
+                  <div className="text-xs text-muted-foreground">{user.programType}</div>
                 </TableCell>
-                <TableCell>
-                  <div className="min-w-[180px]">
-                    <div className="mb-1 flex items-center justify-between text-xs font-semibold text-slate-600">
+                <TableCell className="min-w-[160px]">
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between text-xs font-semibold text-muted-foreground">
                       <span>{user.paidDays} paid days</span>
                       <span>{user.totalDays} total</span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
                       <div
                         className="h-full rounded-full bg-blue-600 transition-all"
                         style={{ width: `${user.progressPercent}%` }}
                       />
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">{user.progressPercent}% complete</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{user.progressPercent}% complete</div>
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
                   <div className="space-y-1">
-                    <div className="text-xs text-slate-600">
+                    <div className="text-xs text-muted-foreground">
                       Missed: <span className="font-semibold">{Math.max(0, user.missedPayments || 0)}</span>
                     </div>
-                    <div className="flex items-center justify-center gap-1 text-[11px]">
+                    <div className="flex items-center justify-center gap-1 text-xs">
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
                         Grace {user.graceCount}
                       </span>
@@ -296,10 +296,10 @@ export function UsersView() {
                 <TableCell>
                   {user.primaryVehicle ? (
                     <div>
-                      <div className="font-semibold text-slate-800">
+                      <div className="font-semibold text-foreground">
                         {[user.primaryVehicle.brand, user.primaryVehicle.model].filter(Boolean).join(' ')}
                       </div>
-                      <div className="text-xs text-slate-500">No Pol: {user.primaryVehicle.plate || '-'}</div>
+                      <div className="text-xs text-muted-foreground">No Pol: {user.primaryVehicle.plate || '-'}</div>
                     </div>
                   ) : (
                     <span className="text-slate-400">-</span>
@@ -323,7 +323,7 @@ export function UsersView() {
                         {user.movementLabel}
                       </span>
                     </div>
-                    <div className="text-xs text-slate-500">Last ping: {user.gpsLastPingLabel}</div>
+                    <div className="text-xs text-muted-foreground">Last ping: {user.gpsLastPingLabel}</div>
                   </div>
                 </TableCell>
                 <TableCell>{new Date(user.joinDate).toLocaleDateString('id-ID')}</TableCell>
@@ -336,7 +336,7 @@ export function UsersView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableCell colSpan={8} className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No users found for current filters.
               </TableCell>
             </TableRow>
@@ -344,16 +344,9 @@ export function UsersView() {
           </TableBody>
         </Table>
       </DataPanel>
-      <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-        Risk formula: <span className="font-semibold">100 - (8 x missed) - (6 x grace) - (14 x immobilized)</span>, clamped 0-100. High+ rule:{' '}
-        <span className="font-semibold">if Grace &gt;= 4 and Immobilized &gt;= 2, score is capped at 40</span>. Bands:{' '}
-        <span className="font-semibold text-emerald-700">80-100 Low</span>,{' '}
-        <span className="font-semibold text-cyan-700">60-79 Medium-Low</span>,{' '}
-        <span className="font-semibold text-amber-700">41-59 Medium</span>,{' '}
-        <span className="font-semibold text-orange-700">21-40 High</span>,{' '}
-        <span className="font-semibold text-rose-700">0-20 Critical</span>.
+      <div className="mt-2 rounded-lg border border-border bg-muted px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        Risk formula: 100 - (8×missed) - (6×grace) - (14×immobilized). High+ rule: Grace≥4 &amp; Immobilized≥2 → score capped at 40. Bands: 80-100 Low, 60-79 Medium-Low, 41-59 Medium, 21-40 High, 0-20 Critical.
       </div>
-
       <PageFooter>
         <Button
           variant="legacyGhost"
@@ -363,8 +356,8 @@ export function UsersView() {
         >
           Prev
         </Button>
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} of {totalPages}
+        <div className="text-sm font-semibold text-muted-foreground">
+          Page {currentPage} of {totalPages} ({riskFilteredRows.length} rows)
         </div>
         <Button
           variant="legacyGhost"
@@ -389,8 +382,8 @@ export function UsersView() {
                 className="h-14 w-14 rounded-full object-cover ring-1 ring-slate-200"
               />
               <div>
-                <div className="text-sm font-semibold text-slate-900">{profileUser?.name || '-'}</div>
-                <div className="text-xs text-slate-500">{profileUser?.userId || '-'}</div>
+                <div className="text-sm font-semibold text-foreground">{profileUser?.name || '-'}</div>
+                <div className="text-xs text-muted-foreground">{profileUser?.userId || '-'}</div>
               </div>
             </div>
             <div>
