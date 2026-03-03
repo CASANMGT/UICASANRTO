@@ -14,7 +14,7 @@ import {
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
+import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -1044,9 +1044,7 @@ export function RtoView() {
             >
               Prev
             </Button>
-            <div className="text-base font-semibold text-muted-foreground">
-              Page {currentAppPage} of {appTotalPages} ({filteredApps.length} apps)
-            </div>
+            <PaginationInfo currentPage={currentAppPage} totalPages={appTotalPages} totalItems={filteredApps.length} itemName="applications" />
             <Button
               variant="legacyGhost"
               size="legacy"
@@ -1232,9 +1230,7 @@ export function RtoView() {
             >
               Prev
             </Button>
-            <div className="text-base font-semibold text-muted-foreground">
-              Page {currentPickupPage} of {pickupTotalPages} ({filteredPickup.length} pickups)
-            </div>
+            <PaginationInfo currentPage={currentPickupPage} totalPages={pickupTotalPages} totalItems={filteredPickup.length} itemName="pickups" />
             <Button
               variant="legacyGhost"
               size="legacy"

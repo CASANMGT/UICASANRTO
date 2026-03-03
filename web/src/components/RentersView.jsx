@@ -4,7 +4,7 @@ import { usePagination } from '../context/PaginationContext'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { FilterBar, DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
+import { FilterBar, DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -276,9 +276,7 @@ export function RentersView() {
         >
           Prev
         </Button>
-        <div className="text-sm font-semibold text-muted-foreground">
-          Page {currentPage} of {totalPages} ({renters.length} rows)
-        </div>
+        <PaginationInfo currentPage={currentPage} totalPages={totalPages} totalItems={renters.length} itemName="renters" />
         <Button
           variant="legacyGhost"
           size="legacy"

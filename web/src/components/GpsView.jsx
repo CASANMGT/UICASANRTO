@@ -14,7 +14,7 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
-import { DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
+import { DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 const initialFilter = {
@@ -679,9 +679,7 @@ export function GpsView() {
         >
           Prev
         </Button>
-        <div className="text-sm font-semibold text-muted-foreground">
-          Page {currentPage} of {totalPages} ({filteredRows.length} rows)
-        </div>
+        <PaginationInfo currentPage={currentPage} totalPages={totalPages} totalItems={filteredRows.length} itemName="devices" />
         <Button
           variant="legacyGhost"
           size="legacy"

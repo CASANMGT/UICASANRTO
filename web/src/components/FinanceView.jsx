@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import { getFinanceSnapshot } from '../bridge/legacyRuntime'
 import { usePagination } from '../context/PaginationContext'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Badge } from './ui/badge'
 import { Button } from './ui/button'
-import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
+import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -142,19 +143,19 @@ export function FinanceView() {
                     </TableCell>
                     <TableCell className="font-semibold text-cyan-700">{formatCurrency(tx.casanShare || 0)}</TableCell>
                     <TableCell>
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${
+                      <Badge
+                        variant={
                           (tx.status || '').toLowerCase() === 'paid'
-                            ? 'bg-emerald-100 text-emerald-700'
+                            ? 'success'
                             : (tx.status || '').toLowerCase() === 'failed'
-                              ? 'bg-rose-100 text-rose-700'
+                              ? 'danger'
                               : (tx.status || '').toLowerCase() === 'pending'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-slate-100 text-slate-600'
-                        }`}
+                                ? 'warning'
+                                : 'neutral'
+                        }
                       >
                         {(tx.status || '-').toUpperCase()}
-                      </span>
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))
@@ -179,9 +180,7 @@ export function FinanceView() {
         >
           Prev
         </Button>
-        <div className="text-sm font-semibold text-slate-600">
-          Page {currentPage} of {totalPages} ({data.transactions.length} rows)
-        </div>
+        <PaginationInfo currentPage={currentPage} totalPages={totalPages} totalItems={data.transactions.length} itemName="rows" />
         <Button
           variant="legacyGhost"
           size="legacy"

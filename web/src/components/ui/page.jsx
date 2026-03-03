@@ -67,3 +67,11 @@ export function PageFooter({ className, ...props }) {
     />
   )
 }
+
+export function PaginationInfo({ currentPage, totalPages, totalItems, itemName = 'rows', className }) {
+  return (
+    <div className={cn('text-sm font-semibold text-muted-foreground', className)}>
+      Page {currentPage} of {totalPages} ({totalItems} {itemName})
+    </div>
+  )
+}
