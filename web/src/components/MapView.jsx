@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { usePagination } from '../context/PaginationContext'
 import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Polygon, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -42,7 +43,7 @@ export function MapView() {
   const [gpsFilter, setGpsFilter] = useState('all')
   const [pingAgeFilter, setPingAgeFilter] = useState('all')
   const [speedBand, setSpeedBand] = useState('all')
-  const [listPage, setListPage] = useState(1)
+  const [listPage, setListPage] = usePagination('map')
   const [geofenceCities, setGeofenceCities] = useState([])
   const vehicles = useMemo(() => {
     void tick

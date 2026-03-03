@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePagination } from '../context/PaginationContext'
 import {
   createGps,
   deleteGps,
@@ -62,7 +63,7 @@ export function GpsView() {
     model: '',
   })
   const [brandModelCatalog, setBrandModelCatalog] = useState(() => loadBrandModelCatalog())
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('gps')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const brandOptions = useMemo(
     () => [...new Set(brandModelCatalog.map((entry) => entry.brand).filter(Boolean))].sort(),

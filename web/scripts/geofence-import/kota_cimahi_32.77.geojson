@@ -1,0 +1,110 @@
+{
+  "type": "Feature",
+  "metadata": {
+    "generator": {
+      "name": "Peta Nusa",
+      "url": "https://petanusa.web.id",
+      "version": "1.0"
+    },
+    "query": {
+      "region": "Kota Cimahi",
+      "region_code": "32.77",
+      "level": "regency",
+      "boundary_level": "self"
+    },
+    "result": {
+      "total_features": 1,
+      "generated_at": "2026-03-03T14:19:33.532Z"
+    },
+    "source": {
+      "name": "Laravel Nusa",
+      "url": "https://nusa.creasi.dev",
+      "github": "https://github.com/creasico/laravel-nusa",
+      "data_reference": "Kepmendagri No 300.2.2-2138 Tahun 2025"
+    },
+    "copyright": {
+      "text": "© Creasi.co - Laravel Nusa",
+      "license": "MIT",
+      "license_url": "https://github.com/creasico/laravel-nusa/blob/main/LICENSE"
+    }
+  },
+  "properties": {
+    "code": "32.77",
+    "name": "Kota Cimahi",
+    "level": "regency",
+    "latitude": -6.886318982932,
+    "longitude": 107.54289593466,
+    "parent_code": "32"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          107.54793649037678,
+          -6.8283574117651105
+        ],
+        [
+          107.55492467143648,
+          -6.85357444510453
+        ],
+        [
+          107.56323806198702,
+          -6.856084773093744
+        ],
+        [
+          107.56181965305457,
+          -6.872971907927176
+        ],
+        [
+          107.57618571479895,
+          -6.891020799570206
+        ],
+        [
+          107.55643759372002,
+          -6.88965613682118
+        ],
+        [
+          107.56897199905856,
+          -6.9103619999063595
+        ],
+        [
+          107.56415299986111,
+          -6.932867999958229
+        ],
+        [
+          107.54554618141127,
+          -6.92675513534116
+        ],
+        [
+          107.54257568831746,
+          -6.918846943331739
+        ],
+        [
+          107.51901015829223,
+          -6.918879975430484
+        ],
+        [
+          107.51035307293601,
+          -6.898675180415185
+        ],
+        [
+          107.52228544601655,
+          -6.865528100641231
+        ],
+        [
+          107.53606312990952,
+          -6.857978783094313
+        ],
+        [
+          107.5395991301958,
+          -6.832049545150357
+        ],
+        [
+          107.54793649037678,
+          -6.8283574117651105
+        ]
+      ]
+    ]
+  }
+}

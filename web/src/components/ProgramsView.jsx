@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { usePagination } from '../context/PaginationContext'
 import {
   CITIES_GEOFENCE,
   createProgram,
@@ -30,7 +31,7 @@ function buildPickupMapQuery(location, address) {
 export function ProgramsView() {
   const tick = useLegacyTick()
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('programs')
   const DEFAULT_GEOFENCE = { tangkas: ['Jakarta'], maka: ['Jakarta'], united: ['Bekasi'] }
   const [programModal, setProgramModal] = useState({
     open: false,

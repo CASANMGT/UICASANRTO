@@ -1,8 +1,34 @@
 {
-  "hash": "7ef77bc9",
+  "hash": "820e40a5",
   "configHash": "32615dd6",
-  "lockfileHash": "c0b7aa3e",
-  "browserHash": "185c40cf",
-  "optimized": {},
-  "chunks": {}
+  "lockfileHash": "0293127c",
+  "browserHash": "8554ce4c",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "932ab1dd",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "6f482f05",
+      "needsInterop": true
+    },
+    "react-leaflet": {
+      "src": "../../node_modules/react-leaflet/lib/index.js",
+      "file": "react-leaflet.js",
+      "fileHash": "c1c827b4",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-NOSD3EBE": {
+      "file": "chunk-NOSD3EBE.js"
+    },
+    "chunk-G4V7ITBN": {
+      "file": "chunk-G4V7ITBN.js"
+    }
+  }
 }

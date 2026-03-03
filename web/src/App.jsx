@@ -167,7 +167,7 @@ function App() {
             </Select>
           </div>
         </header>
-        <section className="card min-w-0 flex-1 p-5">
+        <section className="card min-h-0 min-w-0 flex-1 p-5">
           {activeTab === 'users' && (featureFlags.usersReact ? <UsersView /> : <LegacyPlaceholder tab="users" />)}
           {activeTab === 'renters' && (featureFlags.rentersReact ? <RentersView /> : <LegacyPlaceholder tab="renters" />)}
           {activeTab === 'vehicles' &&

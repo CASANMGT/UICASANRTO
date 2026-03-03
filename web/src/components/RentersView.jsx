@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { getPrograms, getState } from '../bridge/legacyRuntime'
+import { usePagination } from '../context/PaginationContext'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -31,7 +32,7 @@ export function RentersView() {
   const [program, setProgram] = useState('all')
   const [status, setStatus] = useState('all')
   const [renterTab, setRenterTab] = useState('all')
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('renters')
 
   const programs = useMemo(() => {
     void tick

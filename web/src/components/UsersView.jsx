@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { getPrograms, getState, getUsers } from '../bridge/legacyRuntime'
+import { usePagination } from '../context/PaginationContext'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
@@ -148,7 +149,7 @@ export function UsersView() {
 
   const pageSize = PAGE_SIZE
   const totalPages = Math.max(1, Math.ceil(riskFilteredRows.length / pageSize))
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('users')
   const currentPage = Math.min(page, totalPages)
   const pageRows = riskFilteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const userStats = useMemo(() => {
@@ -219,8 +220,9 @@ export function UsersView() {
         </Select>
       </FilterBar>
 
-      <DataPanel>
-        <Table density="legacy" className={TABLE_MIN_WIDTH}>
+      <DataPanel className="flex flex-col">
+        <div className="flex-1 overflow-auto">
+          <Table density="legacy" className={TABLE_MIN_WIDTH}>
           <TableHeader tone="legacy">
             <TableRow tone="legacy">
               <TableHead>USER</TableHead>
@@ -343,6 +345,7 @@ export function UsersView() {
           )}
           </TableBody>
         </Table>
+        </div>
       </DataPanel>
       <div className="mt-2 rounded-lg border border-border bg-muted px-4 py-3 text-xs leading-relaxed text-muted-foreground">
         Risk formula: 100 - (8×missed) - (6×grace) - (14×immobilized). High+ rule: Grace≥4 &amp; Immobilized≥2 → score capped at 40. Bands: 80-100 Low, 60-79 Medium-Low, 41-59 Medium, 21-40 High, 0-20 Critical.

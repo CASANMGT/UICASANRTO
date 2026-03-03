@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createVehicle, deleteVehicle, getState, getVehicles, lockVehicle, releaseVehicle, updateGps } from '../bridge/legacyRuntime'
+import { usePagination } from '../context/PaginationContext'
 import * as XLSX from 'xlsx'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
@@ -70,7 +71,7 @@ export function VehiclesView() {
     brand: '',
     model: '',
   })
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('vehicles')
   const pageSize = PAGE_SIZE
   const motorBrandOptions = useMemo(
     () => [...new Set(motorCatalog.map((entry) => entry.brand).filter(Boolean))].sort(),

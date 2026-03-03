@@ -1,0 +1,51 @@
+[
+  {
+    "tab": "users",
+    "mismatch": 50216,
+    "ratio": 0.038746913580246914,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "vehicles",
+    "mismatch": 47655,
+    "ratio": 0.036770833333333336,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "finance",
+    "mismatch": 55730,
+    "ratio": 0.04300154320987654,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "programs",
+    "mismatch": 67520,
+    "ratio": 0.052098765432098765,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "gps",
+    "mismatch": 63598,
+    "ratio": 0.04907253086419753,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "map",
+    "mismatch": 501076,
+    "ratio": 0.3866327160493827,
+    "width": 1440,
+    "height": 900
+  },
+  {
+    "tab": "rto",
+    "mismatch": 43937,
+    "ratio": 0.033902006172839505,
+    "width": 1440,
+    "height": 900
+  }
+]

@@ -10,7 +10,7 @@ export function PageShell({ className, ...props }) {
   return (
     <section
       className={cn(
-        'min-w-0 rounded-lg border border-border bg-background px-6 py-5 shadow-sm',
+        'flex min-h-0 flex-col rounded-lg border border-border bg-background px-6 py-5 shadow-sm',
         className,
       )}
       {...props}
@@ -56,7 +56,7 @@ export function StatCard({ label, value, valueClassName, className }) {
 }
 
 export function DataPanel({ className, ...props }) {
-  return <div className={cn('overflow-x-auto rounded-lg border border-border', className)} {...props} />
+  return <div className={cn('min-h-0 flex-1 overflow-auto rounded-lg border border-border', className)} {...props} />
 }
 
 export function PageFooter({ className, ...props }) {

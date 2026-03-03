@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { getFinanceSnapshot } from '../bridge/legacyRuntime'
+import { usePagination } from '../context/PaginationContext'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH } from './ui/page'
@@ -30,7 +31,7 @@ function formatTxDate(isoDate) {
 export function FinanceView() {
   const tick = useLegacyTick()
   const [programFilter, setProgramFilter] = useState('all')
-  const [page, setPage] = useState(1)
+  const [page, setPage] = usePagination('finance')
   const pageSize = PAGE_SIZE
   const data = useMemo(() => {
     void tick
@@ -86,12 +87,12 @@ export function FinanceView() {
         </div>
       </FilterBar>
 
-      <DataPanel className="overflow-hidden">
+      <DataPanel className="flex flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h3 className="m-0 text-base font-bold text-foreground">Recent Transactions</h3>
           <span className="text-sm text-muted-foreground">{data.transactions.length} records</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="flex-1 overflow-auto">
           <Table density="legacy" className={TABLE_MIN_WIDTH}>
             <TableHeader tone="legacy" className="text-left">
               <TableRow tone="legacy">

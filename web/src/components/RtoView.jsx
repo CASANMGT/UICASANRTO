@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { usePagination } from '../context/PaginationContext'
 import {
   completeRtoHandover,
   createRtoApplication,
@@ -178,8 +179,8 @@ export function RtoView() {
   const [pickupLocationFilter, setPickupLocationFilter] = useState('all')
   const [pickupSlotFilter, setPickupSlotFilter] = useState('all')
   const [pickupStatusFilter, setPickupStatusFilter] = useState('all')
-  const [appPage, setAppPage] = useState(initialUi.appPage || 1)
-  const [pickupPage, setPickupPage] = useState(initialUi.pickupPage || 1)
+  const [appPage, setAppPage] = usePagination('rto-applications')
+  const [pickupPage, setPickupPage] = usePagination('rto-pickup')
   const pageSize = PAGE_SIZE
   const [message, setMessage] = useState('')
   const [selectedAppId, setSelectedAppId] = useState('')
@@ -436,11 +437,8 @@ export function RtoView() {
   }, [calendarCursor])
 
   useEffect(() => {
-    localStorage.setItem(
-      UI_KEY,
-      JSON.stringify({ tab, appFilter, appSearch, appPage: currentAppPage, pickupPage: currentPickupPage }),
-    )
-  }, [tab, appFilter, appSearch, currentAppPage, currentPickupPage])
+    localStorage.setItem(UI_KEY, JSON.stringify({ tab, appFilter, appSearch }))
+  }, [tab, appFilter, appSearch])
 
   const save = () => {
     let score = null
