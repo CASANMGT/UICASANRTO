@@ -12,10 +12,23 @@ import {
   scheduleRtoPickup,
 } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
+import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
+import {
+  PAGE_SIZE,
+  PageFooter,
+  PageHeader,
+  PageMeta,
+  PageShell,
+  PageTitle,
+  StatCard,
+  StatsGrid,
+  TABLE_MIN_WIDTH,
+  PaginationInfo,
+  FilterBar,
+} from './ui/page'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 const UI_KEY = 'casan_rto_ui'
@@ -697,18 +710,8 @@ export function RtoView() {
     setAppPage(1)
   }
 
-  const formControlCls =
-    'w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none ring-ring focus:ring-2'
-  const ghostBtnCls =
-    'rounded-md border border-input bg-background px-4 py-2 text-base font-semibold text-foreground transition hover:bg-accent'
-  const primaryBtnCls =
-    'rounded-md bg-primary px-4 py-2 text-base font-semibold text-primary-foreground transition hover:bg-primary/90'
-  const pillCls =
-    'inline-flex items-center rounded-full border border-input bg-background px-3 py-1 text-base font-semibold text-foreground transition hover:bg-muted'
-  const topTabBaseCls =
-    'inline-flex items-center rounded-full border px-3 py-1 text-base font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300'
-  const topTabIdleCls = 'border-input bg-background text-foreground hover:border-indigo-300 hover:bg-indigo-50'
-  const topTabActiveCls = 'border-indigo-600 bg-indigo-600 text-white shadow-[0_8px_20px_rgba(79,70,229,0.22)] hover:bg-indigo-700'
+  // Button variants for tab navigation
+  const topTabVariant = (isActive) => (isActive ? 'legacyPrimary' : 'legacyPill')
 
   return (
     <PageShell>
@@ -725,14 +728,15 @@ export function RtoView() {
 
       <div className="mb-2 flex flex-wrap gap-2">
         {TAB_ITEMS.map((item) => (
-          <button
+          <Button
             key={item.key}
-            className={`${topTabBaseCls} ${tab === item.key ? topTabActiveCls : topTabIdleCls}`}
+            variant={topTabVariant(tab === item.key)}
+            size="legacy"
             aria-pressed={tab === item.key}
             onClick={() => setTab(normalizeTab(item.key))}
           >
             {item.label}
-          </button>
+          </Button>
         ))}
       </div>
       {message ? <div className="mb-2 text-base text-amber-700">{message}</div> : null}
@@ -741,11 +745,11 @@ export function RtoView() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-3 py-2">
             <div className="text-base font-semibold text-foreground">Application Filters</div>
-            <button className={ghostBtnCls} type="button" onClick={resetApplicationFilters}>
+            <Button variant="legacyGhost" size="legacy" onClick={resetApplicationFilters}>
               Reset Filters
-            </button>
+            </Button>
           </div>
-          <div className="grid grid-cols-1 gap-2 lg:grid-cols-6">
+          <FilterBar className="lg:grid-cols-6">
             <div className="lg:col-span-2">
               <div className="mb-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Search</div>
               <Input
@@ -838,11 +842,11 @@ export function RtoView() {
                 <option value="Risk Analyst">Risk Analyst</option>
               </Select>
             </div>
-          </div>
+          </FilterBar>
           <div className="flex justify-end">
-            <button className={primaryBtnCls} type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: true }))}>
+            <Button variant="legacyPrimary" size="legacy" onClick={() => setCreateModal((prev) => ({ ...prev, open: true }))}>
               + Add Renter
-            </button>
+            </Button>
           </div>
           <div className="overflow-x-auto rounded-lg border border-border">
             <Table density="legacy" className={TABLE_MIN_WIDTH}>
@@ -900,9 +904,9 @@ export function RtoView() {
                             }}
                           />
                         ))}
-                        <span className={pillCls}>
+                        <Badge variant="warning" size="sm">
                           {(app.documents || []).filter((d) => d.status === 'missing').length} missing
-                        </span>
+                        </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -949,16 +953,16 @@ export function RtoView() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <button
-                          className={pillCls}
-                          type="button"
+                        <Button
+                          variant="legacyPill"
+                          size="legacy"
                           onClick={(event) => {
                             event.stopPropagation()
                             openReview(app)
                           }}
                         >
                           Review
-                        </button>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -996,17 +1000,17 @@ export function RtoView() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button className={primaryBtnCls} type="button" onClick={() => openReview(selectedApp)}>
+                  <Button variant="legacyPrimary" size="legacy" onClick={() => openReview(selectedApp)}>
                     Review Application
-                  </button>
-                  <button
-                    className={ghostBtnCls}
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="legacyGhost"
+                    size="legacy"
                     disabled={selectedApp.decision !== 'approved'}
                     onClick={() => onSchedule(selectedApp.id)}
                   >
                     {selectedApp.pickupSchedule?.date ? 'Edit Pickup Slot' : 'Set Pickup Slot'}
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="mt-2 text-base text-muted-foreground">
@@ -1200,12 +1204,12 @@ export function RtoView() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1.5">
-                        <button className={pillCls} type="button" onClick={() => onSchedule(app.id)}>
+                        <Button variant="legacyPill" size="legacy" onClick={() => onSchedule(app.id)}>
                           {app.pickupSchedule?.date ? 'Edit Slot' : 'Set Slot'}
-                        </button>
-                        <button className={pillCls} type="button" onClick={() => openHandover(app)}>
+                        </Button>
+                        <Button variant="legacyPill" size="legacy" onClick={() => openHandover(app)}>
                           {app.handoverCompleted ? 'View Checklist' : 'Complete Handover'}
-                        </button>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1267,9 +1271,9 @@ export function RtoView() {
             </div>
           </div>
           <div className="flex items-center gap-2.5">
-            <button className={primaryBtnCls} onClick={save}>
+            <Button variant="legacyPrimary" size="legacy" onClick={save}>
               Save Compatibility Config
-            </button>
+            </Button>
             <span className="text-base text-muted-foreground">{message}</span>
           </div>
         </>
@@ -1339,12 +1343,12 @@ export function RtoView() {
             </select>
           </div>
           <div className="flex justify-end gap-2">
-            <button className={ghostBtnCls} type="button" onClick={() => setCreateModal((prev) => ({ ...prev, open: false }))}>
+            <Button variant="legacyGhost" size="legacy" onClick={() => setCreateModal((prev) => ({ ...prev, open: false }))}>
               Cancel
-            </button>
-            <button className={primaryBtnCls} type="button" onClick={submitCreate}>
+            </Button>
+            <Button variant="legacyPrimary" size="legacy" onClick={submitCreate}>
               Add Renter
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1404,12 +1408,12 @@ export function RtoView() {
               <span className="inline-flex rounded-full bg-amber-100 px-2 py-1 text-base font-bold text-amber-700">
                 Missing Docs: {(reviewModal.documents || []).filter((item) => item.status === 'missing').length}
               </span>
-              <button className={pillCls} type="button" onClick={markAllMissing}>
+              <Button variant="legacyPill" size="legacy" onClick={markAllMissing}>
                 Mark Missing Docs
-              </button>
-              <button className={pillCls} type="button" onClick={markAllSubmitted}>
+              </Button>
+              <Button variant="legacyPill" size="legacy" onClick={markAllSubmitted}>
                 Mark All Submitted
-              </button>
+              </Button>
             </div>
             <div className="overflow-x-auto rounded-lg border border-border">
               <Table density="legacy">
@@ -1480,12 +1484,12 @@ export function RtoView() {
           <div className="mb-3 rounded-lg border border-border bg-muted p-3">
             <div className="mb-1.5 text-base text-muted-foreground">Score Review (Legacy-style Manual Override)</div>
             <div className="mb-2 grid grid-cols-2 gap-2 lg:grid-cols-4">
-              <div className={pillCls}>Base: {selectedReviewApp?.score ?? '-'}</div>
-              <div className={pillCls}>Docs: {(reviewModal.documents || []).filter((d) => d.status === 'submitted').length}</div>
-              <div className={pillCls}>Missing: {(reviewModal.documents || []).filter((d) => d.status === 'missing').length}</div>
-              <div className={pillCls}>
+              <Badge variant="neutral" size="lg">Base: {selectedReviewApp?.score ?? '-'}</Badge>
+              <Badge variant="success" size="lg">Docs: {(reviewModal.documents || []).filter((d) => d.status === 'submitted').length}</Badge>
+              <Badge variant="warning" size="lg">Missing: {(reviewModal.documents || []).filter((d) => d.status === 'missing').length}</Badge>
+              <Badge variant="primary" size="lg">
                 Final: {clampScore(Number(selectedReviewApp?.score || 0) + Number(reviewModal.scoreAdjust || 0))}
-              </div>
+              </Badge>
             </div>
             <div className="grid grid-cols-1 gap-2 lg:grid-cols-[180px_minmax(0,1fr)]">
               <div>
@@ -1601,14 +1605,19 @@ export function RtoView() {
             />
             {reviewApplicantPhone ? (
               <div className="mt-2">
-                <a
-                  className={pillCls}
-                  href={`https://wa.me/${reviewApplicantPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(reviewModal.waTemplate || '')}`}
-                  target="_blank"
-                  rel="noreferrer"
+                <Button
+                  variant="legacyPill"
+                  size="legacy"
+                  asChild
                 >
-                  Contact via WhatsApp
-                </a>
+                  <a
+                    href={`https://wa.me/${reviewApplicantPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(reviewModal.waTemplate || '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Contact via WhatsApp
+                  </a>
+                </Button>
               </div>
             ) : null}
           </div>
@@ -1624,12 +1633,12 @@ export function RtoView() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <button className={ghostBtnCls} type="button" onClick={() => setReviewModal((prev) => ({ ...prev, open: false }))}>
+            <Button variant="legacyGhost" size="legacy" onClick={() => setReviewModal((prev) => ({ ...prev, open: false }))}>
               Cancel
-            </button>
-            <button className={primaryBtnCls} type="button" onClick={submitReview}>
+            </Button>
+            <Button variant="legacyPrimary" size="legacy" onClick={submitReview}>
               Save Review
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1641,9 +1650,9 @@ export function RtoView() {
             <img src={docPreview.src} alt={docPreview.title} style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
           </div>
           <div className="mt-3 flex justify-end">
-            <button className={ghostBtnCls} type="button" onClick={() => setDocPreview({ open: false, src: '', title: '' })}>
+            <Button variant="legacyGhost" size="legacy" onClick={() => setDocPreview({ open: false, src: '', title: '' })}>
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1815,17 +1824,17 @@ export function RtoView() {
             </select>
           </div>
           <div className="flex justify-end gap-2">
-            <button className={ghostBtnCls} type="button" onClick={() => setScheduleModal((prev) => ({ ...prev, open: false }))}>
+            <Button variant="legacyGhost" size="legacy" onClick={() => setScheduleModal((prev) => ({ ...prev, open: false }))}>
               Cancel
-            </button>
-            <button
-              className={primaryBtnCls}
-              type="button"
+            </Button>
+            <Button
+              variant="legacyPrimary"
+              size="legacy"
               disabled={!dateAvailability[scheduleModal.date]?.available || (slotLoadMap[`${scheduleModal.date}|${scheduleModal.time}`] || 0) >= 3}
               onClick={submitSchedule}
             >
               Confirm Schedule: {scheduleModal.date} @ {scheduleModal.time}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1903,17 +1912,19 @@ export function RtoView() {
                 <div className="mt-2">
                   <img src={handoverModal.handoverPhotoUrl} alt="Handover proof" className="h-28 w-full rounded-md border border-border object-cover" />
                   <div className="mt-2 flex gap-2">
-                    <label className={`${ghostBtnCls} cursor-pointer`}>
-                      Replace Photo
+                    <label className="cursor-pointer">
+                      <Button variant="legacyGhost" size="legacy" asChild>
+                        <span>Replace Photo</span>
+                      </Button>
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => onHandoverPhotoChange('handoverPhotoUrl', e)} />
                     </label>
-                    <button
-                      className={ghostBtnCls}
-                      type="button"
+                    <Button
+                      variant="legacyGhost"
+                      size="legacy"
                       onClick={() => setHandoverModal((prev) => ({ ...prev, handoverPhotoUrl: '', error: '' }))}
                     >
                       Remove Photo
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : null}
@@ -1929,12 +1940,12 @@ export function RtoView() {
             />
           </div>
           <div className="mt-3 flex justify-end gap-2">
-            <button className={ghostBtnCls} type="button" onClick={() => setHandoverModal((prev) => ({ ...prev, open: false }))}>
+            <Button variant="legacyGhost" size="legacy" onClick={() => setHandoverModal((prev) => ({ ...prev, open: false }))}>
               Cancel
-            </button>
-            <button className={primaryBtnCls} type="button" onClick={submitHandover}>
+            </Button>
+            <Button variant="legacyPrimary" size="legacy" onClick={submitHandover}>
               Complete Handover
-            </button>
+            </Button>
           </div>
         </div>
       </div>

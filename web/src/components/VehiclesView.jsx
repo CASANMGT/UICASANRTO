@@ -6,7 +6,7 @@ import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog'
 import { Input } from './ui/input'
-import { DataPanel, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
+import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -306,7 +306,7 @@ export function VehiclesView() {
         <StatCard label="GPS Online" value={vehicleStats.online} valueClassName="text-cyan-700" />
       </StatsGrid>
 
-      <div className="mb-4 space-y-3">
+      <FilterBar className="lg:grid-cols-5">
         <Input
           variant="legacy"
           placeholder="Search id, plate, customer..."
@@ -316,83 +316,80 @@ export function VehiclesView() {
             setPage(1)
           }}
         />
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <Select
-            variant="legacy"
-            value={programFilter}
-            onChange={(e) => {
-              setProgramFilter(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">All Programs</option>
-            <option value="rto">RTO</option>
-            <option value="rental">Rental</option>
-          </Select>
-          <Select
-            variant="legacy"
-            value={connectivity}
-            onChange={(e) => {
-              setConnectivity(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">All Connectivity</option>
-            <option value="online">Online</option>
-            <option value="offline">Offline</option>
-          </Select>
-          <Select
-            variant="legacy"
-            value={creditBucket}
-            onChange={(e) => {
-              setCreditBucket(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">All Credit Buckets</option>
-            <option value="critical">Critical (&lt;= 0d)</option>
-            <option value="warning">Warning (1-3d)</option>
-            <option value="ok">Healthy (&gt; 3d)</option>
-          </Select>
-          <Select
-            variant="legacy"
-            value={assignment}
-            onChange={(e) => {
-              setAssignment(e.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="all">All Assignment</option>
-            <option value="assigned">Assigned</option>
-            <option value="unassigned">Unassigned</option>
-          </Select>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="legacyPrimary"
-            size="legacy"
-            className="h-11 shrink-0"
-            onClick={() =>
-              setVehicleDialog((prev) => ({
-                ...prev,
-                open: true,
-                form: {
-                  ...prev.form,
-                  brand: prev.form.brand || motorBrandOptions[0] || 'Unknown',
-                  model:
-                    motorCatalog.find((entry) => entry.brand === (prev.form.brand || motorBrandOptions[0]))?.model ||
-                    prev.form.model ||
-                    'Unknown',
-                  programId: prev.form.programId || programsList[0]?.id || '',
-                },
-              }))}
-          >
-            + Add Vehicle
-          </Button>
+        <Select
+          variant="legacy"
+          value={programFilter}
+          onChange={(e) => {
+            setProgramFilter(e.target.value)
+            setPage(1)
+          }}
+        >
+          <option value="all">All Programs</option>
+          <option value="rto">RTO</option>
+          <option value="rental">Rental</option>
+        </Select>
+        <Select
+          variant="legacy"
+          value={connectivity}
+          onChange={(e) => {
+            setConnectivity(e.target.value)
+            setPage(1)
+          }}
+        >
+          <option value="all">All Connectivity</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </Select>
+        <Select
+          variant="legacy"
+          value={creditBucket}
+          onChange={(e) => {
+            setCreditBucket(e.target.value)
+            setPage(1)
+          }}
+        >
+          <option value="all">All Credit Buckets</option>
+          <option value="critical">Critical (&lt;= 0d)</option>
+          <option value="warning">Warning (1-3d)</option>
+          <option value="ok">Healthy (&gt; 3d)</option>
+        </Select>
+        <Select
+          variant="legacy"
+          value={assignment}
+          onChange={(e) => {
+            setAssignment(e.target.value)
+            setPage(1)
+          }}
+        >
+          <option value="all">All Assignment</option>
+          <option value="assigned">Assigned</option>
+          <option value="unassigned">Unassigned</option>
+        </Select>
+      </FilterBar>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="legacyPrimary"
+          size="legacy"
+          onClick={() =>
+            setVehicleDialog((prev) => ({
+              ...prev,
+              open: true,
+              form: {
+                ...prev.form,
+                brand: prev.form.brand || motorBrandOptions[0] || 'Unknown',
+                model:
+                  motorCatalog.find((entry) => entry.brand === (prev.form.brand || motorBrandOptions[0]))?.model ||
+                  prev.form.model ||
+                  'Unknown',
+                programId: prev.form.programId || programsList[0]?.id || '',
+              },
+            }))}
+        >
+          + Add Vehicle
+        </Button>
           <Button
             variant="legacyPill"
             size="legacy"
-            className="h-11 shrink-0"
             onClick={() => setBulkVehicle({ open: true, fileName: '', rows: [], result: null, error: '' })}
           >
             Bulk Add Vehicles
@@ -400,7 +397,6 @@ export function VehiclesView() {
           <Button
             variant="legacyGhost"
             size="legacy"
-            className="h-11 shrink-0"
             onClick={() => setMotorSettings((prev) => ({ ...prev, open: true, editId: null, brand: '', model: '' }))}
           >
             Motor Brand/Model DB
@@ -410,7 +406,6 @@ export function VehiclesView() {
               key={s}
               variant={status === s ? 'legacyPrimary' : 'legacyPill'}
               size="legacy"
-              className="h-11 shrink-0"
               onClick={() => {
                 setStatus(s)
                 setPage(1)
@@ -420,7 +415,6 @@ export function VehiclesView() {
             </Button>
           ))}
         </div>
-      </div>
 
       <DataPanel>
         <Table density="legacy" className={TABLE_MIN_WIDTH}>
