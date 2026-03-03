@@ -129,6 +129,23 @@ function clampScore(value) {
   return Math.max(0, Math.min(100, Number(value || 0)))
 }
 
+const MONTHS_3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function formatSubmissionTime(isoDate) {
+  if (!isoDate) return ''
+  const d = new Date(isoDate)
+  if (Number.isNaN(d.getTime())) return ''
+  const thisYear = new Date().getFullYear()
+  const y = d.getFullYear()
+  const mo = MONTHS_3[d.getMonth()]
+  const day = d.getDate()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const mins = String(d.getMinutes()).padStart(2, '0')
+  const time = `${hours}:${mins}`
+  const dateStr = y === thisYear ? `${day} ${mo}` : `${day}/${mo}/${String(y).slice(-2)}`
+  return `${dateStr} ${time}`
+}
+
 function appAgeDays(app) {
   const raw = app?.createdAt || app?.updatedAt || null
   if (!raw) return '-'
@@ -354,6 +371,8 @@ export function RtoView() {
   const currentPickupPage = Math.min(pickupPage, pickupTotalPages)
   const appRows = filteredApps.slice((currentAppPage - 1) * pageSize, currentAppPage * pageSize)
   const pickupRows = filteredPickup.slice((currentPickupPage - 1) * pageSize, currentPickupPage * pageSize)
+  const usersById = useMemo(() => new Map((getState()?.users || []).map((u) => [u.userId, u])), [tick])
+  const vehiclesById = useMemo(() => new Map(vehicles.map((v) => [v.id, v])), [vehicles])
   const appStats = useMemo(() => {
     const allApps = snapshot.apps || []
     return {
@@ -834,7 +853,6 @@ export function RtoView() {
                 <th className="px-3 py-2 text-left">PROGRAM</th>
                 <th className="px-3 py-2 text-left">SCORE</th>
                 <th className="px-3 py-2 text-left">DOCUMENT REVIEW</th>
-                <th className="px-3 py-2 text-left">AGE</th>
                 <th className="px-3 py-2 text-left">REVIEWER</th>
                 <th className="px-3 py-2 text-left">LAST REVIEWED</th>
                 <th className="px-3 py-2 text-left">ASSIGNED VEHICLE</th>
@@ -847,8 +865,14 @@ export function RtoView() {
               {appRows.length > 0 ? (
                 appRows.map((app) => (
                   <tr key={app.id} className="cursor-pointer border-t border-slate-100" onClick={() => setSelectedAppId(app.id)}>
-                    <td className="px-3 py-2">{app.id}</td>
-                    <td className="px-3 py-2">{app.userName}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-semibold">{app.id}</div>
+                      <div className="text-xs text-slate-500">{formatSubmissionTime(app.createdAt || app.updatedAt)}</div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div>{app.userName || '-'}</div>
+                      <div className="text-xs text-slate-500">{usersById.get(app.userId)?.phone || '-'}</div>
+                    </td>
                     <td className="px-3 py-2">{app.programId}</td>
                     <td className="px-3 py-2">
                       <span
@@ -882,11 +906,6 @@ export function RtoView() {
                       </div>
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${Number(appAgeDays(app)) > 3 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {appAgeDays(app)}d
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">
                       {(app.reviewLog || []).length > 0 ? (app.reviewLog || []).slice().reverse()[0]?.by || 'Unassigned' : 'Unassigned'}
                     </td>
                     <td className="px-3 py-2 text-xs text-slate-500">
@@ -896,9 +915,22 @@ export function RtoView() {
                     </td>
                     <td className="px-3 py-2">
                       {app.assignedVehicleId ? (
-                        <span className="inline-flex rounded-full bg-cyan-100 px-2 py-1 text-xs font-bold text-cyan-700">
-                          {app.assignedVehicleId}
-                        </span>
+                        (() => {
+                          const v = vehiclesById.get(app.assignedVehicleId)
+                          return (
+                            <div className="text-xs">
+                              <span className="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 font-bold text-cyan-700">
+                                {app.assignedVehicleId}
+                              </span>
+                              {v && (
+                                <div className="mt-1 text-slate-600">
+                                  <span>{v.brand || '-'} {v.model || '-'}</span>
+                                  <span className="ml-1 font-mono text-slate-500">{v.plate || '-'}</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()
                       ) : (
                         <span className="text-xs text-slate-500">Unassigned</span>
                       )}
@@ -933,7 +965,7 @@ export function RtoView() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={12} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
                     No applications found.
                   </td>
                 </tr>
@@ -1112,7 +1144,23 @@ export function RtoView() {
                     <td className="px-3 py-2">{app.id}</td>
                     <td className="px-3 py-2">{app.userName}</td>
                     <td className="px-3 py-2">
-                      <div className="font-semibold text-slate-900">{app.assignedVehicleId || '-'}</div>
+                      {app.assignedVehicleId ? (
+                        (() => {
+                          const v = vehiclesById.get(app.assignedVehicleId)
+                          return (
+                            <div className="text-xs">
+                              <div className="font-semibold text-slate-900">{app.assignedVehicleId}</div>
+                              {v && (
+                                <div className="text-slate-600">
+                                  {v.brand || '-'} {v.model || '-'} • <span className="font-mono">{v.plate || '-'}</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })()
+                      ) : (
+                        <span className="text-slate-500">-</span>
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       {(() => {

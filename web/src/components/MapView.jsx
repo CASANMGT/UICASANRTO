@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
-import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet'
+import { divIcon } from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getState, getVehicles } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
@@ -48,6 +49,9 @@ export function MapView() {
         gps?.lastPingAt ||
         gps?.updatedAt ||
         new Date(Date.now() - (Math.abs(hashCode(vehicle.id || 'veh')) % (6 * 60 * 60 * 1000))).toISOString()
+      const headingDeg = normalizeDegree(gps?.headingDeg ?? gps?.heading ?? pseudoHeading(vehicle.id || 'veh'))
+      const gpsOnline = String(gps?.status || '').toLowerCase() !== 'offline' && String(gps?.status || '').toLowerCase() !== 'unassigned'
+      const signalPercent = normalizePercent(gps?.signalPercent ?? pseudoSignal(gps?.status || (gpsOnline ? 'Online' : 'Offline'), vehicle.id || 'veh'))
       return {
         ...vehicle,
         userPhone: user?.phone || vehicle.phone || '-',
@@ -57,9 +61,12 @@ export function MapView() {
         programLabel: `${program?.name || program?.shortName || '-'} • ${program?.type || '-'}`,
         vehicleBrand: vehicle.brand || String(vehicle.model || '').split(' ')[0] || '-',
         gpsStatus: gps?.status || 'Unassigned',
+        gpsOnline,
+        signalPercent,
         lastPingAt,
         pingAgeHours: Math.floor((Date.now() - new Date(lastPingAt).getTime()) / (60 * 60 * 1000)),
         movementState: (vehicle.effectiveSpeed || 0) > 0 ? 'RUNNING' : 'STOPPED',
+        headingDeg,
       }
     })
   }, [vehicles, tick])
@@ -102,7 +109,44 @@ export function MapView() {
         <StatCard label="Online" value={mapStats.online} valueClassName="text-cyan-700" />
       </StatsGrid>
 
-      <div className="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
+      <div className="h-[560px] overflow-hidden rounded-xl border border-slate-200">
+        <MapContainer
+          center={[-6.25, 106.85]}
+          zoom={11}
+          className="h-full w-full"
+          whenReady={(event) => {
+            mapRef.current = event.target
+          }}
+        >
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
+          {filteredVehicles.map((vehicle) => (
+            <Marker
+              key={vehicle.id}
+              position={[vehicle.lat, vehicle.lng]}
+              icon={movementMarkerIcon(vehicle.status, vehicle.headingDeg, vehicle.movementState)}
+            >
+              <Popup>
+                <div className="text-xs">
+                  <div className="font-semibold">{vehicle.id}</div>
+                  <div>{vehicle.plate}</div>
+                  <div>Renter: {vehicle.customer || 'Unassigned'}</div>
+                  <div>Phone: {vehicle.userPhone}</div>
+                  <div>Program: {vehicle.programName}</div>
+                  <div>Status: <span className="capitalize">{vehicle.status}</span></div>
+                  <div>Connectivity: {vehicle.isOnline ? 'Online' : 'Offline'}</div>
+                  <div>GPS: {vehicle.gpsStatus}</div>
+                  <div>Last Ping: {new Date(vehicle.lastPingAt).toLocaleString('id-ID')}</div>
+                  <div>Heading: {vehicle.headingDeg}°</div>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+      <div className="mb-3 mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="mapStatusFilter">
             Status
@@ -223,44 +267,6 @@ export function MapView() {
         Markers: {filteredVehicles.length} — filtered by <strong>Status</strong>, Connectivity, Movement, Program, GPS, ping age, and speed.
       </p>
 
-      <div className="h-[560px] overflow-hidden rounded-xl border border-slate-200">
-        <MapContainer
-          center={[-6.25, 106.85]}
-          zoom={11}
-          className="h-full w-full"
-          whenReady={(event) => {
-            mapRef.current = event.target
-          }}
-        >
-          <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
-          {filteredVehicles.map((vehicle) => (
-            <CircleMarker
-              key={vehicle.id}
-              center={[vehicle.lat, vehicle.lng]}
-              radius={5}
-              pathOptions={{ color: markerColor(vehicle.status) }}
-            >
-              <Popup>
-                <div className="text-xs">
-                  <div className="font-semibold">{vehicle.id}</div>
-                  <div>{vehicle.plate}</div>
-                  <div>Renter: {vehicle.customer || 'Unassigned'}</div>
-                  <div>Phone: {vehicle.userPhone}</div>
-                  <div>Program: {vehicle.programName}</div>
-                  <div>Status: <span className="capitalize">{vehicle.status}</span></div>
-                  <div>Connectivity: {vehicle.isOnline ? 'Online' : 'Offline'}</div>
-                  <div>GPS: {vehicle.gpsStatus}</div>
-                  <div>Last Ping: {new Date(vehicle.lastPingAt).toLocaleString('id-ID')}</div>
-                </div>
-              </Popup>
-            </CircleMarker>
-          ))}
-        </MapContainer>
-      </div>
-
       <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-xs uppercase text-slate-500">
@@ -276,13 +282,13 @@ export function MapView() {
               <tr>
                 <th className="px-3 py-2 text-left">VEHICLE</th>
                 <th className="px-3 py-2 text-left">BRAND / MODEL</th>
-                <th className="px-3 py-2 text-left">STATUS</th>
-                <th className="px-3 py-2 text-left">MOVEMENT</th>
                 <th className="px-3 py-2 text-left">RENTER</th>
                 <th className="px-3 py-2 text-left">PROGRAM</th>
+                <th className="px-3 py-2 text-left">STATUS</th>
+                <th className="px-3 py-2 text-left">MOVEMENT</th>
+                <th className="px-3 py-2 text-left">SPEED</th>
                 <th className="px-3 py-2 text-left">GPS</th>
                 <th className="px-3 py-2 text-left">LAST PING</th>
-                <th className="px-3 py-2 text-left">SPEED</th>
               </tr>
             </thead>
             <tbody>
@@ -302,6 +308,11 @@ export function MapView() {
                     </td>
                     <td className="px-3 py-2">{vehicle.vehicleBrand} / {vehicle.model || '-'}</td>
                     <td className="px-3 py-2">
+                      <div>{vehicle.customer || 'Unassigned'}</div>
+                      <div className="text-xs text-slate-500">{vehicle.userPhone}</div>
+                    </td>
+                    <td className="px-3 py-2">{vehicle.programName}</td>
+                    <td className="px-3 py-2">
                       <span
                         className="inline-flex rounded-full px-2 py-1 text-xs font-bold"
                         style={{ background: `${markerColor(vehicle.status)}22`, color: markerColor(vehicle.status) }}
@@ -320,11 +331,7 @@ export function MapView() {
                         {vehicle.movementState}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
-                      <div>{vehicle.customer || 'Unassigned'}</div>
-                      <div className="text-xs text-slate-500">{vehicle.userPhone}</div>
-                    </td>
-                    <td className="px-3 py-2">{vehicle.programName}</td>
+                    <td className="px-3 py-2">{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</td>
                     <td className="px-3 py-2">
                       <span
                         className={`inline-flex rounded-full px-2 py-1 text-xs font-bold ${gpsColor(vehicle.gpsStatus)}`}
@@ -332,8 +339,25 @@ export function MapView() {
                         {String(vehicle.gpsStatus || '-').toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-3 py-2">{new Date(vehicle.lastPingAt).toLocaleString('id-ID')}</td>
-                    <td className="px-3 py-2">{Math.max(0, vehicle.effectiveSpeed || 0)} km/h</td>
+                    <td className="px-3 py-2">
+                      <div className="mb-1 flex items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold ${
+                            vehicle.gpsOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {vehicle.gpsOnline ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className={`h-full rounded-full ${vehicle.signalPercent >= 60 ? 'bg-emerald-500' : vehicle.signalPercent >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                            style={{ width: `${vehicle.signalPercent}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] text-slate-600">{vehicle.signalPercent}%</span>
+                      </div>
+                      <div className="text-xs text-slate-500">{timeAgo(vehicle.lastPingAt)}</div>
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -397,4 +421,65 @@ function hashCode(value) {
     hash |= 0
   }
   return hash
+}
+
+function normalizeDegree(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 0
+  const deg = Math.round(n) % 360
+  return deg < 0 ? deg + 360 : deg
+}
+
+function pseudoHeading(seed) {
+  return Math.abs(hashCode(String(seed || 'veh'))) % 360
+}
+
+function normalizePercent(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(100, Math.round(n)))
+}
+
+function pseudoSignal(status, seedText) {
+  if (status === 'Offline') return 0
+  if (status === 'Tampered') return 12 + (Math.abs(hashCode(seedText)) % 18)
+  if (status === 'Low Signal') return 20 + (Math.abs(hashCode(seedText)) % 30)
+  return 55 + (Math.abs(hashCode(seedText)) % 46)
+}
+
+function timeAgo(dateLike) {
+  if (!dateLike) return '-'
+  const ms = Date.now() - new Date(dateLike).getTime()
+  if (!Number.isFinite(ms)) return '-'
+  if (ms < 0) return 'just now'
+  const minutes = Math.floor(ms / 60000)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+function movementMarkerIcon(status, headingDeg, movementState) {
+  const color = markerColor(status)
+  if (movementState === 'STOPPED') {
+    return divIcon({
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -10],
+      html: `<div style="width:18px;height:18px;border-radius:9999px;background:${color};border:2px solid #ffffff;box-shadow:0 0 0 1px rgba(15,23,42,0.15);"></div>`,
+    })
+  }
+  return divIcon({
+    className: '',
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+    popupAnchor: [0, -10],
+    html: `<div style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;transform:rotate(${headingDeg}deg);">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2L20 20L12 16L4 20L12 2Z" fill="${color}" stroke="#ffffff" stroke-width="1.4" />
+      </svg>
+    </div>`,
+  })
 }

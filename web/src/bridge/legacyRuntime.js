@@ -120,24 +120,46 @@ function normalizeDataIntegrity(state) {
   }
 
   const vehiclesById = new Map(state.vehicles.map((vehicle) => [vehicle.id, vehicle]))
+
+  // Prune user.vehicleIds: only keep vehicles that exist and belong to this user
+  for (const user of state.users) {
+    user.vehicleIds = user.vehicleIds.filter((vehicleId) => {
+      const vehicle = vehiclesById.get(vehicleId)
+      return vehicle && vehicle.userId === user.userId
+    })
+  }
+
   for (const gps of state.gpsDevices) {
     if (!gps.createdAt) gps.createdAt = new Date().toISOString()
     if (!gps.updatedAt) gps.updatedAt = gps.createdAt
     if (gps.vehicleId) {
       const vehicle = vehiclesById.get(gps.vehicleId)
-      gps.vehiclePlate = vehicle?.plate || gps.vehiclePlate || '—'
+      if (!vehicle) {
+        gps.vehicleId = null
+        gps.vehiclePlate = '—'
+      } else {
+        gps.vehiclePlate = vehicle.plate || gps.vehiclePlate || '—'
+      }
     } else {
       gps.vehiclePlate = gps.vehiclePlate || '—'
     }
   }
+  state.transactions = state.transactions.filter((tx) => vehiclesById.has(tx.vehicleId))
   for (const tx of state.transactions) {
     const vehicle = vehiclesById.get(tx.vehicleId)
-    if (!vehicle) continue
-    if (!tx.customer) tx.customer = vehicle.customer || ''
-    if (!tx.programId) tx.programId = vehicle.programId || ''
+    if (!tx.customer) tx.customer = vehicle?.customer || ''
+    if (!tx.programId) tx.programId = vehicle?.programId || ''
   }
   for (const app of state.rtoApplications) {
     app.score = Number(app.score || 0)
+    if (!app.createdAt) app.createdAt = app.updatedAt || new Date().toISOString()
+    if (app.assignedVehicleId && !vehiclesById.has(app.assignedVehicleId)) {
+      app.assignedVehicleId = null
+      app.handoverCompleted = false
+      app.handoverCompletedAt = null
+      app.handoverChecklist = { ...HANDOVER_CHECKLIST_TEMPLATE }
+      app.handoverPhotos = { ...HANDOVER_PHOTO_TEMPLATE }
+    }
     const user = app.userId ? usersById.get(app.userId) : null
     if (user && !app.userName) app.userName = user.name || ''
     if (!app.userId && app.userName) {
@@ -297,6 +319,7 @@ function seedLocalState() {
   const transactions = Array.from({ length: 280 }, (_, i) => {
     const vehicle = vehicles[i % vehicles.length]
     const amount = 25000 + (i % 7) * 5000
+    const transactionType = i % 12 === 0 ? 'pay_penalty' : 'buy_credit'
     return {
       id: `TX-${10000 + i}`,
       date: new Date(Date.now() - i * 86400000).toISOString(),
@@ -307,6 +330,7 @@ function seedLocalState() {
       casanShare: Math.round(amount * 0.1),
       status: i % 20 === 0 ? 'failed' : 'paid',
       method: i % 2 === 0 ? 'BCA' : 'OVO',
+      transactionType,
     }
   })
 
@@ -340,10 +364,12 @@ function seedLocalState() {
     const decision = i % 6 === 0 ? 'approved' : i % 9 === 0 ? 'review' : i % 7 === 0 ? 'rejected' : i % 5 === 0 ? 'pending_docs' : 'pending'
     const program = programs.find((item) => item.id === vehicle.programId)
     const pickupDate = decision === 'approved' && i % 3 === 0 ? new Date(Date.now() + i * 86400000).toISOString() : null
+    const createdAt = new Date(Date.now() - (i + 1) * 86400000).toISOString()
     return {
       id: `APP-${String(i + 1).padStart(4, '0')}`,
       userId: user.userId,
       userName: user.name,
+      createdAt,
       programId: vehicle.programId,
       score: user.riskScore,
       decision,
@@ -512,15 +538,111 @@ export function extendVehicleCredits(id, days = 1) {
   notifyStateChanged()
 }
 
+export function createVehicle(fields = {}) {
+  const state = getState()
+  const programs = state.programs || []
+  const preferredProgram = programs.find((program) => program.id === fields.programId) || programs[0] || null
+  const explicitId = String(fields.id || '').trim()
+  const id = explicitId || nextVehicleId(state.vehicles || [])
+  if (!id) return null
+  if ((state.vehicles || []).some((vehicle) => vehicle.id === id)) return null
+  const model = fields.model || preferredProgram?.eligibleModels?.[0] || MODELS[0]
+  const brand = fields.brand || String(model || '').split(' ')[0] || 'Unknown'
+  const status = fields.status || 'available'
+  const partnerId = fields.partnerId || preferredProgram?.partnerId || PARTNERS[0]
+  const programId = fields.programId || preferredProgram?.id || ''
+  const programType = fields.programType || preferredProgram?.type || 'RTO'
+  const indexSeed = (state.vehicles || []).length + 1
+  state.vehicles.push({
+    id,
+    plate: fields.plate || `B ${4000 + indexSeed} CSN`,
+    customer: fields.customer || null,
+    phone: fields.phone || '',
+    status,
+    partnerId,
+    programId,
+    programType,
+    brand,
+    model,
+    stnkNumber: fields.stnkNumber || `STNK-${String(fields.plate || id).replace(/\s+/g, '').toUpperCase()}`,
+    stnkExpiryDate: fields.stnkExpiryDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    lat: typeof fields.lat === 'number' ? fields.lat : -6.25 + rand(indexSeed) * 0.2 - 0.1,
+    lng: typeof fields.lng === 'number' ? fields.lng : 106.85 + rand(indexSeed + 1) * 0.3 - 0.15,
+    credits: Number(fields.credits || 0),
+    riskScore: Number(fields.riskScore || 0),
+    speed: Number(fields.speed || 0),
+    isOnline: Boolean(fields.isOnline),
+    handoverCompleted: false,
+    handoverChecklist: { ...HANDOVER_CHECKLIST_TEMPLATE },
+    handoverPhotos: { ...HANDOVER_PHOTO_TEMPLATE },
+  })
+  notifyStateChanged()
+  return id
+}
+
+export function deleteVehicle(id) {
+  const state = getState()
+  const idx = (state.vehicles || []).findIndex((vehicle) => vehicle.id === id)
+  if (idx < 0) return false
+  state.vehicles.splice(idx, 1)
+  state.gpsDevices = (state.gpsDevices || []).map((device) =>
+    device.vehicleId === id
+      ? {
+          ...device,
+          vehicleId: null,
+          vehiclePlate: '—',
+          status: 'Offline',
+          updatedAt: new Date().toISOString(),
+        }
+      : device,
+  )
+  state.transactions = (state.transactions || []).filter((tx) => tx.vehicleId !== id)
+  state.users = (state.users || []).map((user) => ({
+    ...user,
+    vehicleIds: (user.vehicleIds || []).filter((vehicleId) => vehicleId !== id),
+  }))
+  state.rtoApplications = (state.rtoApplications || []).map((app) =>
+    app.assignedVehicleId === id
+      ? {
+          ...app,
+          assignedVehicleId: null,
+          handoverCompleted: false,
+          handoverCompletedAt: null,
+          handoverChecklist: { ...HANDOVER_CHECKLIST_TEMPLATE },
+          handoverPhotos: { ...HANDOVER_PHOTO_TEMPLATE },
+        }
+      : app,
+  )
+  notifyStateChanged()
+  return true
+}
+
 export function getFinanceSnapshot(programFilter = 'all') {
   const state = getState()
   const partnerFilter = state.filter?.partner || 'all'
-  const tx = state.transactions.filter((t) => {
-    const vehicle = state.vehicles.find((v) => v.id === t.vehicleId)
-    const partnerMatch = partnerFilter === 'all' || vehicle?.partnerId === partnerFilter
-    const programMatch = programFilter === 'all' || vehicle?.programId === programFilter
-    return partnerMatch && programMatch
-  })
+  const vehiclesById = new Map(state.vehicles.map((v) => [v.id, v]))
+  const programsById = new Map(state.programs.map((p) => [p.id, p]))
+  const tx = state.transactions
+    .filter((t) => {
+      const vehicle = vehiclesById.get(t.vehicleId)
+      const partnerMatch = partnerFilter === 'all' || vehicle?.partnerId === partnerFilter
+      const programMatch = programFilter === 'all' || vehicle?.programId === programFilter
+      return partnerMatch && programMatch
+    })
+    .map((t) => {
+      const vehicle = vehiclesById.get(t.vehicleId)
+      const program = programsById.get(t.programId || vehicle?.programId)
+      const programName = program?.shortName || program?.name || t.program || t.programId || '-'
+      const programType = program?.type || vehicle?.programType || '-'
+      const txType = t.transactionType === 'pay_penalty' ? 'Pay Penalty' : 'Buy Credit'
+      return {
+        ...t,
+        programLabel: `${programName} • ${programType}`,
+        credits: vehicle?.credits ?? null,
+        customerPhone: vehicle?.phone || t.customerPhone || '-',
+        transactionTypeLabel: txType,
+      }
+    })
   const paid = tx.filter((t) => t.status === 'paid')
   const scopedVehicles =
     state.vehicles.filter((vehicle) => {
@@ -654,6 +776,17 @@ export function deleteGps(id) {
   const state = getState()
   state.gpsDevices = state.gpsDevices.filter((device) => device.id !== id)
   notifyStateChanged()
+}
+
+function nextVehicleId(vehicles) {
+  const used = new Set((vehicles || []).map((vehicle) => vehicle.id))
+  let seq = (vehicles || []).length + 1
+  while (seq < 100000) {
+    const candidate = `CSN-${String(seq).padStart(3, '0')}`
+    if (!used.has(candidate)) return candidate
+    seq += 1
+  }
+  return null
 }
 
 function safeParse(value, fallback) {

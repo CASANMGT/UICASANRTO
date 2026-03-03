@@ -17,6 +17,25 @@ function scoreTone(score) {
   return 'bg-rose-100 text-rose-700'
 }
 
+function riskLabelFromScore(score) {
+  const value = Number(score || 0)
+  if (value >= 80) return 'Low'
+  if (value >= 60) return 'Medium-Low'
+  if (value >= 41) return 'Medium'
+  if (value >= 21) return 'High'
+  return 'Critical'
+}
+
+function computeRiskScoreFromAudit({ missedPayments, graceCount, immobilizedCount }) {
+  const missed = Math.max(0, Number(missedPayments || 0))
+  const grace = Math.max(0, Number(graceCount || 0))
+  const immobilized = Math.max(0, Number(immobilizedCount || 0))
+  let score = 100 - missed * 8 - grace * 6 - immobilized * 14
+  // Business rule: High+ should start when Grace >= 4 AND Immobilized >= 2.
+  if (grace >= 4 && immobilized >= 2) score = Math.min(score, 40)
+  return Math.max(0, Math.min(100, Math.round(score)))
+}
+
 function toAvatarDataUrl(name = '') {
   const trimmed = String(name || '').trim()
   const initials = trimmed
@@ -58,9 +77,9 @@ export function UsersView() {
   const users = useMemo(
     () => {
       void tick
-      return getUsers({ search, risk, program, sortBy: 'joinDate', sortDir: 'desc' })
+      return getUsers({ search, program, sortBy: 'joinDate', sortDir: 'desc' })
     },
-    [search, risk, program, tick],
+    [search, program, tick],
   )
   const userRows = useMemo(() => {
     void tick
@@ -80,12 +99,20 @@ export function UsersView() {
       const primaryVehicle = linkedVehicles[0] || null
       const linkedProgram = primaryVehicle?.programId ? programsById.get(primaryVehicle.programId) : null
       const primaryGps = primaryVehicle?.id ? gpsByVehicleId.get(primaryVehicle.id) : null
+      const graceCount = linkedVehicles.filter((vehicle) => vehicle.status === 'grace').length
+      const immobilizedCount = linkedVehicles.filter((vehicle) => vehicle.status === 'immobilized').length
       const paidDays = linkedVehicles.reduce((sum, vehicle) => sum + (txByVehicleId.get(vehicle.id) || 0), 0)
       const totalDays = Math.max(1, Number(linkedProgram?.durationDays || 180))
       const normalizedPaidDays = Math.min(totalDays, paidDays)
       const progressPercent = Math.min(100, Math.round((normalizedPaidDays / totalDays) * 100))
       const isOnline = primaryGps ? primaryGps.status !== 'Offline' : Boolean(primaryVehicle?.isOnline)
       const movementLabel = Number(primaryVehicle?.speed || 0) > 0 ? 'Running' : 'Stopped'
+      const computedRiskScore = computeRiskScoreFromAudit({
+        missedPayments: user.missedPayments,
+        graceCount,
+        immobilizedCount,
+      })
+      const computedRiskLabel = riskLabelFromScore(computedRiskScore)
       return {
         ...user,
         avatarUrl: user.avatarUrl || toAvatarDataUrl(user.name),
@@ -98,9 +125,21 @@ export function UsersView() {
         gpsStatusLabel: isOnline ? 'Online' : 'Offline',
         gpsLastPingLabel: formatLastPing(primaryGps?.updatedAt),
         movementLabel,
+        graceCount,
+        immobilizedCount,
+        computedRiskScore,
+        computedRiskLabel,
       }
     })
   }, [users, tick])
+  const riskFilteredRows = useMemo(() => {
+    if (risk === 'all') return userRows
+    const normalizedRisk = String(risk || '').toLowerCase()
+    if (normalizedRisk === 'low') return userRows.filter((user) => user.computedRiskScore >= 80)
+    if (normalizedRisk === 'medium') return userRows.filter((user) => user.computedRiskScore >= 41 && user.computedRiskScore < 80)
+    if (normalizedRisk === 'high') return userRows.filter((user) => user.computedRiskScore < 41)
+    return userRows
+  }, [userRows, risk])
   const countsByProgram = useMemo(() => {
     void tick
     const entries = programs.map((p) => [p.id, getUsers({ program: p.id }).length])
@@ -108,30 +147,30 @@ export function UsersView() {
   }, [programs, tick])
 
   const pageSize = 10
-  const totalPages = Math.max(1, Math.ceil(userRows.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(riskFilteredRows.length / pageSize))
   const [page, setPage] = useState(1)
   const currentPage = Math.min(page, totalPages)
-  const pageRows = userRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const pageRows = riskFilteredRows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const userStats = useMemo(() => {
     return {
-      total: userRows.length,
-      lowRisk: userRows.filter((user) => Number(user.riskScore || 0) >= 80).length,
-      medRisk: userRows.filter((user) => {
-        const score = Number(user.riskScore || 0)
+      total: riskFilteredRows.length,
+      lowRisk: riskFilteredRows.filter((user) => Number(user.computedRiskScore || 0) >= 80).length,
+      medRisk: riskFilteredRows.filter((user) => {
+        const score = Number(user.computedRiskScore || 0)
         return score >= 60 && score < 80
       }).length,
-      highRisk: userRows.filter((user) => Number(user.riskScore || 0) < 60).length,
+      highRisk: riskFilteredRows.filter((user) => Number(user.computedRiskScore || 0) < 60).length,
     }
-  }, [userRows])
+  }, [riskFilteredRows])
 
   return (
     <PageShell>
       <PageHeader>
         <div>
           <PageTitle>Rider KYC & Profiles</PageTitle>
-          <div className="mt-0.5 text-sm text-slate-500">Operational Behavioral Auditing</div>
+          <div className="mt-0.5 text-sm text-slate-500">Operational Behavioral Auditing • sorted by latest join</div>
         </div>
-        <PageMeta>{userRows.length} Riders Displayed</PageMeta>
+        <PageMeta>{riskFilteredRows.length} Riders Displayed</PageMeta>
       </PageHeader>
       <StatsGrid>
         <StatCard label="Total Riders" value={userStats.total} />
@@ -187,8 +226,7 @@ export function UsersView() {
               <TableHead>USER</TableHead>
               <TableHead>PROGRAM NAME</TableHead>
               <TableHead>PROGRESS</TableHead>
-              <TableHead className="text-center">COLLECTION AUDIT</TableHead>
-              <TableHead>RISK SCORE</TableHead>
+              <TableHead className="text-center">COLLECTION AUDIT / RISK</TableHead>
               <TableHead>VEHICLE</TableHead>
               <TableHead>GPS STATUS</TableHead>
               <TableHead>JOINED PROGRAM</TableHead>
@@ -234,16 +272,26 @@ export function UsersView() {
                   </div>
                 </TableCell>
                 <TableCell className="text-center">
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                    {Math.max(0, user.missedPayments || 0)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(user.riskScore)}`}
-                  >
-                    {user.riskLabel} ({user.riskScore})
-                  </span>
+                  <div className="space-y-1">
+                    <div className="text-xs text-slate-600">
+                      Missed: <span className="font-semibold">{Math.max(0, user.missedPayments || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-1 text-[11px]">
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                        Grace {user.graceCount}
+                      </span>
+                      <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 font-semibold text-rose-700">
+                        Immobilized {user.immobilizedCount}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-bold ${scoreTone(user.computedRiskScore)}`}
+                      >
+                        Risk {user.computedRiskLabel} ({user.computedRiskScore})
+                      </span>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {user.primaryVehicle ? (
@@ -288,7 +336,7 @@ export function UsersView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-slate-500">
+              <TableCell colSpan={8} className="px-6 py-8 text-center text-sm text-slate-500">
                 No users found for current filters.
               </TableCell>
             </TableRow>
@@ -296,6 +344,15 @@ export function UsersView() {
           </TableBody>
         </Table>
       </DataPanel>
+      <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        Risk formula: <span className="font-semibold">100 - (8 x missed) - (6 x grace) - (14 x immobilized)</span>, clamped 0-100. High+ rule:{' '}
+        <span className="font-semibold">if Grace &gt;= 4 and Immobilized &gt;= 2, score is capped at 40</span>. Bands:{' '}
+        <span className="font-semibold text-emerald-700">80-100 Low</span>,{' '}
+        <span className="font-semibold text-cyan-700">60-79 Medium-Low</span>,{' '}
+        <span className="font-semibold text-amber-700">41-59 Medium</span>,{' '}
+        <span className="font-semibold text-orange-700">21-40 High</span>,{' '}
+        <span className="font-semibold text-rose-700">0-20 Critical</span>.
+      </div>
 
       <PageFooter>
         <Button
