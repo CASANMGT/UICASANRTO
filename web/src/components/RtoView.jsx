@@ -170,6 +170,14 @@ function appAgeDays(app) {
 }
 
 export function RtoView() {
+  // #region agent log - error tracking
+  try {
+    fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'RtoView.jsx:173',message:'RtoView component mounting',data:{},timestamp:Date.now(),hypothesisId:'ERROR'})}).catch(()=>{});
+  } catch(e) {
+    console.error('Debug log failed:', e);
+  }
+  // #endregion
+  
   const tick = useLegacyTick()
   const snapshot = getRtoSnapshot()
   const initialUi = useMemo(() => {
@@ -713,6 +721,9 @@ export function RtoView() {
   // Button variants for tab navigation
   const topTabVariant = (isActive) => (isActive ? 'legacyPrimary' : 'legacyPill')
 
+  // Form control styling for modals (legacy inline styles for custom inputs)
+  const formControlCls = 'w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none ring-ring focus:ring-2'
+
   return (
     <PageShell>
       <PageHeader>
@@ -882,6 +893,9 @@ export function RtoView() {
                     </TableCell>
                     <TableCell>{app.programId}</TableCell>
                     <TableCell>
+                      {/* #region agent log - ScoreBadge render */}
+                      {(() => { fetch('http://127.0.0.1:7870/ingest/65ed9fd0-f2c1-47a1-ab1c-6ee276a8f045',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a58c06'},body:JSON.stringify({sessionId:'a58c06',location:'RtoView.jsx:885',message:'ScoreBadge render attempt',data:{score:app?.score,hasScore:!!app?.score},timestamp:Date.now(),hypothesisId:'ERROR'})}).catch(()=>{}); return null; })()}
+                      {/* #endregion */}
                       <ScoreBadge score={app.score} />
                     </TableCell>
                     <TableCell>

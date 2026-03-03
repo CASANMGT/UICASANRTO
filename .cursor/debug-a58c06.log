@@ -120,3 +120,191 @@
 {"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772575496650,"hypothesisId":"D"}
 {"sessionId":"a58c06","location":"RtoView.jsx:752","message":"FilterBar with lg:grid-cols-6 rendered","data":{"gridCols":6,"tab":"applications"},"timestamp":1772575497959,"hypothesisId":"B"}
 {"sessionId":"a58c06","location":"RtoView.jsx:752","message":"FilterBar with lg:grid-cols-6 rendered","data":{"gridCols":6,"tab":"applications"},"timestamp":1772575497965,"hypothesisId":"B"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772575583341,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772575583364,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772575584484,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"RtoView.jsx:752","message":"FilterBar with lg:grid-cols-6 rendered","data":{"gridCols":6,"tab":"applications"},"timestamp":1772575585093,"hypothesisId":"B"}
+{"sessionId":"a58c06","location":"RtoView.jsx:752","message":"FilterBar with lg:grid-cols-6 rendered","data":{"gridCols":6,"tab":"applications"},"timestamp":1772575585102,"hypothesisId":"B"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577352552,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577352612,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"RtoView.jsx:173","message":"RtoView component mounting","data":{},"timestamp":1772577354006,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:752","message":"FilterBar with lg:grid-cols-6 rendered","data":{"gridCols":6,"tab":"applications"},"timestamp":1772577354021,"hypothesisId":"B"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":40,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":71,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":74,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":5,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":58,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":17,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":59,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":77,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":15,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":21,"hasScore":true},"timestamp":1772577354021,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":82,"hasScore":true},"timestamp":1772577354022,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":86,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":91,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":52,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":88,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":12,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":39,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":79,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":92,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354027,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354027,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354029,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354029,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354030,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354031,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354031,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"sm","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354035,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354035,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354036,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354036,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354037,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354037,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354038,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"default","hasCustomClass":false},"timestamp":1772577354041,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354041,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354045,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354045,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354046,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354046,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354046,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354047,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354047,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354049,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"lg","hasCustomClass":false},"timestamp":1772577354050,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"primary","size":"lg","hasCustomClass":false},"timestamp":1772577354051,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354054,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354054,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354054,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"lg","hasCustomClass":false},"timestamp":1772577354050,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"lg","hasCustomClass":false},"timestamp":1772577354050,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354045,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354047,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"sm","hasCustomClass":false},"timestamp":1772577354046,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354045,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354044,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354043,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"sm","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354042,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354041,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354041,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354037,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354040,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354036,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354037,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"default","hasCustomClass":false},"timestamp":1772577354035,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354036,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354035,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354036,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354035,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354033,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354034,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354031,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354030,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"sm","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"default","hasCustomClass":false},"timestamp":1772577354029,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"warning","size":"default","hasCustomClass":false},"timestamp":1772577354032,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"default","hasCustomClass":false},"timestamp":1772577354028,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354031,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577354027,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"neutral","size":"default","hasCustomClass":false},"timestamp":1772577354030,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577354026,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"default","size":"default","hasCustomClass":false},"timestamp":1772577354029,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"RtoView.jsx:885","message":"ScoreBadge render attempt","data":{"score":88,"hasScore":true},"timestamp":1772577354023,"hypothesisId":"ERROR"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"info","size":"sm","hasCustomClass":false},"timestamp":1772577354027,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577360455,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577361413,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577361415,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361415,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361415,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361415,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361416,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361418,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361418,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361418,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577361417,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577362362,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577363512,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577363512,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363512,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363512,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363512,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363514,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363515,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363516,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363516,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363516,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577363516,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577364312,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577366213,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"page.jsx:59","message":"DataPanel rendered with flex layout","data":{"hasFlex1":true,"hasOverflow":true,"hasMinH0":true},"timestamp":1772577366794,"hypothesisId":"D"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"danger","size":"default","hasCustomClass":false},"timestamp":1772577366794,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366794,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366794,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366794,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366795,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366796,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366797,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366797,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366797,"hypothesisId":"C"}
+{"sessionId":"a58c06","location":"badge.jsx:27","message":"Badge rendered","data":{"variant":"success","size":"default","hasCustomClass":false},"timestamp":1772577366797,"hypothesisId":"C"}
