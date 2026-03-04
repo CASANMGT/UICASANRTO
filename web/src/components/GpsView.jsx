@@ -146,9 +146,18 @@ export function GpsView() {
           users.find((u) => u.userId === vehicle?.userId) ||
           users.find((u) => (u.name || '').toLowerCase() === (vehicle?.customer || '').toLowerCase()) ||
           null
+        const mockDate = (() => {
+          const h = Math.abs(hashCode(device.id || 'gps'))
+          const daysAgo = (h % 30) + 1
+          const d = new Date(Date.now() - daysAgo * 86400000)
+          d.setHours(8 + (h % 10), (h * 13) % 60, 0, 0)
+          return d.toISOString()
+        })()
         const lastPingAt =
           device.lastPingAt ||
-          new Date(Date.now() - (Math.abs(hashCode(device.id || 'gps')) % (8 * 60 * 60 * 1000))).toISOString()
+          device.updatedAt ||
+          device.createdAt ||
+          mockDate
         const address = device.address || vehicle?.lastActiveLocation || `Zone ${((Math.abs(hashCode(device.id || 'gps')) % 12) + 1)} Jakarta`
         const lat = device.lat ?? vehicle?.lat
         const lng = device.lng ?? vehicle?.lng
@@ -547,7 +556,7 @@ export function GpsView() {
                 <TableCell>
                   <div className="font-mono text-xs">{device.id}</div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(device.createdAt || lastPingAt).toLocaleString('id-ID')}
+                    {new Date(device.createdAt || device.updatedAt || lastPingAt).toLocaleString('id-ID')}
                   </div>
                 </TableCell>
                 <TableCell>

@@ -17,6 +17,8 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Select } from './ui/select'
 import {
+  CHECKBOX_CLS,
+  FORM_CONTROL_CLS,
   PAGE_SIZE,
   PageFooter,
   PageHeader,
@@ -427,18 +429,29 @@ export function RtoView() {
     return map
   }, [snapshot.pickup, scheduleModal.id, scheduleModal.location])
   const dateAvailability = useMemo(() => {
+    const offDays = Array.isArray(scheduleProgram?.offDays) ? scheduleProgram.offDays : [0]
+    const holidayDates = Array.isArray(scheduleProgram?.holidayDates) ? scheduleProgram.holidayDates : []
     const result = {}
+    const dayShortToNum = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }
     for (const date of dateChoices) {
       const isPast = date < todayIso
-      const isSunday = dayShort(date) === 'Sun'
+      const [, , day] = date.split('-').map(Number)
+      const weekdayNum = dayShortToNum[dayShort(date)] ?? 0
+      const isWeeklyOff = offDays.length > 0 && offDays.includes(weekdayNum)
+      const isMonthlyHoliday = holidayDates.length > 0 && holidayDates.includes(day)
+      const isOffDay = isWeeklyOff || isMonthlyHoliday
       const hasOpenSlot = timeSlots.some((slot) => (slotLoadMap[`${date}|${slot}`] || 0) < 3)
+      let reason = ''
+      if (isWeeklyOff) reason = `Unavailable (${dayShort(date)})`
+      else if (isMonthlyHoliday) reason = `Unavailable (${day}th)`
+      else if (!hasOpenSlot) reason = 'Fully booked'
       result[date] = {
-        available: !isPast && !isSunday && hasOpenSlot,
-        reason: isSunday ? 'Unavailable (Sunday)' : !hasOpenSlot ? 'Fully booked' : '',
+        available: !isPast && !isOffDay && hasOpenSlot,
+        reason,
       }
     }
     return result
-  }, [dateChoices, slotLoadMap, timeSlots, todayIso])
+  }, [dateChoices, slotLoadMap, timeSlots, todayIso, scheduleProgram?.offDays, scheduleProgram?.holidayDates])
   const monthLabel = useMemo(
     () => new Date(`${calendarCursor}T00:00:00`).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
     [calendarCursor],
@@ -721,9 +734,6 @@ export function RtoView() {
   // Button variants for tab navigation
   const topTabVariant = (isActive) => (isActive ? 'legacyPrimary' : 'legacyPill')
 
-  // Form control styling for modals (legacy inline styles for custom inputs)
-  const formControlCls = 'w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none ring-ring focus:ring-2'
-
   return (
     <PageShell>
       <PageHeader>
@@ -976,7 +986,7 @@ export function RtoView() {
                 ))
               ) : (
                 <TableRow tone="legacy">
-                  <TableCell colSpan={11} className="px-6 py-8 text-center text-base text-muted-foreground">
+                  <TableCell colSpan={11} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     No applications found.
                   </TableCell>
                 </TableRow>
@@ -1209,7 +1219,7 @@ export function RtoView() {
                 ))
               ) : (
                 <TableRow tone="legacy">
-                  <TableCell colSpan={10} className="px-6 py-8 text-center text-base text-muted-foreground">
+                  <TableCell colSpan={10} className="px-6 py-8 text-center text-sm text-muted-foreground">
                     No pickups scheduled yet.
                   </TableCell>
                 </TableRow>
@@ -1249,7 +1259,7 @@ export function RtoView() {
             <div>
               <h3 className="mb-1.5 text-base text-muted-foreground">Score Config</h3>
               <textarea
-                className={`${formControlCls} h-[280px] font-mono`}
+                className={`${FORM_CONTROL_CLS} h-[280px] font-mono`}
                 value={scoreJson}
                 onChange={(e) => setScoreJson(e.target.value)}
               />
@@ -1257,7 +1267,7 @@ export function RtoView() {
             <div>
               <h3 className="mb-1.5 text-base text-muted-foreground">WA Templates</h3>
               <textarea
-                className={`${formControlCls} h-[280px] font-mono`}
+                className={`${FORM_CONTROL_CLS} h-[280px] font-mono`}
                 value={waJson}
                 onChange={(e) => setWaJson(e.target.value)}
               />
@@ -1281,7 +1291,7 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Applicant Name</label>
             <input
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={createModal.userName}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, userName: e.target.value }))}
             />
@@ -1289,7 +1299,7 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Program / Scheme</label>
             <select
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={createModal.programId}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, programId: e.target.value }))}
             >
@@ -1304,7 +1314,7 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Score</label>
             <input
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={createModal.score}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, score: e.target.value }))}
             />
@@ -1312,7 +1322,7 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Decision</label>
             <select
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={createModal.decision}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, decision: e.target.value }))}
             >
@@ -1326,7 +1336,7 @@ export function RtoView() {
           <div className="mb-4">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Assigned Vehicle (optional)</label>
             <select
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={createModal.assignedVehicleId}
               onChange={(e) => setCreateModal((prev) => ({ ...prev, assignedVehicleId: e.target.value }))}
             >
@@ -1356,7 +1366,7 @@ export function RtoView() {
             <div className="mb-2">
               <label className="mb-1 block text-base font-semibold text-muted-foreground">Reviewer</label>
               <input
-                className={formControlCls}
+                className={FORM_CONTROL_CLS}
                 value={reviewModal.reviewer}
                 onChange={(e) => setReviewModal((prev) => ({ ...prev, reviewer: e.target.value }))}
               />
@@ -1364,7 +1374,7 @@ export function RtoView() {
             <div className="mb-2">
               <label className="mb-1 block text-base font-semibold text-muted-foreground">Review Decision</label>
               <select
-                className={formControlCls}
+                className={FORM_CONTROL_CLS}
                 value={reviewModal.nextDecision}
                 onChange={(e) => setReviewModal((prev) => ({ ...prev, nextDecision: e.target.value }))}
               >
@@ -1379,7 +1389,7 @@ export function RtoView() {
           <div className={`mb-3 ${reviewModal.nextDecision === 'approved' ? '' : 'opacity-60'}`}>
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Assign Vehicle (if accepted)</label>
             <select
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={reviewModal.assignedVehicleId}
               disabled={reviewModal.nextDecision !== 'approved'}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, assignedVehicleId: e.target.value }))}
@@ -1445,7 +1455,7 @@ export function RtoView() {
                     </TableCell>
                     <TableCell>
                       <select
-                        className={formControlCls}
+                        className={FORM_CONTROL_CLS}
                         value={document.status}
                         onChange={(e) =>
                           setReviewModal((prev) => ({
@@ -1488,7 +1498,7 @@ export function RtoView() {
                 <label className="mb-1 block text-base font-semibold text-muted-foreground">Manual Score Adj.</label>
                 <input
                   type="number"
-                  className={formControlCls}
+                  className={FORM_CONTROL_CLS}
                   min={-30}
                   max={30}
                   value={reviewModal.scoreAdjust}
@@ -1498,7 +1508,7 @@ export function RtoView() {
               <div>
                 <label className="mb-1 block text-base font-semibold text-muted-foreground">Score Override Note</label>
                 <input
-                  className={formControlCls}
+                  className={FORM_CONTROL_CLS}
                   value={reviewModal.scoreNote}
                   onChange={(e) => setReviewModal((prev) => ({ ...prev, scoreNote: e.target.value }))}
                   placeholder="Reason for score adjustment."
@@ -1511,7 +1521,7 @@ export function RtoView() {
             <div className="mb-3">
               <label className="mb-1 block text-base font-semibold text-muted-foreground">Reject Reason</label>
               <textarea
-                className={`${formControlCls} min-h-20`}
+                className={`${FORM_CONTROL_CLS} min-h-20`}
                 value={reviewModal.rejectReason}
                 onChange={(e) =>
                   setReviewModal((prev) => ({
@@ -1539,6 +1549,7 @@ export function RtoView() {
                     <label key={`required-${document.id}`} className="flex items-center gap-2 text-base text-foreground">
                       <input
                         type="checkbox"
+                        className={CHECKBOX_CLS}
                         checked={checked}
                         onChange={(e) =>
                           setReviewModal((prev) => {
@@ -1571,7 +1582,7 @@ export function RtoView() {
               <input
                 type="number"
                 min={1}
-                className={formControlCls}
+                className={FORM_CONTROL_CLS}
                 value={reviewModal.reviewEtaDays}
                 onChange={(e) =>
                   setReviewModal((prev) => ({
@@ -1591,7 +1602,7 @@ export function RtoView() {
           <div className="mb-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">WhatsApp Template Preview</label>
             <textarea
-              className={`${formControlCls} min-h-[120px] font-mono`}
+              className={`${FORM_CONTROL_CLS} min-h-[120px] font-mono`}
               value={reviewModal.waTemplate}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, waTemplate: e.target.value }))}
             />
@@ -1617,7 +1628,7 @@ export function RtoView() {
           <div className="mb-4">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Review Notes / Acknowledgement</label>
             <textarea
-              className={`${formControlCls} min-h-[90px]`}
+              className={`${FORM_CONTROL_CLS} min-h-[90px]`}
               value={reviewModal.note}
               onChange={(e) => setReviewModal((prev) => ({ ...prev, note: e.target.value }))}
               placeholder="Acknowledge review process, findings, and required next steps."
@@ -1771,14 +1782,21 @@ export function RtoView() {
               })}
             </div>
             <div className="mt-2 text-base text-muted-foreground">
-              Greyed dates/slots are unavailable. Sundays and fully booked slots are blocked.
+              Greyed dates/slots are unavailable.{' '}
+              {Array.isArray(scheduleProgram?.offDays) && scheduleProgram.offDays.length > 0 && (
+                <>Weekly: {scheduleProgram.offDays.map((d) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] ?? '').join(', ')}. </>
+              )}
+              {Array.isArray(scheduleProgram?.holidayDates) && scheduleProgram.holidayDates.length > 0 && (
+                <>Monthly: {scheduleProgram.holidayDates.sort((a, b) => a - b).join(', ')}. </>
+              )}
+              Fully booked slots are blocked.
             </div>
           </div>
 
           <div className="mb-4">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Pickup Location (by program)</label>
             <input
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={scheduleModal.location}
               onChange={(e) => setScheduleModal((prev) => ({ ...prev, location: e.target.value }))}
             />
@@ -1805,7 +1823,7 @@ export function RtoView() {
           <div className="mb-4">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Pickup Status</label>
             <select
-              className={formControlCls}
+              className={FORM_CONTROL_CLS}
               value={scheduleModal.status}
               onChange={(e) => setScheduleModal((prev) => ({ ...prev, status: e.target.value }))}
             >
@@ -1847,7 +1865,7 @@ export function RtoView() {
             <div className="mb-2">
               <label className="mb-1 block text-base font-semibold text-muted-foreground">Assigned Vehicle (can be changed during process)</label>
               <select
-                className={formControlCls}
+                className={FORM_CONTROL_CLS}
                 value={handoverModal.assignedVehicleId}
                 onChange={(e) => setHandoverModal((prev) => ({ ...prev, assignedVehicleId: e.target.value, error: '' }))}
               >
@@ -1883,6 +1901,7 @@ export function RtoView() {
               <label key={key} className="flex cursor-pointer items-center gap-2 rounded-md bg-background px-2 py-2 text-base text-foreground">
                 <input
                   type="checkbox"
+                  className={CHECKBOX_CLS}
                   checked={Boolean(handoverModal[key])}
                   onChange={(e) => setHandoverModal((prev) => ({ ...prev, [key]: e.target.checked, error: '' }))}
                 />
@@ -1923,7 +1942,7 @@ export function RtoView() {
           <div className="mt-3">
             <label className="mb-1 block text-base font-semibold text-muted-foreground">Handover Notes</label>
             <textarea
-              className={`${formControlCls} min-h-[90px]`}
+              className={`${FORM_CONTROL_CLS} min-h-[90px]`}
               value={handoverModal.notes}
               onChange={(e) => setHandoverModal((prev) => ({ ...prev, notes: e.target.value }))}
               placeholder="Optional note: condition summary, remarks, photo refs."

@@ -82,6 +82,8 @@ Goal: remove legacy CSS dependencies and make all React views use a consistent T
 - legacy-compatible shadcn variants added:
   - `legacyPrimary`, `legacyGhost`, `legacyDanger`, `legacyPill` (Button)
   - `legacy` variant (Input/Select), `legacy` tone/density (Table/Dialog)
+- shared form/checkbox constants (v3.1.0):
+  - `FORM_CONTROL_CLS` and `CHECKBOX_CLS` in `page.jsx` for consistent modal styling
 - GPS is now component-driven via shadcn-style primitives:
   - `web/src/components/GpsView.jsx`
 - Remaining views pending full Tailwind-native refactor:

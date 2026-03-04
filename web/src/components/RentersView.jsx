@@ -50,6 +50,11 @@ export function RentersView() {
       map[key].push(tx)
       return map
     }, {})
+    const paidDaysByVehicle = (state.transactions || []).reduce((map, tx) => {
+      if (tx.status !== 'paid' || !tx.vehicleId) return map
+      map[tx.vehicleId] = (map[tx.vehicleId] || 0) + 1
+      return map
+    }, {})
     let list = (state.vehicles || [])
       .filter((vehicle) => (vehicle.customer || vehicle.userId) && vehicle.handoverCompleted !== false)
       .map((vehicle) => {
@@ -64,7 +69,20 @@ export function RentersView() {
         const estimatedGraceCount = Math.max(0, missedPayments + (vehicle.status === 'grace' ? 1 : 0))
         const estimatedImmobilizedCount = Math.max(0, failedTxCount + (vehicle.status === 'immobilized' ? 1 : 0))
         const movementState = Number(vehicle.speed || 0) > 0 ? 'RUNNING' : 'STOPPED'
-        return { vehicle, user, matchedProgram, estimatedGraceCount, estimatedImmobilizedCount, movementState }
+        const paidDays = paidDaysByVehicle[vehicle.id] || 0
+        const totalDays = Math.max(1, Number(matchedProgram?.durationDays || 180))
+        const progressPercent = matchedProgram?.type === 'RTO' ? Math.min(100, Math.round((paidDays / totalDays) * 100)) : null
+        return {
+          vehicle,
+          user,
+          matchedProgram,
+          paidDays,
+          totalDays,
+          progressPercent,
+          estimatedGraceCount,
+          estimatedImmobilizedCount,
+          movementState,
+        }
       })
 
     if (program !== 'all') list = list.filter((item) => item.vehicle.programId === program)
@@ -200,6 +218,7 @@ export function RentersView() {
             <TableRow tone="legacy">
               <TableHead>RENTER</TableHead>
               <TableHead>PROGRAM</TableHead>
+              <TableHead>RTO PROGRESS</TableHead>
               <TableHead>VEHICLE</TableHead>
               <TableHead>STATUS</TableHead>
               <TableHead>CONNECTIVITY</TableHead>
@@ -211,7 +230,7 @@ export function RentersView() {
           </TableHeader>
           <TableBody>
           {pageRows.length > 0 ? (
-            pageRows.map(({ vehicle, user, matchedProgram, movementState, estimatedGraceCount, estimatedImmobilizedCount }) => (
+            pageRows.map(({ vehicle, user, matchedProgram, paidDays, totalDays, progressPercent, movementState, estimatedGraceCount, estimatedImmobilizedCount }) => (
               <TableRow key={`renter-${vehicle.id}`} tone="legacy">
                 <TableCell>
                   <div className="font-bold text-foreground">{vehicle.customer || user?.name || 'Unknown'}</div>
@@ -228,6 +247,26 @@ export function RentersView() {
                 <TableCell>
                   <div>{matchedProgram?.shortName || matchedProgram?.name || '-'}</div>
                   <div className="text-xs text-muted-foreground">{vehicle.programId || '-'}</div>
+                </TableCell>
+                <TableCell>
+                  {matchedProgram?.type === 'RTO' ? (
+                    <div>
+                      <div className="font-semibold text-foreground">
+                        {paidDays} / {totalDays} days
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 max-w-[80px] overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-cyan-500"
+                            style={{ width: `${progressPercent ?? 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-muted-foreground">{progressPercent ?? 0}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="font-bold text-foreground">{vehicle.id}</div>
@@ -258,7 +297,7 @@ export function RentersView() {
             ))
           ) : (
             <TableRow tone="legacy">
-              <TableCell colSpan={9} className="px-6 py-8 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={10} className="px-6 py-8 text-center text-sm text-muted-foreground">
                 No renters found. Only handover-completed renters are shown.
               </TableCell>
             </TableRow>

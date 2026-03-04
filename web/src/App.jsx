@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { featureFlags } from './config/featureFlags'
 import { setGlobalFilter } from './bridge/legacyRuntime'
 import { useLegacyRuntime } from './hooks/useLegacyRuntime'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog'
 import { Select } from './components/ui/select'
 import { FinanceView } from './components/FinanceView'
 import { GpsView } from './components/GpsView'
@@ -23,12 +24,16 @@ const NAV_ITEMS = [
   { key: 'gps', label: 'GPS', icon: '📡' },
 ]
 const CHANGELOG_ITEMS = [
+  { version: 'v3.1.0', date: '2026-03-04', notes: ['Shared form control and checkbox constants', 'ProgramsView modals use Button component', 'Unified pill action buttons (Edit, Delete, Vehicle/Renters List)', 'Consistent empty-state text size across views'] },
+  { version: 'v3.0.0', date: '2026-03-04', notes: ['Province-grouped geofence (DKI Jakarta, Banten, Jawa Barat)', 'Accordion UX for Maps & Programs—expand to select kota/kab', 'Bandung area GeoJSON: Kota Cimahi, Kab. Bandung Barat, etc.', 'Stat card larger value font', 'Docs popout with close button'] },
   { version: 'v2.9.0', date: '2026-02-28', notes: ['Maps list row click now zooms to marker', 'Removed Focus Vehicle panel in map view', 'Handover checklist guardrails and inline popup validation'] },
   { version: 'v2.6.0', date: '2026-02-28', notes: ['Map movement list with enriched telemetry', 'GPS assignment + SIM filters', 'Sidebar + mobile drawer navigation'] },
   { version: 'v2.5.0', date: '2026-02-28', notes: ['Applications review workflow with WA templates', 'Program vehicle/renter lists + commission editing', 'Cross-tab badge and pagination consistency'] },
 ]
 
-function DocPanel({ path, label }) {
+const APP_VERSION = CHANGELOG_ITEMS[0]?.version ?? 'v3.1.0'
+
+function DocPanel({ path, className = '' }) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -43,7 +48,7 @@ function DocPanel({ path, label }) {
       .finally(() => setLoading(false))
   }, [path])
   return (
-    <div className="mt-3 max-h-64 overflow-auto rounded-md border border-border bg-muted/30 p-3">
+    <div className={`overflow-auto rounded-md border border-border bg-muted/30 p-3 ${className}`}>
       {loading && <div className="text-muted-foreground">Loading…</div>}
       {error && <div className="text-destructive">{error}</div>}
       {text && <pre className="whitespace-pre-wrap break-words text-base font-sans">{text}</pre>}
@@ -57,6 +62,8 @@ function App() {
   const [partner, setPartner] = useState('all')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [docsPopoutOpen, setDocsPopoutOpen] = useState(false)
+  const [docsTab, setDocsTab] = useState('changelog')
 
   const counts = useMemo(
     () => ({
@@ -83,34 +90,14 @@ function App() {
           <div className="app-sidebar-title-wrap">
             <div style={{ fontSize: 'var(--text-base)', fontWeight: 800 }}>CASAN Operations</div>
             <div style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>RTO & Rental</div>
-            <details className="mt-3">
-              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>📘 Changelog</summary>
-              <div className="mt-3 flex flex-col gap-3">
-                {CHANGELOG_ITEMS.map((item) => (
-                  <div key={item.version} className="card p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div style={{ fontWeight: 800, fontSize: 'var(--text-base)' }}>{item.version}</div>
-                      <div style={{ fontSize: 'var(--text-base)', color: 'var(--t3)' }}>{item.date}</div>
-                    </div>
-                    <ul className="m-0 list-inside list-disc pl-5">
-                      {item.notes.map((note) => (
-                        <li key={`${item.version}-${note}`} className="mb-1.5" style={{ color: 'var(--t2)', fontSize: 'var(--text-base)' }}>
-                          {note}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </details>
-            <details className="mt-3">
-              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>📖 README</summary>
-              <DocPanel path="README.md" label="README" />
-            </details>
-            <details className="mt-3">
-              <summary className="cursor-pointer font-bold text-base" style={{ fontSize: 'var(--text-base)' }}>🗺️ Roadmap</summary>
-              <DocPanel path="ROADMAP.md" label="Roadmap" />
-            </details>
+            <button
+              type="button"
+              onClick={() => setDocsPopoutOpen(true)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-sm font-semibold transition-colors hover:bg-muted"
+            >
+              <span>📘</span>
+              <span>{APP_VERSION}</span>
+            </button>
           </div>
           <button className="app-collapse-btn" type="button" onClick={() => setSidebarCollapsed((prev) => !prev)}>
             {sidebarCollapsed ? '▶' : '◀'}
@@ -181,6 +168,61 @@ function App() {
           {activeTab === 'rto' && (featureFlags.rtoReact ? <RtoView /> : <LegacyPlaceholder tab="rto" />)}
         </section>
       </div>
+
+      <Dialog open={docsPopoutOpen} onOpenChange={setDocsPopoutOpen}>
+        <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0">
+          <DialogHeader className="relative px-6 pt-6 pb-2">
+            <DialogTitle>Docs & Release Notes</DialogTitle>
+            <button
+              type="button"
+              onClick={() => setDocsPopoutOpen(false)}
+              className="absolute right-4 top-4 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Close"
+            >
+              <span className="text-lg leading-none">×</span>
+            </button>
+          </DialogHeader>
+          <div className="flex border-b border-border px-6">
+            {[
+              { key: 'changelog', label: 'Changelog', icon: '📘' },
+              { key: 'readme', label: 'README', icon: '📖' },
+              { key: 'roadmap', label: 'Roadmap', icon: '🗺️' },
+            ].map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setDocsTab(t.key)}
+                className={`px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  docsTab === t.key ? 'border-b-2 border-primary text-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 min-h-0 overflow-auto px-6 pb-6 pt-4">
+            {docsTab === 'changelog' && (
+              <div className="flex flex-col gap-3">
+                {CHANGELOG_ITEMS.map((item) => (
+                  <div key={item.version} className="rounded-lg border border-border p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-bold text-base">{item.version}</span>
+                      <span className="text-sm text-muted-foreground">{item.date}</span>
+                    </div>
+                    <ul className="m-0 list-inside list-disc space-y-1 pl-2 text-sm text-muted-foreground">
+                      {item.notes.map((note) => (
+                        <li key={`${item.version}-${note}`}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {docsTab === 'readme' && <DocPanel path="README.md" className="max-h-[60vh]" />}
+            {docsTab === 'roadmap' && <DocPanel path="ROADMAP.md" className="max-h-[60vh]" />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

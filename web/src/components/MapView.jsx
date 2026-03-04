@@ -4,8 +4,8 @@ import { divIcon } from 'leaflet'
 import { MapContainer, Marker, Polygon, Popup, TileLayer } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import {
-  CITIES_GEOFENCE,
   CITIES_POLYGONS,
+  PROVINCES_GEOFENCE,
   OUT_OF_ZONE_ACTIONS,
   getDistanceToGeofenceBoundary,
   getGeofenceSpeedLimit,
@@ -15,7 +15,7 @@ import {
 } from '../bridge/legacyRuntime'
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
-import { PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
+import { CHECKBOX_CLS, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
 import { Select } from './ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
@@ -45,6 +45,7 @@ export function MapView() {
   const [speedBand, setSpeedBand] = useState('all')
   const [listPage, setListPage] = usePagination('map')
   const [geofenceCities, setGeofenceCities] = useState([])
+  const [geofenceExpandedProvinces, setGeofenceExpandedProvinces] = useState(['dki'])
   const vehicles = useMemo(() => {
     void tick
     const state = getState()
@@ -174,33 +175,87 @@ export function MapView() {
         <StatCard label="Online" value={mapStats.online} valueClassName="text-cyan-700" />
       </StatsGrid>
 
-      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-muted/80 px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Geofence (cities)</span>
-        {CITIES_GEOFENCE.map((city) => (
-          <label key={city} className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap">
-            <input
-              type="checkbox"
-              checked={geofenceCities.includes(city)}
-              onChange={(e) => {
-                setGeofenceCities((prev) =>
-                  e.target.checked ? [...prev, city] : prev.filter((c) => c !== city),
-                )
-                setListPage(1)
-              }}
-              className="h-3.5 w-3.5 rounded border-input accent-cyan-600"
-            />
-            <span className="text-sm text-foreground">{city}</span>
-          </label>
-        ))}
-        {geofenceCities.length > 0 && (
-          <button
-            type="button"
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-            onClick={() => setGeofenceCities([])}
-          >
-            Clear
-          </button>
-        )}
+      <div className="mb-2 rounded-lg border border-border bg-muted/80 px-3 py-2">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Geofence (propinsi → kota/kab)</span>
+          {geofenceCities.length > 0 && (
+            <button
+              type="button"
+              className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+              onClick={() => setGeofenceCities([])}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="space-y-1">
+          {PROVINCES_GEOFENCE.map((prov) => {
+            const provinceCities = prov.cities
+            const selectedCount = provinceCities.filter((c) => geofenceCities.includes(c)).length
+            const allSelected = selectedCount === provinceCities.length
+            const someSelected = selectedCount > 0
+            const expanded = geofenceExpandedProvinces.includes(prov.id)
+            return (
+              <div key={prov.id} className="rounded border border-border bg-background/80">
+                <div
+                  className="flex cursor-pointer items-center gap-2 px-2 py-1.5 hover:bg-muted/50"
+                  onClick={() =>
+                    setGeofenceExpandedProvinces((prev) =>
+                      expanded ? prev.filter((p) => p !== prov.id) : [...prev, prov.id],
+                    )
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      setGeofenceCities((prev) =>
+                        allSelected
+                          ? prev.filter((c) => !provinceCities.includes(c))
+                          : [...new Set([...prev, ...provinceCities])],
+                      )
+                      setListPage(1)
+                    }}
+                    className={CHECKBOX_CLS}
+                  />
+                  <span className="flex-1 text-sm font-medium text-foreground">{prov.label}</span>
+                  {someSelected && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedCount}/{provinceCities.length}
+                    </span>
+                  )}
+                  <span className="text-muted-foreground">{expanded ? '▼' : '▶'}</span>
+                </div>
+                {expanded && (
+                  <div className="flex flex-wrap gap-x-2 gap-y-1 border-t border-border bg-muted/30 px-2 py-1.5 pl-6">
+                    {provinceCities.map((city) => (
+                      <label
+                        key={city}
+                        className="flex cursor-pointer items-center gap-1.5 text-xs"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={geofenceCities.includes(city)}
+                          onChange={(e) => {
+                            setGeofenceCities((prev) =>
+                              e.target.checked ? [...prev, city] : prev.filter((c) => c !== city),
+                            )
+                            setListPage(1)
+                          }}
+                          className={CHECKBOX_CLS}
+                        />
+                        <span>{city}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="h-[560px] overflow-hidden rounded-lg border border-border">

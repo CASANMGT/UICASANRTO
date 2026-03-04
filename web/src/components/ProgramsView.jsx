@@ -2,8 +2,8 @@ import { Fragment, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePagination } from '../context/PaginationContext'
 import {
-  CITIES_GEOFENCE,
   createProgram,
+  PROVINCES_GEOFENCE,
   DEFAULT_OUT_OF_ZONE_BUFFER_KM,
   DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
   editProgram,
@@ -15,7 +15,22 @@ import {
 import { useLegacyTick } from '../hooks/useLegacyTick'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
-import { DataPanel, FilterBar, PAGE_SIZE, PageFooter, PageHeader, PageMeta, PageShell, PageTitle, StatCard, StatsGrid, TABLE_MIN_WIDTH, PaginationInfo } from './ui/page'
+import {
+  CHECKBOX_CLS,
+  DataPanel,
+  FilterBar,
+  FORM_CONTROL_CLS,
+  PAGE_SIZE,
+  PageFooter,
+  PageHeader,
+  PageMeta,
+  PageShell,
+  PageTitle,
+  StatCard,
+  StatsGrid,
+  TABLE_MIN_WIDTH,
+  PaginationInfo,
+} from './ui/page'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 function makeId(shortName) {
@@ -26,6 +41,16 @@ function makeId(shortName) {
 function buildPickupMapQuery(location, address) {
   const q = [location, address].map((item) => String(item || '').trim()).filter(Boolean).join(', ')
   return q || 'Program Pickup Point'
+}
+
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+function formatOffDays(offDays) {
+  if (!Array.isArray(offDays) || offDays.length === 0) return '—'
+  return [...offDays]
+    .filter((d) => d >= 0 && d <= 6)
+    .sort((a, b) => a - b)
+    .map((d) => WEEKDAY_NAMES[d])
+    .join(', ')
 }
 
 export function ProgramsView() {
@@ -47,6 +72,9 @@ export function ProgramsView() {
     commissionValue: '10',
     pickupLocation: '',
     pickupAddress: '',
+    durationDays: '180',
+    offDays: [0],
+    holidayDates: [],
     geofenceCities: ['Jakarta'],
     applyOutOfZoneSpeedLimit: true,
     outOfZoneBufferKm: DEFAULT_OUT_OF_ZONE_BUFFER_KM,
@@ -58,6 +86,7 @@ export function ProgramsView() {
   const [vehicleModal, setVehicleModal] = useState({ open: false, programId: '' })
   const [expandedRenterVehicleId, setExpandedRenterVehicleId] = useState('')
   const [rentersTab, setRentersTab] = useState('all')
+  const [geofenceExpandedProvinces, setGeofenceExpandedProvinces] = useState(['dki'])
 
   const programs = useMemo(() => {
     void tick
@@ -120,11 +149,17 @@ export function ProgramsView() {
     if (!rentersModal.programId) return []
     const state = getState()
     const usersById = new Map((state.users || []).map((user) => [user.userId, user]))
+    const program = (state.programs || []).find((p) => p.id === rentersModal.programId)
     const txByVehicleId = (state.transactions || []).reduce((map, tx) => {
       const key = String(tx.vehicleId || '').trim()
       if (!key) return map
       map[key] = map[key] || []
       map[key].push(tx)
+      return map
+    }, {})
+    const paidDaysByVehicle = (state.transactions || []).reduce((map, tx) => {
+      if (tx.status !== 'paid' || !tx.vehicleId) return map
+      map[tx.vehicleId] = (map[tx.vehicleId] || 0) + 1
       return map
     }, {})
     return (state.vehicles || [])
@@ -134,7 +169,9 @@ export function ProgramsView() {
           (vehicle.userId && usersById.get(vehicle.userId)) ||
           (state.users || []).find((item) => (item.name || '').toLowerCase() === (vehicle.customer || '').toLowerCase()) ||
           null
-        const progressPct = Math.max(0, Math.min(100, vehicle.programType === 'RTO' ? 100 - (vehicle.credits || 0) : 0))
+        const paidDays = paidDaysByVehicle[vehicle.id] || 0
+        const totalDays = Math.max(1, Number(program?.durationDays || 180))
+        const progressPercent = program?.type === 'RTO' ? Math.min(100, Math.round((paidDays / totalDays) * 100)) : null
         const userTx = txByVehicleId[vehicle.id] || []
         const failedTxCount = userTx.filter((tx) => String(tx.status || '').toLowerCase() === 'failed').length
         const missedPayments = Number(user?.missedPayments || 0)
@@ -144,7 +181,9 @@ export function ProgramsView() {
         return {
           vehicle,
           user,
-          progressPct,
+          paidDays,
+          totalDays,
+          progressPercent,
           estimatedGraceCount,
           estimatedImmobilizedCount,
           movementState,
@@ -193,8 +232,11 @@ export function ProgramsView() {
       commissionValue: '10',
       pickupLocation: '',
       pickupAddress: '',
-      geofenceCities: DEFAULT_GEOFENCE.tangkas,
-      applyOutOfZoneSpeedLimit: true,
+    durationDays: '180',
+    offDays: [0],
+    holidayDates: [],
+    geofenceCities: DEFAULT_GEOFENCE.tangkas,
+    applyOutOfZoneSpeedLimit: true,
       outOfZoneBufferKm: DEFAULT_OUT_OF_ZONE_BUFFER_KM,
       outOfZoneAction: OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
       outOfZoneSpeedLimitKmh: DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
@@ -202,6 +244,13 @@ export function ProgramsView() {
   }
 
   const openEditModal = (program) => {
+    const geofenceCities = Array.isArray(program.geofenceCities) && program.geofenceCities.length > 0
+      ? [...program.geofenceCities]
+      : DEFAULT_GEOFENCE[program.partnerId] || ['Jakarta']
+    const provincesToExpand = PROVINCES_GEOFENCE.filter((p) =>
+      p.cities.some((c) => geofenceCities.includes(c)),
+    ).map((p) => p.id)
+    setGeofenceExpandedProvinces(provincesToExpand.length > 0 ? provincesToExpand : ['dki'])
     setProgramModal({
       open: true,
       mode: 'edit',
@@ -216,9 +265,10 @@ export function ProgramsView() {
       commissionValue: String(program.commissionType === 'fixed' ? program.commissionFixed || 0 : Math.round((program.commissionRate || 0) * 100)),
       pickupLocation: program.pickupLocation || '',
       pickupAddress: program.pickupAddress || '',
-      geofenceCities: Array.isArray(program.geofenceCities) && program.geofenceCities.length > 0
-        ? [...program.geofenceCities]
-        : DEFAULT_GEOFENCE[program.partnerId] || ['Jakarta'],
+      durationDays: String(program.durationDays ?? (program.type === 'RTO' ? 180 : 30)),
+      offDays: Array.isArray(program.offDays) ? [...program.offDays] : [0],
+      holidayDates: Array.isArray(program.holidayDates) ? [...program.holidayDates] : [],
+      geofenceCities,
       applyOutOfZoneSpeedLimit: program.applyOutOfZoneSpeedLimit !== false,
       outOfZoneBufferKm: Math.max(0, Number(program.outOfZoneBufferKm) || DEFAULT_OUT_OF_ZONE_BUFFER_KM),
       outOfZoneAction: program.outOfZoneAction === OUT_OF_ZONE_ACTIONS.IMMOBILIZED ? OUT_OF_ZONE_ACTIONS.IMMOBILIZED : OUT_OF_ZONE_ACTIONS.SPEED_LIMIT,
@@ -241,6 +291,9 @@ export function ProgramsView() {
       commissionFixed: programModal.commissionType === 'fixed' ? Number(programModal.commissionValue || 0) : 0,
       pickupLocation: programModal.pickupLocation.trim() || 'Program Pickup Point',
       pickupAddress: programModal.pickupAddress.trim(),
+      durationDays: Math.max(1, Number(programModal.durationDays) || (programModal.type === 'RTO' ? 180 : 30)),
+      offDays: Array.isArray(programModal.offDays) ? [...programModal.offDays] : [0],
+      holidayDates: Array.isArray(programModal.holidayDates) ? programModal.holidayDates.filter((d) => d >= 1 && d <= 31) : [],
       geofenceCities: Array.isArray(programModal.geofenceCities) ? programModal.geofenceCities : DEFAULT_GEOFENCE[programModal.partnerId] || ['Jakarta'],
       applyOutOfZoneSpeedLimit: programModal.applyOutOfZoneSpeedLimit !== false,
       outOfZoneBufferKm: Math.max(0, Number(programModal.outOfZoneBufferKm) || DEFAULT_OUT_OF_ZONE_BUFFER_KM),
@@ -263,11 +316,6 @@ export function ProgramsView() {
 
   const selectedVehicleProgram = programs.find((item) => item.id === vehicleModal.programId)
   const selectedRentersProgram = programs.find((item) => item.id === rentersModal.programId)
-  const inputCls =
-    'w-full rounded-md border border-input bg-background px-4 py-3 text-sm text-foreground outline-none ring-ring focus:ring-2'
-  const actionBtnCls =
-    'rounded-full border border-input bg-background px-3 py-1 text-xs font-semibold text-foreground transition hover:bg-accent'
-
   return (
     <PageShell>
       <PageHeader>
@@ -321,6 +369,15 @@ export function ProgramsView() {
                   <TableCell>
                     <div className="font-bold text-foreground">{program.name}</div>
                     <div className="font-mono text-xs text-muted-foreground">{program.id}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {program.durationDays ?? 180} days
+                      {Array.isArray(program.offDays) && program.offDays.length > 0 && (
+                        <> • Weekly: {formatOffDays(program.offDays)}</>
+                      )}
+                      {Array.isArray(program.holidayDates) && program.holidayDates.length > 0 && (
+                        <> • Monthly: {program.holidayDates.sort((a, b) => a - b).join(', ')}</>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{program.partnerId}</TableCell>
                   <TableCell>{program.type}</TableCell>
@@ -329,13 +386,15 @@ export function ProgramsView() {
                       <span className="inline-flex rounded-full bg-cyan-50 px-2 py-1 text-xs font-bold text-cyan-700">
                         {vehiclesByProgram[program.id] || 0}
                       </span>
-                      <button
-                        className={actionBtnCls}
+                      <Button
+                        variant="legacyPill"
+                        size="legacy"
+                        className="h-auto px-3 py-1 text-xs"
                         type="button"
                         onClick={() => setVehicleModal({ open: true, programId: program.id })}
                       >
                         Vehicle List
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -343,8 +402,10 @@ export function ProgramsView() {
                       <span className="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
                         {rentersByProgram[program.id] || 0}
                       </span>
-                      <button
-                        className={actionBtnCls}
+                      <Button
+                        variant="legacyPill"
+                        size="legacy"
+                        className="h-auto px-3 py-1 text-xs"
                         type="button"
                         onClick={() => {
                           setExpandedRenterVehicleId('')
@@ -353,7 +414,7 @@ export function ProgramsView() {
                         }}
                       >
                         Renters List
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -386,12 +447,12 @@ export function ProgramsView() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-2">
-                      <button className={actionBtnCls} type="button" onClick={() => openEditModal(program)}>
+                      <Button variant="legacyPill" size="legacy" className="h-auto px-3 py-1 text-xs" type="button" onClick={() => openEditModal(program)}>
                         Edit
-                      </button>
-                      <button className={actionBtnCls} type="button" onClick={() => setDeleteTarget(program)}>
+                      </Button>
+                      <Button variant="legacyPill" size="legacy" className="h-auto px-3 py-1 text-xs" type="button" onClick={() => setDeleteTarget(program)}>
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -436,16 +497,16 @@ export function ProgramsView() {
           </h2>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Display Name</label>
-            <input className={inputCls} value={programModal.name} onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))} />
+            <input className={FORM_CONTROL_CLS} value={programModal.name} onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))} />
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Short Name</label>
-            <input className={inputCls} value={programModal.shortName} onChange={(e) => setProgramModal((prev) => ({ ...prev, shortName: e.target.value }))} />
+            <input className={FORM_CONTROL_CLS} value={programModal.shortName} onChange={(e) => setProgramModal((prev) => ({ ...prev, shortName: e.target.value }))} />
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Partner</label>
             <select
-              className={inputCls}
+              className={FORM_CONTROL_CLS}
               value={programModal.partnerId}
               onChange={(e) => {
                 const partnerId = e.target.value
@@ -463,22 +524,71 @@ export function ProgramsView() {
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Program Intent</label>
-            <select className={inputCls} value={programModal.type} onChange={(e) => setProgramModal((prev) => ({ ...prev, type: e.target.value }))}>
+            <select className={FORM_CONTROL_CLS} value={programModal.type} onChange={(e) => setProgramModal((prev) => ({ ...prev, type: e.target.value }))}>
               <option value="RTO">Rent To Own (RTO)</option>
               <option value="Rental">Daily Rental</option>
             </select>
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Daily Price (IDR)</label>
-            <input className={inputCls} value={programModal.price} onChange={(e) => setProgramModal((prev) => ({ ...prev, price: e.target.value }))} />
+            <input className={FORM_CONTROL_CLS} value={programModal.price} onChange={(e) => setProgramModal((prev) => ({ ...prev, price: e.target.value }))} />
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Grace Period (Days)</label>
-            <input className={inputCls} value={programModal.grace} onChange={(e) => setProgramModal((prev) => ({ ...prev, grace: e.target.value }))} />
+            <input className={FORM_CONTROL_CLS} value={programModal.grace} onChange={(e) => setProgramModal((prev) => ({ ...prev, grace: e.target.value }))} />
+          </div>
+          <div className="mb-3">
+            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Program Duration (Days)</label>
+            <input
+              type="number"
+              min="1"
+              className={FORM_CONTROL_CLS}
+              value={programModal.durationDays}
+              placeholder={programModal.type === 'RTO' ? '180' : '30'}
+              onChange={(e) => setProgramModal((prev) => ({ ...prev, durationDays: e.target.value }))}
+            />
+            <p className="mt-0.5 text-xs text-muted-foreground">Total contract length (e.g. 180 for 6-month RTO)</p>
+          </div>
+          <div className="mb-3 rounded-lg border border-border p-3">
+            <label className="mb-2 block text-sm font-semibold text-muted-foreground">Holiday / Off Days (no pickup)</label>
+            <div className="mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Weekly — select weekday(s):</span>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                {WEEKDAY_NAMES.map((name, idx) => (
+                  <label key={idx} className="flex cursor-pointer items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={(programModal.offDays || []).includes(idx)}
+                      onChange={(e) => {
+                        const current = programModal.offDays || []
+                        const next = e.target.checked ? [...current, idx] : current.filter((d) => d !== idx)
+                        setProgramModal((prev) => ({ ...prev, offDays: next.sort((a, b) => a - b) }))
+                      }}
+                      className={CHECKBOX_CLS}
+                    />
+                    <span className="text-xs text-foreground">{name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-muted-foreground">Monthly — dates (e.g. 1, 15):</span>
+              <input
+                className={`${FORM_CONTROL_CLS} mt-1`}
+                placeholder="1, 15"
+                value={(programModal.holidayDates || []).sort((a, b) => a - b).join(', ')}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\s/g, '')
+                  const nums = raw ? raw.split(',').map((s) => parseInt(s, 10)).filter((n) => n >= 1 && n <= 31) : []
+                  setProgramModal((prev) => ({ ...prev, holidayDates: [...new Set(nums)] }))
+                }}
+              />
+              <p className="mt-0.5 text-xs text-muted-foreground">Day(s) of month (1–31), e.g. 1 and 15 = 1st & 15th every month</p>
+            </div>
           </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Commission Type</label>
-            <select className={inputCls} value={programModal.commissionType} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionType: e.target.value }))}>
+            <select className={FORM_CONTROL_CLS} value={programModal.commissionType} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionType: e.target.value }))}>
               <option value="percentage">Percentage (%)</option>
               <option value="fixed">Fixed Amount (IDR)</option>
             </select>
@@ -487,59 +597,90 @@ export function ProgramsView() {
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">
               {programModal.commissionType === 'fixed' ? 'Commission Fixed (IDR)' : 'Commission Rate (%)'}
             </label>
-            <input className={inputCls} value={programModal.commissionValue} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionValue: e.target.value }))} />
-          </div>
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Pickup Location</label>
-            <input
-              className={inputCls}
-              value={programModal.pickupLocation}
-              placeholder="Location name (example: Tangkas Hub - Kemayoran)"
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupLocation: e.target.value }))}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-semibold text-muted-foreground">Pickup Address</label>
-            <textarea
-              className={`${inputCls} min-h-[84px]`}
-              value={programModal.pickupAddress}
-              placeholder="Full pickup address for operators and renters"
-              onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupAddress: e.target.value }))}
-            />
+            <input className={FORM_CONTROL_CLS} value={programModal.commissionValue} onChange={(e) => setProgramModal((prev) => ({ ...prev, commissionValue: e.target.value }))} />
           </div>
           <div className="mb-4">
             <label className="mb-2 block text-sm font-semibold text-muted-foreground">
-              Geofence Zone (cities allowed for this program)
+              Geofence Zone (propinsi → kota/kab)
             </label>
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
-              {CITIES_GEOFENCE.map((city) => (
-                <label key={city} className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={(programModal.geofenceCities || []).includes(city)}
-                    onChange={(e) => {
-                      const checked = e.target.checked
-                      setProgramModal((prev) => {
-                        const current = prev.geofenceCities || []
-                        const next = checked ? [...current, city] : current.filter((c) => c !== city)
-                        return { ...prev, geofenceCities: next.length > 0 ? next : DEFAULT_GEOFENCE[prev.partnerId] }
-                      })
-                    }}
-                    className="h-4 w-4 rounded border-input accent-cyan-600"
-                  />
-                  <span className="text-sm text-foreground">{city}</span>
-                </label>
-              ))}
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Renters in this program must stay within selected city boundaries. Map shows in/out of zone.
+            <p className="mb-2 text-xs text-muted-foreground">
+              Renters must stay within selected boundaries. Expand province to pick cities.
             </p>
+            <div className="space-y-1 rounded-lg border border-border bg-muted/30">
+              {PROVINCES_GEOFENCE.map((prov) => {
+                const cities = prov.cities
+                const selected = cities.filter((c) => (programModal.geofenceCities || []).includes(c))
+                const allSelected = selected.length === cities.length
+                const someSelected = selected.length > 0
+                const expanded = geofenceExpandedProvinces.includes(prov.id)
+                return (
+                  <div key={prov.id} className="border-b border-border last:border-b-0">
+                    <div
+                      className="flex cursor-pointer items-center gap-2 px-3 py-2 hover:bg-muted/50"
+                      onClick={() =>
+                        setGeofenceExpandedProvinces((prev) =>
+                          expanded ? prev.filter((p) => p !== prov.id) : [...prev, prov.id],
+                        )
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          setProgramModal((prev) => {
+                            const current = prev.geofenceCities || []
+                            const next = e.target.checked
+                              ? [...new Set([...current, ...cities])]
+                              : current.filter((c) => !cities.includes(c))
+                            return { ...prev, geofenceCities: next.length > 0 ? next : DEFAULT_GEOFENCE[prev.partnerId] }
+                          })
+                        }}
+                        className={CHECKBOX_CLS}
+                      />
+                      <span className="flex-1 text-sm font-medium text-foreground">{prov.label}</span>
+                      {someSelected && (
+                        <span className="text-xs text-muted-foreground">
+                          {selected.length}/{cities.length}
+                        </span>
+                      )}
+                      <span className="text-muted-foreground">{expanded ? '▼' : '▶'}</span>
+                    </div>
+                    {expanded && (
+                      <div className="border-t border-border bg-background px-3 py-2 pl-8">
+                        <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                          {cities.map((city) => (
+                            <label key={city} className="flex cursor-pointer items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={(programModal.geofenceCities || []).includes(city)}
+                                onChange={(e) => {
+                                  const checked = e.target.checked
+                                  setProgramModal((prev) => {
+                                    const current = prev.geofenceCities || []
+                                    const next = checked ? [...current, city] : current.filter((c) => c !== city)
+                                    return { ...prev, geofenceCities: next.length > 0 ? next : DEFAULT_GEOFENCE[prev.partnerId] }
+                                  })
+                                }}
+                                className={CHECKBOX_CLS}
+                              />
+                              <span className="text-xs text-foreground">{city}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
             <label className="mt-3 flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 checked={programModal.applyOutOfZoneSpeedLimit !== false}
                 onChange={(e) => setProgramModal((prev) => ({ ...prev, applyOutOfZoneSpeedLimit: e.target.checked }))}
-                className="h-4 w-4 rounded border-input accent-cyan-600"
+                className={CHECKBOX_CLS}
               />
               <span className="text-sm font-semibold text-foreground">Apply out-of-zone rule beyond boundary</span>
             </label>
@@ -551,7 +692,7 @@ export function ProgramsView() {
                     type="number"
                     min="0"
                     step="0.5"
-                    className={inputCls}
+                    className={FORM_CONTROL_CLS}
                     value={programModal.outOfZoneBufferKm ?? DEFAULT_OUT_OF_ZONE_BUFFER_KM}
                     onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneBufferKm: Math.max(0, parseFloat(e.target.value) || 0) }))}
                   />
@@ -559,7 +700,7 @@ export function ProgramsView() {
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-muted-foreground">Beyond buffer — action</label>
                   <select
-                    className={inputCls}
+                    className={FORM_CONTROL_CLS}
                     value={programModal.outOfZoneAction ?? OUT_OF_ZONE_ACTIONS.SPEED_LIMIT}
                     onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneAction: e.target.value }))}
                   >
@@ -574,7 +715,7 @@ export function ProgramsView() {
                       type="number"
                       min="0"
                       max="80"
-                      className={inputCls}
+                      className={FORM_CONTROL_CLS}
                       value={programModal.outOfZoneSpeedLimitKmh ?? DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH}
                       onChange={(e) => setProgramModal((prev) => ({ ...prev, outOfZoneSpeedLimitKmh: Math.max(0, Math.min(80, parseFloat(e.target.value) || 0)) }))}
                     />
@@ -583,45 +724,51 @@ export function ProgramsView() {
               </div>
             )}
           </div>
-          <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <div className="rounded-lg border border-border bg-muted p-3">
-              <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Pickup Preview</div>
-              <div className="text-sm font-bold text-foreground">
-                {programModal.pickupLocation.trim() || 'Program Pickup Point'}
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {programModal.pickupAddress.trim() || 'Address not set'}
-              </div>
-              <a
-                className="mt-2 inline-flex text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open in Google Maps
-              </a>
+          <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3">
+            <div className="mb-2 text-sm font-semibold text-muted-foreground">Pickup Location & Address</div>
+            <div className="mb-3">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Location name</label>
+              <input
+                className={FORM_CONTROL_CLS}
+                value={programModal.pickupLocation}
+                placeholder="e.g. Tangkas Hub - Kemayoran"
+                onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupLocation: e.target.value }))}
+              />
             </div>
-            <div className="overflow-hidden rounded-lg border border-border bg-muted">
+            <div className="mb-3">
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Full address</label>
+              <textarea
+                className={`${FORM_CONTROL_CLS} min-h-[72px]`}
+                value={programModal.pickupAddress}
+                placeholder="Full pickup address for operators and renters"
+                onChange={(e) => setProgramModal((prev) => ({ ...prev, pickupAddress: e.target.value }))}
+              />
+            </div>
+            <a
+              className="mb-3 inline-flex text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in Google Maps
+            </a>
+            <div className="overflow-hidden rounded-lg border border-border">
               <iframe
                 title="Program pickup map preview"
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(buildPickupMapQuery(programModal.pickupLocation, programModal.pickupAddress))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                style={{ border: 0, width: '100%', height: 170 }}
+                style={{ border: 0, width: '100%', height: 180 }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <button
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
-              type="button"
-              onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}
-            >
+            <Button variant="legacyGhost" size="legacy" onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}>
               Cancel
-            </button>
-            <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90" type="button" onClick={submitProgramModal}>
+            </Button>
+            <Button variant="legacyPrimary" size="legacy" onClick={submitProgramModal}>
               {programModal.mode === 'create' ? 'Initialize Program' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
             </div>
           </div>
@@ -670,13 +817,9 @@ export function ProgramsView() {
             </Table>
           </div>
           <div className="mt-3 flex justify-end">
-            <button
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
-              type="button"
-              onClick={() => setVehicleModal({ open: false, programId: '' })}
-            >
+            <Button variant="legacyGhost" size="legacy" onClick={() => setVehicleModal({ open: false, programId: '' })}>
               Close
-            </button>
+            </Button>
           </div>
             </div>
           </div>
@@ -724,7 +867,7 @@ export function ProgramsView() {
                   <TableHead>STATUS</TableHead>
                   <TableHead>CONNECTIVITY</TableHead>
                   <TableHead>MOVEMENT</TableHead>
-                  <TableHead>PROGRESS</TableHead>
+                  <TableHead>RTO PROGRESS</TableHead>
                   <TableHead>ACTIVE ADDRESS</TableHead>
                   <TableHead>NOPOL / ID</TableHead>
                   <TableHead>CREDITS</TableHead>
@@ -732,7 +875,7 @@ export function ProgramsView() {
               </TableHeader>
               <TableBody>
                 {filteredRentersRows.length > 0 ? (
-                  filteredRentersRows.map(({ vehicle, user, progressPct, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
+                  filteredRentersRows.map(({ vehicle, user, paidDays, totalDays, progressPercent, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
                     const expanded = expandedRenterVehicleId === vehicle.id
                     return (
                       <Fragment key={`renters-group-${vehicle.id}`}>
@@ -779,7 +922,24 @@ export function ProgramsView() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <div className="font-bold text-foreground">{progressPct}%</div>
+                            {progressPercent != null ? (
+                              <div>
+                                <div className="font-semibold text-foreground">
+                                  {paidDays} / {totalDays} days
+                                </div>
+                                <div className="mt-0.5 flex items-center gap-2">
+                                  <div className="h-1.5 flex-1 max-w-[60px] overflow-hidden rounded-full bg-muted">
+                                    <div
+                                      className="h-full rounded-full bg-cyan-500"
+                                      style={{ width: `${progressPercent}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium text-muted-foreground">{progressPercent}%</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="text-muted-foreground">{vehicle.lastActiveLocation || vehicle.address || 'Location Hidden'}</div>
@@ -834,9 +994,9 @@ export function ProgramsView() {
             </Table>
           </div>
           <div className="mt-3 flex justify-end">
-            <button
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
-              type="button"
+            <Button
+              variant="legacyGhost"
+              size="legacy"
               onClick={() => {
                 setExpandedRenterVehicleId('')
                 setRentersTab('all')
@@ -844,7 +1004,7 @@ export function ProgramsView() {
               }}
             >
               Close
-            </button>
+            </Button>
           </div>
             </div>
           </div>
@@ -856,23 +1016,19 @@ export function ProgramsView() {
             Delete <b>{deleteTarget?.name}</b>? This cannot be undone.
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <button
-              className="rounded-md border border-input bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-accent"
-              type="button"
-              onClick={() => setDeleteTarget(null)}
-            >
+            <Button variant="legacyGhost" size="legacy" onClick={() => setDeleteTarget(null)}>
               Cancel
-            </button>
-            <button
-              className="rounded-lg bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
-              type="button"
+            </Button>
+            <Button
+              variant="legacyDanger"
+              size="legacy"
               onClick={() => {
                 if (deleteTarget) removeProgram(deleteTarget.id)
                 setDeleteTarget(null)
               }}
             >
               Delete
-            </button>
+            </Button>
           </div>
             </div>
           </div>

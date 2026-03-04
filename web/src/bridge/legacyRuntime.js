@@ -8,27 +8,70 @@ const runtimeState = {
 /** City boundary polygons from cityPolygons.json. Format: { cityName: [[lng,lat],...] | [ [[lng,lat],...], ... ] } */
 export const CITIES_POLYGONS = cityPolygonsData || {}
 
-/** Geofence cities for Jabodetabek (ordered for UI) */
-const JABODETABEK_GEOFENCE = [
-  'Jakarta',
-  'Kabupaten Bekasi',
-  'Kota Bekasi',
-  'Kabupaten Tangerang',
-  'Kota Tangerang',
-  'Tangerang',
-  'Tangerang Selatan',
-  'Kabupaten Bogor',
-  'Kota Bogor',
-  'Depok',
-  'Kabupaten Purwakarta',
-  'Kabupaten Karawang',
+/** City to province (propinsi) mapping for grouped geofence filter */
+const CITY_TO_PROVINCE = {
+  Jakarta: 'DKI Jakarta',
+  Bekasi: 'Jawa Barat',
+  'Kabupaten Bekasi': 'Jawa Barat',
+  'Kota Bekasi': 'Jawa Barat',
+  Depok: 'Jawa Barat',
+  Bogor: 'Jawa Barat',
+  'Kabupaten Bogor': 'Jawa Barat',
+  'Kota Bogor': 'Jawa Barat',
+  'Kabupaten Purwakarta': 'Jawa Barat',
+  'Kabupaten Karawang': 'Jawa Barat',
+  'Kabupaten Bandung Barat': 'Jawa Barat',
+  'Kota Bandung': 'Jawa Barat',
+  'Kabupaten Bandung': 'Jawa Barat',
+  'Kota Cimahi': 'Jawa Barat',
+  'Kabupaten Sumedang': 'Jawa Barat',
+  'Kabupaten Subang': 'Jawa Barat',
+  Bandung: 'Jawa Barat',
+  'Kabupaten Tangerang': 'Banten',
+  'Kota Tangerang': 'Banten',
+  Tangerang: 'Banten',
+  'Tangerang Selatan': 'Banten',
+  Surabaya: 'Jawa Timur',
+  Semarang: 'Jawa Tengah',
+  Yogyakarta: 'DIY Yogyakarta',
+  Medan: 'Sumatera Utara',
+}
+
+/** Provinces (propinsi) in display order; cities filtered to those with polygon data */
+const PROVINCES_RAW = [
+  { id: 'dki', label: 'DKI Jakarta', cities: ['Jakarta'] },
+  { id: 'banten', label: 'Banten', cities: ['Tangerang', 'Tangerang Selatan', 'Kabupaten Tangerang', 'Kota Tangerang'] },
+  {
+    id: 'jabar',
+    label: 'Jawa Barat',
+    cities: [
+      'Bekasi',
+      'Kabupaten Bekasi',
+      'Kota Bekasi',
+      'Depok',
+      'Bogor',
+      'Kabupaten Bogor',
+      'Kota Bogor',
+      'Kabupaten Purwakarta',
+      'Kabupaten Karawang',
+      'Kabupaten Bandung Barat',
+      'Kota Bandung',
+      'Kabupaten Bandung',
+      'Kota Cimahi',
+      'Kabupaten Sumedang',
+      'Kabupaten Subang',
+      'Bandung',
+    ],
+  },
 ]
 
-/** List of city names: Jabodetabek first, then others from polygon data */
-export const CITIES_GEOFENCE = [
-  ...JABODETABEK_GEOFENCE,
-  ...Object.keys(CITIES_POLYGONS).filter((c) => !JABODETABEK_GEOFENCE.includes(c)).sort(),
-]
+export const PROVINCES_GEOFENCE = PROVINCES_RAW.map((p) => ({
+  ...p,
+  cities: p.cities.filter((c) => CITIES_POLYGONS[c]),
+})).filter((p) => p.cities.length > 0)
+
+/** Flat list of all geofence cities (for program geofenceCities, etc.) */
+export const CITIES_GEOFENCE = [...new Set(PROVINCES_RAW.flatMap((p) => p.cities).filter((c) => CITIES_POLYGONS[c]))].sort()
 
 /** Cities where program pickup locations are (tangkas/maka=Jakarta, united=Bekasi) */
 const PROGRAM_CITY_MAP = { tangkas: 'Jakarta', maka: 'Jakarta', united: 'Bekasi' }
@@ -254,6 +297,10 @@ function normalizeDataIntegrity(state) {
   for (const program of state.programs) {
     if (!program.type) program.type = 'RTO'
     if (!program.durationDays) program.durationDays = program.type === 'RTO' ? 180 : 30
+    if (!Array.isArray(program.offDays)) program.offDays = [0]
+    program.offDays = program.offDays.filter((d) => d >= 0 && d <= 6)
+    if (!Array.isArray(program.holidayDates)) program.holidayDates = []
+    program.holidayDates = program.holidayDates.filter((d) => d >= 1 && d <= 31)
     if (!program.pickupLocation) {
       program.pickupLocation = PROGRAM_PICKUP_LOCATIONS[program.partnerId] || 'Program Pickup Point'
     }
@@ -341,7 +388,12 @@ function normalizeDataIntegrity(state) {
   }
 
   for (const gps of state.gpsDevices) {
-    if (!gps.createdAt) gps.createdAt = new Date().toISOString()
+    if (!gps.createdAt) {
+      const seed = (gps.id || 'gps').split('').reduce((h, c) => h + c.charCodeAt(0), 0)
+      const d = new Date(Date.now() - ((Math.abs(seed) % 30) + 1) * 86400000)
+      d.setHours(9, (Math.abs(seed) * 17) % 60, 0, 0)
+      gps.createdAt = d.toISOString()
+    }
     if (!gps.updatedAt) gps.updatedAt = gps.createdAt
     if (gps.vehicleId) {
       const vehicle = vehiclesById.get(gps.vehicleId)
@@ -456,6 +508,8 @@ function seedLocalState() {
       commissionFixed: 0,
       pickupLocation: PROGRAM_PICKUP_LOCATIONS[partner] || 'Program Pickup Point',
       durationDays: type === 'RTO' ? 180 : 30,
+      offDays: [0],
+      holidayDates: [],
       eligibleModels: [MODELS[i % MODELS.length]],
       minSalary: 0,
       promotions: [],
@@ -531,9 +585,15 @@ function seedLocalState() {
     const vehicle = vehicles[i % vehicles.length]
     const amount = 25000 + (i % 7) * 5000
     const transactionType = i % 12 === 0 ? 'pay_penalty' : 'buy_credit'
+    // Mock transaction time: fixed base date + varied time of day (not Date.now())
+    const mockBaseMs = new Date('2026-01-15T00:00:00Z').getTime()
+    const dayMs = 86400000
+    const hourMs = 3600000
+    const minMs = 60000
+    const txTime = mockBaseMs - i * dayMs + ((i * 17) % 24) * hourMs + ((i * 31) % 60) * minMs
     return {
       id: `TX-${10000 + i}`,
-      date: new Date(Date.now() - i * 86400000).toISOString(),
+      date: new Date(txTime).toISOString(),
       vehicleId: vehicle.id,
       partnerId: vehicle.partnerId,
       amount,
@@ -547,7 +607,9 @@ function seedLocalState() {
 
   const gpsDevices = vehicles.map((vehicle, i) => {
     const isUnassigned = i % 11 === 0
-    const createdAt = new Date(Date.now() - i * 86400000).toISOString()
+    const d = new Date(Date.now() - (i + 1) * 86400000)
+    d.setHours(9, (i * 17) % 60, 0, 0)
+    const createdAt = d.toISOString()
     return {
       id: `GPS-${String(i + 1).padStart(5, '0')}`,
       imei: `8688${String(1000000000 + i)}`,

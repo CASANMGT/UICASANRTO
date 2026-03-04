@@ -2,6 +2,33 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [3.1.0] - 2026-03-04
+
+### UX Consistency Refactor
+- **Shared Form Controls:** Introduced `FORM_CONTROL_CLS` in `page.jsx` for inputs, selects, and textareas—`text-base` for readability. ProgramsView and RtoView modals now use this shared constant.
+- **Button Standardization:** ProgramsView modal actions (Cancel, Save, Close, Delete) now use the shared `Button` component (`legacyGhost`, `legacyPrimary`, `legacyDanger`) instead of raw inline styles.
+- **Action Buttons:** Edit, Delete, Vehicle List, and Renters List in ProgramsView use `Button variant="legacyPill"` for consistent pill styling.
+- **Checkbox Consistency:** Introduced `CHECKBOX_CLS` (h-4 w-4); MapView, ProgramsView, and RtoView checkboxes unified for consistent sizing and accent.
+- **Empty State Text:** RtoView empty-table text standardized to `text-sm` to match other views.
+
+## [3.0.0] - 2026-03-04
+
+### Geofence UX Overhaul
+- **Province-Grouped Selection:** Geofence filters now grouped by propinsi (DKI Jakarta, Banten, Jawa Barat) instead of flat city lists.
+- **Accordion UI:** Maps and Programs use expandable province sections—expand to select individual kota/kab within each province.
+- **Map Geofence:** Province-level checkboxes with expand-to-select cities; one-click province select-all; selection count (n/total) per province.
+- **Program Geofence:** Same accordion pattern in Create/Edit Program modal; province select-all plus fine-grained city checkboxes when expanded.
+- **Bandung Area Coverage:** Ingested GeoJSON for Kabupaten Bandung Barat, Kota Bandung, Kabupaten Bandung, Kota Cimahi, Kabupaten Sumedang, Kabupaten Subang.
+
+### Docs & Changelog UX
+- **Version Badge Popout:** Sidebar shows version badge (e.g. v3.0.0); click opens modal with Changelog, README, Roadmap tabs.
+- **Close Button:** Docs popout has explicit × close button in header.
+- **No More Dropdowns:** Replaced inline collapsible changelog/readme/roadmap sections with single popout.
+
+### UI Refinements
+- **Stat Card Typography:** Stat values use larger font (text-2xl) with tabular-nums for proportional readability; labels use text-sm.
+- **GPS Timestamps:** Mock timestamps use deterministic past dates (09:XX) instead of current time; fallbacks use varied 1–30 days ago per device.
+
 ## [2.9.0] - 2026-02-28
 
 ### Maps List Interaction

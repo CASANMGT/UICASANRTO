@@ -6,6 +6,13 @@ export const PAGE_SIZE = 20
 /** Minimum table width class for consistent layout across tabs */
 export const TABLE_MIN_WIDTH = 'min-w-[1200px]'
 
+/** Shared form control classes for modals (inputs, selects, textareas) — text-base for readability */
+export const FORM_CONTROL_CLS =
+  'w-full rounded-md border border-input bg-background px-4 py-3 text-base text-foreground outline-none ring-ring focus:ring-2'
+
+/** Shared checkbox classes for consistent sizing and accent */
+export const CHECKBOX_CLS = 'h-4 w-4 rounded border-input accent-cyan-600'
+
 export function PageShell({ className, ...props }) {
   return (
     <section
@@ -49,8 +56,8 @@ export function StatsGrid({ className, ...props }) {
 export function StatCard({ label, value, valueClassName, className }) {
   return (
     <div className={cn('rounded-lg border border-border bg-card p-5 shadow-sm', className)}>
-      <div className="text-base font-medium text-muted-foreground">{label}</div>
-      <div className={cn('mt-2 text-base font-bold text-foreground', valueClassName)}>{value}</div>
+      <div className="text-sm font-medium text-muted-foreground">{label}</div>
+      <div className={cn('mt-1.5 text-2xl font-bold tabular-nums text-foreground', valueClassName)}>{value}</div>
     </div>
   )
 }
