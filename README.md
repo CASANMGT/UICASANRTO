@@ -106,6 +106,18 @@ casan_rto/
 └─ CHANGELOG.md            # Release log
 ```
 
+## Branches & Releases
+
+- `main` — Production release branch (deployed to Vercel).
+- `feat/*` — Feature branches. Create with `git checkout -b feat/your-feature`, commit changes, then open a PR to merge into `main`.
+
+To work with the latest program modals pagination (v3.2.0):
+
+```powershell
+git fetch origin
+git checkout feat/program-modals-pagination   # or merge into main
+```
+
 ## Local Development
 
 ### React App (recommended)
@@ -142,6 +154,15 @@ vercel --prod
 ```
 
 `main` is the release branch and is connected to Vercel production.
+
+## Program Modals (Vehicle List & RTO List)
+
+The **Programs** view shows each program with action buttons:
+
+- **Vehicle List** — Opens a popout listing all vehicles assigned to that program. Use **Prev** / **Next** to paginate (10 vehicles per page). The footer shows `Page X of Y (N vehicles)`.
+- **Renters List (RTO List)** — Opens a popout listing all renters (RTO users) for that program. Filter by tab (All, Online, Offline, Running, Stopped, Grace, Immobilized). Use **Prev** / **Next** to paginate (10 renters per page). The footer shows `Page X of Y (N renters)`.
+
+When opening either modal or switching RTO List tabs, pagination resets to page 1.
 
 ## Product Scope (Current)
 

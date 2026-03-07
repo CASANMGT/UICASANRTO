@@ -2,6 +2,13 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [3.2.0] - 2026-03-04
+
+### Program Modals Pagination
+- **Vehicle List popout:** Added pagination (10 per page) with Prev/Next controls and page info (`Page X of Y (N vehicles)`). Page resets to 1 when opening the modal.
+- **RTO List (Renters List) popout:** Added pagination (10 per page) with Prev/Next controls and page info (`Page X of Y (N renters)`). Page resets to 1 when opening the modal or switching tabs (All, Online, Offline, Running, Stopped, Grace, Immobilized).
+- Both modals retain full detail visibility while improving navigation for programs with many vehicles or renters.
+
 ## [3.1.0] - 2026-03-04
 
 ### UX Consistency Refactor

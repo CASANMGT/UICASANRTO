@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { featureFlags } from './config/featureFlags'
-import { setGlobalFilter } from './bridge/legacyRuntime'
-import { useLegacyRuntime } from './hooks/useLegacyRuntime'
+import { setGlobalFilter } from './api/client'
+import { useApiState, ApiContext } from './hooks/useApiState'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog'
 import { Select } from './components/ui/select'
 import { FinanceView } from './components/FinanceView'
@@ -9,6 +9,7 @@ import { GpsView } from './components/GpsView'
 import { MapView } from './components/MapView'
 import { ProgramsView } from './components/ProgramsView'
 import { RentersView } from './components/RentersView'
+import { RtoAnalyticsView } from './components/RtoAnalyticsView'
 import { RtoView } from './components/RtoView'
 import { UsersView } from './components/UsersView'
 import { VehiclesView } from './components/VehiclesView'
@@ -19,11 +20,13 @@ const NAV_ITEMS = [
   { key: 'rto', label: 'Applications', icon: '📋' },
   { key: 'renters', label: 'Renters', icon: '🤝' },
   { key: 'finance', label: 'Finance', icon: '💰' },
+  { key: 'rto-analytics', label: 'RTO Analytics', icon: '📊' },
   { key: 'vehicles', label: 'Vehicle', icon: '🏍️' },
   { key: 'map', label: 'Maps', icon: '🗺️' },
   { key: 'gps', label: 'GPS', icon: '📡' },
 ]
 const CHANGELOG_ITEMS = [
+  { version: 'v3.2.0', date: '2026-03-04', notes: ['Vehicle List popout: pagination (10 per page) with Prev/Next and page info', 'RTO List (Renters List) popout: pagination (10 per page) with Prev/Next and page info', 'Pagination resets when opening modal or switching RTO List tabs'] },
   { version: 'v3.1.0', date: '2026-03-04', notes: ['Shared form control and checkbox constants', 'ProgramsView modals use Button component', 'Unified pill action buttons (Edit, Delete, Vehicle/Renters List)', 'Consistent empty-state text size across views'] },
   { version: 'v3.0.0', date: '2026-03-04', notes: ['Province-grouped geofence (DKI Jakarta, Banten, Jawa Barat)', 'Accordion UX for Maps & Programs—expand to select kota/kab', 'Bandung area GeoJSON: Kota Cimahi, Kab. Bandung Barat, etc.', 'Stat card larger value font', 'Docs popout with close button'] },
   { version: 'v2.9.0', date: '2026-02-28', notes: ['Maps list row click now zooms to marker', 'Removed Focus Vehicle panel in map view', 'Handover checklist guardrails and inline popup validation'] },
@@ -57,13 +60,14 @@ function DocPanel({ path, className = '' }) {
 }
 
 function App() {
-  const { ready, state, error } = useLegacyRuntime()
   const [activeTab, setActiveTab] = useState('users')
   const [partner, setPartner] = useState('all')
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [docsPopoutOpen, setDocsPopoutOpen] = useState(false)
   const [docsTab, setDocsTab] = useState('changelog')
+
+  const { ready, state, error, refreshVersion } = useApiState(partner)
 
   const counts = useMemo(
     () => ({
@@ -75,11 +79,13 @@ function App() {
       gps: state.gpsDevices?.length || 0,
       map: state.vehicles?.length || 0,
       rto: state.rtoApplications?.length || 0,
+      'rto-analytics': 0,
     }),
     [state],
   )
 
   return (
+    <ApiContext.Provider value={{ refreshVersion }}>
     <main className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div
         className={`app-sidebar-overlay ${mobileNavOpen ? 'open' : ''}`}
@@ -125,33 +131,37 @@ function App() {
 
       <div className="app-main">
         <header className="card app-topbar">
-          <div className="flex items-center gap-3">
-            <button className="app-menu-btn" type="button" onClick={() => setMobileNavOpen((prev) => !prev)}>
-              ☰
-            </button>
-            <h1 className="m-0 font-extrabold" style={{ fontSize: 'var(--text-base)' }}>{NAV_ITEMS.find((item) => item.key === activeTab)?.label}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {!ready && !error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dw)' }}>Loading...</span>}
-            {!!error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dd)' }}>{error}</span>}
-            <label style={{ fontSize: 'var(--text-base)', color: 'var(--t2)' }} htmlFor="partnerFilter">
-              Partner
-            </label>
-            <Select
-              id="partnerFilter"
-              className="w-[180px]"
-              value={partner}
-              onChange={(e) => {
-                const value = e.target.value
-                setPartner(value)
-                setGlobalFilter({ partner: value, program: 'all' })
-              }}
-            >
-              <option value="all">All Partners</option>
-              <option value="tangkas">Tangkas</option>
-              <option value="maka">Maka</option>
-              <option value="united">United</option>
-            </Select>
+          <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2 shrink-0">
+                <label style={{ fontSize: 'var(--text-base)', color: 'var(--t2)' }} htmlFor="partnerFilter">
+                  Partner
+                </label>
+                <Select
+                  id="partnerFilter"
+                  className="w-[160px] shrink-0"
+                  value={partner}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setPartner(value)
+                    setGlobalFilter({ partner: value, program: 'all' })
+                  }}
+                >
+                  <option value="all">All Partners</option>
+                  <option value="tangkas">Tangkas</option>
+                  <option value="maka">Maka</option>
+                  <option value="united">United</option>
+                </Select>
+              </div>
+              <button className="app-menu-btn shrink-0" type="button" onClick={() => setMobileNavOpen((prev) => !prev)}>
+                ☰
+              </button>
+              <h1 className="m-0 font-extrabold truncate" style={{ fontSize: 'var(--text-base)' }}>{NAV_ITEMS.find((item) => item.key === activeTab)?.label}</h1>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {!ready && !error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dw)' }}>Loading...</span>}
+              {!!error && <span style={{ fontSize: 'var(--text-base)', color: 'var(--dd)' }}>{error}</span>}
+            </div>
           </div>
         </header>
         <section className="card min-h-0 min-w-0 flex-1 p-5">
@@ -166,6 +176,7 @@ function App() {
           {activeTab === 'gps' && (featureFlags.gpsReact ? <GpsView /> : <LegacyPlaceholder tab="gps" />)}
           {activeTab === 'map' && (featureFlags.mapReact ? <MapView /> : <LegacyPlaceholder tab="map" />)}
           {activeTab === 'rto' && (featureFlags.rtoReact ? <RtoView /> : <LegacyPlaceholder tab="rto" />)}
+          {activeTab === 'rto-analytics' && <RtoAnalyticsView partner={partner} />}
         </section>
       </div>
 
@@ -224,6 +235,7 @@ function App() {
         </DialogContent>
       </Dialog>
     </main>
+    </ApiContext.Provider>
   )
 }
 

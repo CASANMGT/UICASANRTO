@@ -1,18 +1,14 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePagination } from '../context/PaginationContext'
+import { createProgram, editProgram, getPrograms, getState, removeProgram } from '../api/client'
 import {
-  createProgram,
   PROVINCES_GEOFENCE,
   DEFAULT_OUT_OF_ZONE_BUFFER_KM,
   DEFAULT_OUT_OF_ZONE_SPEED_LIMIT_KMH,
-  editProgram,
-  getPrograms,
-  getState,
   OUT_OF_ZONE_ACTIONS,
-  removeProgram,
-} from '../bridge/legacyRuntime'
-import { useLegacyTick } from '../hooks/useLegacyTick'
+} from '../utils/geofence'
+import { useRefreshVersion } from '../hooks/useApiState'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import {
@@ -44,6 +40,8 @@ function buildPickupMapQuery(location, address) {
 }
 
 const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MODAL_PAGE_SIZE = 10
+
 function formatOffDays(offDays) {
   if (!Array.isArray(offDays) || offDays.length === 0) return '—'
   return [...offDays]
@@ -54,7 +52,7 @@ function formatOffDays(offDays) {
 }
 
 export function ProgramsView() {
-  const tick = useLegacyTick()
+  const tick = useRefreshVersion()
   const [search, setSearch] = useState('')
   const [page, setPage] = usePagination('programs')
   const DEFAULT_GEOFENCE = { tangkas: ['Jakarta'], maka: ['Jakarta'], united: ['Bekasi'] }
@@ -87,6 +85,8 @@ export function ProgramsView() {
   const [expandedRenterVehicleId, setExpandedRenterVehicleId] = useState('')
   const [rentersTab, setRentersTab] = useState('all')
   const [geofenceExpandedProvinces, setGeofenceExpandedProvinces] = useState(['dki'])
+  const [vehicleModalPage, setVehicleModalPage] = useState(1)
+  const [rentersModalPage, setRentersModalPage] = useState(1)
 
   const programs = useMemo(() => {
     void tick
@@ -217,6 +217,21 @@ export function ProgramsView() {
   const currentPage = Math.min(page, totalPages)
   const pageRows = programs.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
+  // Modal pagination
+  const vehicleTotalPages = Math.max(1, Math.ceil(vehicleRows.length / MODAL_PAGE_SIZE))
+  const vehicleCurrentPage = Math.min(vehicleModalPage, vehicleTotalPages)
+  const vehiclePaginatedRows = vehicleRows.slice((vehicleCurrentPage - 1) * MODAL_PAGE_SIZE, vehicleCurrentPage * MODAL_PAGE_SIZE)
+
+  const rentersTotalPages = Math.max(1, Math.ceil(filteredRentersRows.length / MODAL_PAGE_SIZE))
+  const rentersCurrentPage = Math.min(rentersModalPage, rentersTotalPages)
+  const rentersPaginatedRows = filteredRentersRows.slice((rentersCurrentPage - 1) * MODAL_PAGE_SIZE, rentersCurrentPage * MODAL_PAGE_SIZE)
+
+  useEffect(() => {
+    if (totalPages >= 1 && page > totalPages) {
+      setPage(totalPages)
+    }
+  }, [page, totalPages, setPage])
+
   const openCreateModal = () => {
     setProgramModal({
       open: true,
@@ -276,7 +291,31 @@ export function ProgramsView() {
     })
   }
 
-  const submitProgramModal = () => {
+  const closeProgramModal = () => setProgramModal((prev) => ({ ...prev, open: false }))
+
+  const closeVehicleModal = () => setVehicleModal({ open: false, programId: '' })
+  const closeRentersModal = () => {
+    setExpandedRenterVehicleId('')
+    setRentersTab('all')
+    setRentersModal({ open: false, programId: '' })
+  }
+  const closeDeleteModal = () => setDeleteTarget(null)
+
+  useEffect(() => {
+    const anyOpen = programModal.open || vehicleModal.open || rentersModal.open || !!deleteTarget
+    if (!anyOpen) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (programModal.open) closeProgramModal()
+      else if (vehicleModal.open) closeVehicleModal()
+      else if (rentersModal.open) closeRentersModal()
+      else if (deleteTarget) closeDeleteModal()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [programModal.open, vehicleModal.open, rentersModal.open, deleteTarget])
+
+  const submitProgramModal = async () => {
     const name = programModal.name.trim()
     if (!name) return
     const payload = {
@@ -303,15 +342,19 @@ export function ProgramsView() {
       minSalary: 0,
       promotions: [],
     }
-    if (programModal.mode === 'create') {
-      createProgram({
-        id: makeId(payload.shortName || payload.name),
-        ...payload,
-      })
-    } else {
-      editProgram(programModal.id, payload)
+    try {
+      if (programModal.mode === 'create') {
+        await createProgram({
+          id: makeId(payload.shortName || payload.name),
+          ...payload,
+        })
+      } else {
+        await editProgram(programModal.id, payload)
+      }
+      closeProgramModal()
+    } catch (err) {
+      window.alert(err?.message || 'Failed to save program')
     }
-    setProgramModal((prev) => ({ ...prev, open: false }))
   }
 
   const selectedVehicleProgram = programs.find((item) => item.id === vehicleModal.programId)
@@ -391,7 +434,10 @@ export function ProgramsView() {
                         size="legacy"
                         className="h-auto px-3 py-1 text-xs"
                         type="button"
-                        onClick={() => setVehicleModal({ open: true, programId: program.id })}
+                        onClick={() => {
+                          setVehicleModalPage(1)
+                          setVehicleModal({ open: true, programId: program.id })
+                        }}
                       >
                         Vehicle List
                       </Button>
@@ -410,6 +456,7 @@ export function ProgramsView() {
                         onClick={() => {
                           setExpandedRenterVehicleId('')
                           setRentersTab('all')
+                          setRentersModalPage(1)
                           setRentersModal({ open: true, programId: program.id })
                         }}
                       >
@@ -490,11 +537,28 @@ export function ProgramsView() {
 
       {createPortal(
         <>
-          <div className={`${programModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
-            <div className="app-modal-content max-h-[92vh] w-full max-w-xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-foreground">
+          {programModal.open && (
+          <div
+            className="app-modal-backdrop fixed inset-0 z-[100] cursor-pointer items-center justify-center bg-black/45 p-4"
+            onClick={closeProgramModal}
+          >
+            <div
+              className="app-modal-content max-h-[92vh] w-full max-w-xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+          <div className="mb-3 flex items-start justify-between gap-2">
+          <h2 className="text-lg font-extrabold text-foreground">
             {programModal.mode === 'create' ? 'Launch New Program' : 'Update Program Scheme'}
           </h2>
+          <button
+            type="button"
+            className="shrink-0 rounded p-2 text-xl leading-none text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={closeProgramModal}
+            aria-label="Close"
+          >
+            ×
+          </button>
+          </div>
           <div className="mb-3">
             <label className="mb-1 block text-sm font-semibold text-muted-foreground">Display Name</label>
             <input className={FORM_CONTROL_CLS} value={programModal.name} onChange={(e) => setProgramModal((prev) => ({ ...prev, name: e.target.value }))} />
@@ -763,7 +827,7 @@ export function ProgramsView() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="legacyGhost" size="legacy" onClick={() => setProgramModal((prev) => ({ ...prev, open: false }))}>
+            <Button variant="legacyGhost" size="legacy" onClick={closeProgramModal}>
               Cancel
             </Button>
             <Button variant="legacyPrimary" size="legacy" onClick={submitProgramModal}>
@@ -772,12 +836,30 @@ export function ProgramsView() {
           </div>
             </div>
           </div>
+          )}
 
-          <div className={`${vehicleModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
-            <div className="app-modal-content max-h-[92vh] w-[94vw] max-w-5xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-foreground">
+          {vehicleModal.open && (
+          <div
+            className="app-modal-backdrop fixed inset-0 z-[100] cursor-pointer items-center justify-center bg-black/45 p-4"
+            onClick={closeVehicleModal}
+          >
+            <div
+              className="app-modal-content max-h-[92vh] w-[94vw] max-w-5xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+          <div className="mb-3 flex items-start justify-between gap-2">
+          <h2 className="text-lg font-extrabold text-foreground">
             Vehicle List for {selectedVehicleProgram?.shortName || selectedVehicleProgram?.name || 'Program'}
           </h2>
+          <button
+            type="button"
+            className="shrink-0 rounded p-2 text-xl leading-none text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={closeVehicleModal}
+            aria-label="Close"
+          >
+            ×
+          </button>
+          </div>
           <div className="max-h-[70vh] overflow-auto rounded-lg border border-border">
             <Table density="legacy">
               <TableHeader tone="legacy">
@@ -791,8 +873,8 @@ export function ProgramsView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vehicleRows.length > 0 ? (
-                  vehicleRows.map((vehicle) => (
+                {vehiclePaginatedRows.length > 0 ? (
+                  vehiclePaginatedRows.map((vehicle) => (
                     <TableRow key={`program-vehicle-${vehicle.id}`} tone="legacy">
                       <TableCell>{vehicle.id}</TableCell>
                       <TableCell>{vehicle.plate || '-'}</TableCell>
@@ -816,19 +898,58 @@ export function ProgramsView() {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-3 flex justify-end">
-            <Button variant="legacyGhost" size="legacy" onClick={() => setVehicleModal({ open: false, programId: '' })}>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="legacyGhost"
+                size="legacy"
+                disabled={vehicleCurrentPage <= 1}
+                onClick={() => setVehicleModalPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <span className="text-sm font-semibold text-muted-foreground">
+                Page {vehicleCurrentPage} of {vehicleTotalPages} ({vehicleRows.length} vehicles)
+              </span>
+              <Button
+                variant="legacyGhost"
+                size="legacy"
+                disabled={vehicleCurrentPage >= vehicleTotalPages}
+                onClick={() => setVehicleModalPage((p) => Math.min(vehicleTotalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+            <Button variant="legacyGhost" size="legacy" onClick={closeVehicleModal}>
               Close
             </Button>
           </div>
             </div>
           </div>
+          )}
 
-          <div className={`${rentersModal.open ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
-            <div className="app-modal-content max-h-[92vh] w-[95vw] max-w-6xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl">
-          <h2 className="mb-3 text-lg font-extrabold text-foreground">
+          {rentersModal.open && (
+          <div
+            className="app-modal-backdrop fixed inset-0 z-[100] cursor-pointer items-center justify-center bg-black/45 p-4"
+            onClick={closeRentersModal}
+          >
+            <div
+              className="app-modal-content max-h-[92vh] w-[95vw] max-w-6xl overflow-auto rounded-lg border border-border bg-background p-4 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+          <div className="mb-3 flex items-start justify-between gap-2">
+          <h2 className="text-lg font-extrabold text-foreground">
             Renter Details for {selectedRentersProgram?.shortName || selectedRentersProgram?.name || 'Program'}
           </h2>
+          <button
+            type="button"
+            className="shrink-0 rounded p-2 text-xl leading-none text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={closeRentersModal}
+            aria-label="Close"
+          >
+            ×
+          </button>
+          </div>
           <div className="mb-3 flex flex-wrap gap-2">
             {[
               ['all', 'All'],
@@ -850,6 +971,7 @@ export function ProgramsView() {
                 onClick={() => {
                   setExpandedRenterVehicleId('')
                   setRentersTab(id)
+                  setRentersModalPage(1)
                 }}
               >
                 {label} ({rentersTabCounts[id] || 0})
@@ -874,8 +996,8 @@ export function ProgramsView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRentersRows.length > 0 ? (
-                  filteredRentersRows.map(({ vehicle, user, paidDays, totalDays, progressPercent, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
+                {rentersPaginatedRows.length > 0 ? (
+                  rentersPaginatedRows.map(({ vehicle, user, paidDays, totalDays, progressPercent, estimatedGraceCount, estimatedImmobilizedCount, movementState }) => {
                     const expanded = expandedRenterVehicleId === vehicle.id
                     return (
                       <Fragment key={`renters-group-${vehicle.id}`}>
@@ -993,38 +1115,69 @@ export function ProgramsView() {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-3 flex justify-end">
-            <Button
-              variant="legacyGhost"
-              size="legacy"
-              onClick={() => {
-                setExpandedRenterVehicleId('')
-                setRentersTab('all')
-                setRentersModal({ open: false, programId: '' })
-              }}
-            >
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="legacyGhost"
+                size="legacy"
+                disabled={rentersCurrentPage <= 1}
+                onClick={() => setRentersModalPage((p) => Math.max(1, p - 1))}
+              >
+                Prev
+              </Button>
+              <span className="text-sm font-semibold text-muted-foreground">
+                Page {rentersCurrentPage} of {rentersTotalPages} ({filteredRentersRows.length} renters)
+              </span>
+              <Button
+                variant="legacyGhost"
+                size="legacy"
+                disabled={rentersCurrentPage >= rentersTotalPages}
+                onClick={() => setRentersModalPage((p) => Math.min(rentersTotalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </div>
+            <Button variant="legacyGhost" size="legacy" onClick={closeRentersModal}>
               Close
             </Button>
           </div>
             </div>
           </div>
+          )}
 
-          <div className={`${deleteTarget ? 'flex' : 'hidden'} app-modal-backdrop fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4`}>
-            <div className="app-modal-content w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-xl">
-          <h2 className="mb-2 text-lg font-extrabold text-foreground">Delete Program</h2>
+          {deleteTarget && (
+          <div
+            className="app-modal-backdrop fixed inset-0 z-[100] cursor-pointer items-center justify-center bg-black/45 p-4"
+            onClick={closeDeleteModal}
+          >
+            <div
+              className="app-modal-content w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+          <div className="mb-2 flex items-start justify-between gap-2">
+          <h2 className="text-lg font-extrabold text-foreground">Delete Program</h2>
+          <button
+            type="button"
+            className="shrink-0 rounded p-2 text-xl leading-none text-muted-foreground hover:bg-muted hover:text-foreground"
+            onClick={closeDeleteModal}
+            aria-label="Close"
+          >
+            ×
+          </button>
+          </div>
           <div className="text-sm text-muted-foreground">
             Delete <b>{deleteTarget?.name}</b>? This cannot be undone.
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <Button variant="legacyGhost" size="legacy" onClick={() => setDeleteTarget(null)}>
+            <Button variant="legacyGhost" size="legacy" onClick={closeDeleteModal}>
               Cancel
             </Button>
             <Button
               variant="legacyDanger"
               size="legacy"
-              onClick={() => {
-                if (deleteTarget) removeProgram(deleteTarget.id)
-                setDeleteTarget(null)
+              onClick={async () => {
+                if (deleteTarget) await removeProgram(deleteTarget.id)
+                closeDeleteModal()
               }}
             >
               Delete
@@ -1032,6 +1185,7 @@ export function ProgramsView() {
           </div>
             </div>
           </div>
+          )}
         </>,
         document.body,
       )}
