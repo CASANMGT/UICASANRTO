@@ -220,8 +220,8 @@ export function UsersView() {
         </Select>
       </FilterBar>
 
-      <DataPanel className="flex flex-col">
-        <div className="flex-1 overflow-auto">
+      <DataPanel>
+        <div className="overflow-x-auto">
           <Table density="legacy" className={TABLE_MIN_WIDTH}>
           <TableHeader tone="legacy">
             <TableRow tone="legacy">

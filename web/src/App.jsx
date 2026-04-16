@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { key: 'gps', label: 'GPS', icon: '📡' },
 ]
 const CHANGELOG_ITEMS = [
+  { version: 'v3.2.0', date: '2026-04-16', notes: ['Fixed critical scroll bug—all pages now scrollable', 'Removed nested scroll traps in PageShell and DataPanel', 'Override legacy .card overflow:hidden on main content section', 'Verified all 8 tabs via Playwright automated tests'] },
   { version: 'v3.1.0', date: '2026-03-04', notes: ['Shared form control and checkbox constants', 'ProgramsView modals use Button component', 'Unified pill action buttons (Edit, Delete, Vehicle/Renters List)', 'Consistent empty-state text size across views'] },
   { version: 'v3.0.0', date: '2026-03-04', notes: ['Province-grouped geofence (DKI Jakarta, Banten, Jawa Barat)', 'Accordion UX for Maps & Programs—expand to select kota/kab', 'Bandung area GeoJSON: Kota Cimahi, Kab. Bandung Barat, etc.', 'Stat card larger value font', 'Docs popout with close button'] },
   { version: 'v2.9.0', date: '2026-02-28', notes: ['Maps list row click now zooms to marker', 'Removed Focus Vehicle panel in map view', 'Handover checklist guardrails and inline popup validation'] },
@@ -154,7 +155,7 @@ function App() {
             </Select>
           </div>
         </header>
-        <section className="card min-h-0 min-w-0 flex-1 p-5">
+        <section className="card min-w-0 p-5" style={{ overflow: 'visible' }}>
           {activeTab === 'users' && (featureFlags.usersReact ? <UsersView /> : <LegacyPlaceholder tab="users" />)}
           {activeTab === 'renters' && (featureFlags.rentersReact ? <RentersView /> : <LegacyPlaceholder tab="renters" />)}
           {activeTab === 'vehicles' &&

@@ -88,12 +88,12 @@ export function FinanceView() {
         </div>
       </FilterBar>
 
-      <DataPanel className="flex flex-col overflow-hidden">
+      <DataPanel>
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h3 className="m-0 text-base font-bold text-foreground">Recent Transactions</h3>
           <span className="text-sm text-muted-foreground">{data.transactions.length} records</span>
         </div>
-        <div className="flex-1 overflow-auto">
+        <div className="overflow-x-auto">
           <Table density="legacy" className={TABLE_MIN_WIDTH}>
             <TableHeader tone="legacy" className="text-left">
               <TableRow tone="legacy">

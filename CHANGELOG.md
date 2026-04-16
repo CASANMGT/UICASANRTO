@@ -2,6 +2,15 @@
 
 All notable changes to the **CASAN RTO** project will be documented in this file.
 
+## [3.2.0] - 2026-04-16
+
+### Scroll & Layout Fix
+- **Global Scroll Restoration:** Fixed critical bug where all page content was clipped and unscrollable due to the legacy `.card { overflow: hidden }` rule constraining the main content section.
+- **PageShell Simplification:** Removed `flex min-h-0 flex-col` from `PageShell` so page content flows naturally within `.app-main`'s scroll container.
+- **DataPanel Cleanup:** Removed nested `flex-1 overflow-auto` scroll trap from `DataPanel`; simplified to `overflow-x-auto` for horizontal table scrolling only.
+- **View Fixes:** Cleaned up `UsersView` and `FinanceView` `DataPanel` usage—removed custom flex/overflow class overrides that created nested scroll traps.
+- **Verified:** All 8 tabs (Users, Programs, Applications, Renters, Finance, Vehicle, Maps, GPS) confirmed scrollable via Playwright automated tests.
+
 ## [3.1.0] - 2026-03-04
 
 ### UX Consistency Refactor
